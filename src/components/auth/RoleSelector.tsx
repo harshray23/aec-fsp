@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -5,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AppLogo } from "@/components/shared/AppLogo";
+import { CollegeLogo } from "@/components/shared/CollegeLogo";
 import { GraduationCap, Briefcase, UserCog } from "lucide-react";
 import { USER_ROLES, type UserRole } from "@/lib/constants";
 
@@ -61,8 +63,9 @@ export default function RoleSelector() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-background to-secondary">
       <div className="text-center mb-12">
-        <div className="inline-block mb-4">
+        <div className="flex justify-center items-center gap-4 mb-4">
           <AppLogo width="80" height="80" />
+          <CollegeLogo width="132" height="80" />
         </div>
         <h1 className="text-4xl font-bold tracking-tight text-foreground">
           AEC FSP Portal
