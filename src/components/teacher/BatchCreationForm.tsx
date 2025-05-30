@@ -23,7 +23,12 @@ import { DEPARTMENTS } from "@/lib/constants";
 const batchCreationSchema = z.object({
   name: z.string().min(3, "Batch name must be at least 3 characters"),
   department: z.string().min(1, "Department is required"),
-  // We can add more fields later, e.g., maxStudents, startDate, endDate
+  topic: z.string().min(2, "Topic must be at least 2 characters"),
+  startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid start time (HH:MM)."),
+  endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid end time (HH:MM)."),
+}).refine(data => data.startTime < data.endTime, {
+  message: "End time must be after start time.",
+  path: ["endTime"],
 });
 
 type BatchCreationFormValues = z.infer<typeof batchCreationSchema>;
@@ -37,6 +42,9 @@ export default function BatchCreationForm() {
     defaultValues: {
       name: "",
       department: "",
+      topic: "",
+      startTime: "",
+      endTime: "",
     },
   });
 
@@ -44,7 +52,7 @@ export default function BatchCreationForm() {
     console.log("Batch creation form submitted:", values);
     toast({
       title: "Batch Creation Submitted (Simulated)",
-      description: `Batch "${values.name}" for ${values.department} department is being created.`,
+      description: `Batch "${values.name}" for topic "${values.topic}" from ${values.startTime} to ${values.endTime} in ${values.department} department is being created.`,
     });
 
     // Simulate API call
@@ -97,7 +105,47 @@ export default function BatchCreationForm() {
             </FormItem>
           )}
         />
-        {/* Add more fields here as needed, e.g., for student capacity, schedule, etc. */}
+        <FormField
+          control={form.control}
+          name="topic"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Topic / Module Name</FormLabel>
+              <FormControl>
+                <Input placeholder="Enter the main topic or module for this batch" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="startTime"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Start Time</FormLabel>
+                <FormControl>
+                  <Input type="time" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="endTime"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>End Time</FormLabel>
+                <FormControl>
+                  <Input type="time" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
         <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
           {form.formState.isSubmitting ? "Creating Batch..." : "Create Batch"}
         </Button>
