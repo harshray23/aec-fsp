@@ -1,0 +1,108 @@
+import { PageHeader } from "@/components/shared/PageHeader";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { GraduationCap, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+
+// Mock data - replace with actual data fetching
+const mockStudentData = {
+  name: "Aarav Sharma",
+  studentId: "S1001",
+  batch: {
+    name: "FSP Batch Alpha - CSE 2024",
+    timetable: "Morning Session (9 AM - 1 PM)",
+    teacher: "Dr. Priya Singh",
+  },
+  attendance: [
+    { date: "2024-07-01", subject: "Advanced Java", status: "present" as const },
+    { date: "2024-07-02", subject: "Data Structures", status: "present" as const },
+    { date: "2024-07-03", subject: "Project Management", status: "absent" as const },
+    { date: "2024-07-04", subject: "Communication Skills", status: "late" as const },
+    { date: "2024-07-05", subject: "Advanced Java", status: "present" as const },
+  ],
+};
+
+const getStatusIcon = (status: "present" | "absent" | "late") => {
+  switch (status) {
+    case "present":
+      return <CheckCircle className="h-5 w-5 text-green-500" />;
+    case "absent":
+      return <XCircle className="h-5 w-5 text-red-500" />;
+    case "late":
+      return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
+    default:
+      return null;
+  }
+};
+
+export default function StudentDashboardPage() {
+  return (
+    <div className="space-y-8">
+      <PageHeader
+        title={`Welcome, ${mockStudentData.name}!`}
+        description="Here's an overview of your FSP engagement."
+        icon={GraduationCap}
+      />
+
+      <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle>My Assigned Batch</CardTitle>
+          <CardDescription>Details about your current Finishing School Program batch.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Batch Name:</span>
+            <span className="font-medium">{mockStudentData.batch.name}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Timetable Slot:</span>
+            <span className="font-medium">{mockStudentData.batch.timetable}</span>
+          </div>
+           <div className="flex justify-between">
+            <span className="text-muted-foreground">Assigned Teacher:</span>
+            <span className="font-medium">{mockStudentData.batch.teacher}</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle>My Attendance Records</CardTitle>
+          <CardDescription>Your attendance for recent FSP sessions.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Date</TableHead>
+                <TableHead>Subject/Module</TableHead>
+                <TableHead className="text-right">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {mockStudentData.attendance.map((record, index) => (
+                <TableRow key={index}>
+                  <TableCell>{new Date(record.date).toLocaleDateString()}</TableCell>
+                  <TableCell>{record.subject}</TableCell>
+                  <TableCell className="text-right">
+                    <Badge 
+                      variant={record.status === "absent" ? "destructive" : record.status === "late" ? "secondary" : "default"}
+                      className="flex items-center gap-1.5 justify-end w-24 ml-auto"
+                    >
+                      {getStatusIcon(record.status)}
+                      {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+export const metadata = {
+    title: "Student Dashboard - AEC FSP Portal",
+};
