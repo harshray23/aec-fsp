@@ -206,7 +206,3 @@ export default function ManageTimetablesPage() {
     </div>
   );
 }
-
-export const metadata = {
-  title: "Manage Timetables - AEC FSP Portal",
-};
