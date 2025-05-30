@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-import { batches as mockTeacherBatches, teachers as mockTeachers, getMockCurrentUser } from "@/lib/mockData"; // Import from central store
+import { batches as allAppBatches, getMockCurrentUser } from "@/lib/mockData"; // Renamed import for clarity
 import { usePathname } from "next/navigation";
 import React from "react";
 
@@ -22,11 +22,16 @@ export default function ManageBatchesPage() {
   const pathname = usePathname();
   const currentUser = getMockCurrentUser(pathname);
 
-  // For now, we assume a teacher might see all batches or batches assigned to them.
-  // This logic can be refined if teacherId assignment becomes more specific.
-  // If using a default teacherId in batch creation, filter by that or by the first teacher's ID.
-  const placeholderTeacherId = mockTeachers.length > 0 ? mockTeachers[0].id : "TCH_DEFAULT";
-  const displayedBatches = mockTeacherBatches.filter(batch => batch.teacherId === currentUser.id || batch.teacherId === placeholderTeacherId || mockTeacherBatches.length <= 3); // Show all if very few, else filter
+  // Filter batches to show only those assigned to the current teacher
+  const displayedBatches = allAppBatches.filter(batch => batch.teacherId === currentUser.id);
+
+  React.useEffect(() => {
+    // This effect can be used to log data for debugging if needed
+    // console.log("Current User ID on ManageBatchesPage:", currentUser.id);
+    // console.log("All App Batches on ManageBatchesPage:", allAppBatches);
+    // console.log("Displayed Batches on ManageBatchesPage:", displayedBatches);
+  }, [currentUser.id, displayedBatches]);
+
 
   return (
     <div className="space-y-8">

@@ -4,7 +4,7 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 
@@ -26,7 +26,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { DEPARTMENTS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { batches as mockBatches, teachers as mockTeachers } from "@/lib/mockData"; // Import mutable arrays
+import { batches as mockBatches, getMockCurrentUser } from "@/lib/mockData"; // Import mutable arrays
 import type { Batch } from "@/lib/types";
 
 const daysOfWeekOptions = [
@@ -58,6 +58,7 @@ type BatchCreationFormValues = z.infer<typeof batchCreationSchema>;
 export default function BatchCreationForm() {
   const router = useRouter();
   const { toast } = useToast();
+  const pathname = usePathname();
 
   const form = useForm<BatchCreationFormValues>({
     resolver: zodResolver(batchCreationSchema),
@@ -73,7 +74,10 @@ export default function BatchCreationForm() {
   });
 
   const onSubmit = async (values: BatchCreationFormValues) => {
+    const currentUser = getMockCurrentUser(pathname); // Get current user at submit time
     console.log("Batch creation form submitted:", values);
+    console.log("Current user for batch creation:", currentUser);
+
 
     const newBatch: Batch = {
       id: `BATCH_${Date.now()}`,
@@ -84,16 +88,17 @@ export default function BatchCreationForm() {
       daysOfWeek: values.daysOfWeek,
       startTime: values.startTime,
       endTime: values.endTime,
-      teacherId: mockTeachers.length > 0 ? mockTeachers[0].id : "TCH_DEFAULT", // Placeholder logic for teacherId
+      teacherId: currentUser.id, // Use current user's ID
       studentIds: [],
       status: "Scheduled",
     };
 
     mockBatches.push(newBatch);
+    console.log("Batches after adding new one:", mockBatches);
     
     toast({
         title: "Batch Creation Successful!",
-        description: `Batch "${values.name}" has been created.`,
+        description: `Batch "${values.name}" for topic "${values.topic}" on ${values.daysOfWeek.join(', ')} starting ${format(values.startDate, "PPP")} has been created.`,
     });
     form.reset();
     router.push("/teacher/batches/manage"); 
