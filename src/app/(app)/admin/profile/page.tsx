@@ -85,7 +85,3 @@ export default function AdminProfilePage() {
     </div>
   );
 }
-
-export const metadata = {
-  title: "My Profile - AEC FSP Portal",
-};

@@ -97,7 +97,3 @@ export default function ManageTeachersPage() {
     </div>
   );
 }
-
-export const metadata = {
-  title: "Manage Teachers - AEC FSP Portal",
-};

@@ -103,6 +103,8 @@ export default function AdminDashboardPage() {
   );
 }
 
-export const metadata = {
-    title: "Admin Dashboard - AEC FSP Portal",
-};
+// Metadata removed as this is a client component
+// export const metadata = {
+//     title: "Admin Dashboard - AEC FSP Portal",
+// };
+
