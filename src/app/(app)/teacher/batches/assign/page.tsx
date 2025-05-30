@@ -163,6 +163,7 @@ export default function AssignStudentsPage() {
   );
 }
 
-export const metadata = {
-  title: "Assign Students - AEC FSP Portal",
-};
+// Removed metadata export:
+// export const metadata = {
+//   title: "Assign Students - AEC FSP Portal",
+// };
