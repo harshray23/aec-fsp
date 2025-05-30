@@ -1,39 +1,22 @@
-import type { SVGProps } from 'react';
 
-export function AppLogo(props: SVGProps<SVGSVGElement>) {
+import Image from 'next/image';
+import type { SVGProps } from 'react'; // Keep for prop compatibility if used elsewhere, though SVG specific parts are removed
+
+interface AppLogoProps {
+  width?: number | `${number}` | undefined;
+  height?: number | `${number}` | undefined;
+  className?: string;
+}
+
+export function AppLogo({ width = 40, height = 40, className }: AppLogoProps) {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 100 100"
-      width="40"
-      height="40"
-      aria-label="AEC FSP Portal Logo"
-      {...props}
-    >
-      <rect width="100" height="100" rx="20" fill="hsl(var(--primary))" />
-      <text
-        x="50%"
-        y="50%"
-        dominantBaseline="middle"
-        textAnchor="middle"
-        fontSize="40"
-        fill="hsl(var(--primary-foreground))"
-        fontFamily="var(--font-geist-sans)"
-        fontWeight="bold"
-      >
-        AEC
-      </text>
-      <text
-        x="50%"
-        y="75%"
-        dominantBaseline="middle"
-        textAnchor="middle"
-        fontSize="20"
-        fill="hsl(var(--primary-foreground))"
-        fontFamily="var(--font-geist-mono)"
-      >
-        FSP
-      </text>
-    </svg>
+    <Image
+      src="/app-logo.png" // Assumes app-logo.png is in the public folder
+      alt="AEC FSP Portal Logo"
+      width={Number(width)}
+      height={Number(height)}
+      className={className}
+      priority // Consider adding priority if this logo is above the fold
+    />
   );
 }
