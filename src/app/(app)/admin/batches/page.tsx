@@ -1,4 +1,5 @@
 
+"use client";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -6,11 +7,16 @@ import { BookUser, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-
-// Mock Data
-const mockBatches: { id: string, name: string, department: string, teacher: string, students: number, status: string }[] = [];
+import { batches as mockBatches } from "@/lib/mockData"; // Import from central store
+import { teachers as mockTeachersData } from "@/lib/mockData"; // To get teacher names
 
 export default function AdminBatchOverviewPage() {
+
+  const getTeacherName = (teacherId: string) => {
+    const teacher = mockTeachersData.find(t => t.id === teacherId);
+    return teacher ? teacher.name : "N/A";
+  };
+  
   return (
     <div className="space-y-8">
       <PageHeader
@@ -41,12 +47,12 @@ export default function AdminBatchOverviewPage() {
                 <TableRow key={batch.id}>
                   <TableCell>{batch.id}</TableCell>
                   <TableCell className="font-medium">{batch.name}</TableCell>
-                  <TableCell>{batch.department}</TableCell>
-                  <TableCell>{batch.teacher}</TableCell>
-                  <TableCell>{batch.students}</TableCell>
+                  <TableCell>{batch.department}</TableCell> {/* Assuming department is on batch type */}
+                  <TableCell>{getTeacherName(batch.teacherId)}</TableCell>
+                  <TableCell>{batch.studentIds.length}</TableCell>
                   <TableCell>
                     <Badge variant={batch.status === "Ongoing" ? "default" : batch.status === "Scheduled" ? "outline" : "secondary"}>
-                      {batch.status}
+                      {batch.status || "Scheduled"} {/* Assuming status is on batch type */}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">

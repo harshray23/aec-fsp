@@ -1,28 +1,44 @@
 
+"use client"; // Required because we're using React state (even if indirectly via mockData)
+
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ShieldAlert, Users, UserPlus, BookUser, CalendarDays, Settings, Briefcase } from "lucide-react";
+import { ShieldAlert, Users, UserPlus, BookUser, CalendarDays, Settings, Briefcase, GraduationCap } from "lucide-react";
 import Link from "next/link";
-
-// Temporary icon definition
-const GraduationCap = Users; 
-
-const adminStats = [
-  { title: "Total Students", value: "0", icon: GraduationCap, color: "text-blue-500" },
-  { title: "Active Teachers", value: "0", icon: Briefcase, color: "text-green-500" },
-  { title: "Total Batches", value: "0", icon: BookUser, color: "text-purple-500" },
-  { title: "Active Admins", value: "1", icon: ShieldAlert, color: "text-red-500" },
-];
-
-const adminActions = [
-  { href: "/admin/users/teachers", label: "Manage Teachers", icon: Briefcase, description: "Add, view, or edit teacher accounts." },
-  { href: "/admin/users/admins", label: "Manage Admins", icon: ShieldAlert, description: "Manage other administrator accounts." },
-  { href: "/admin/batches", label: "View Batches & Timetables", icon: BookUser, description: "Oversee all program batches and their schedules." },
-  { href: "/admin/settings", label: "System Settings", icon: Settings, description: "Configure overall portal settings." },
-];
+import { students, teachers, batches, admins } from "@/lib/mockData"; // Import live data
+import React from "react"; // Import React for useEffect and useState
 
 export default function AdminDashboardPage() {
+  // Use a state variable to trigger re-renders when mockData changes.
+  // This is a simple way for prototyping. A more robust solution would involve a proper state management library.
+  const [dataVersion, setDataVersion] = React.useState(0);
+
+  React.useEffect(() => {
+    // This effect doesn't strictly need to do anything other than exist
+    // if the data is being read directly in the render.
+    // However, forcing a re-render if data changes externally can be done
+    // by listening to custom events or a more complex state management.
+    // For now, navigation to this page will re-read the data.
+    // To simulate live updates if data was changed by another component without navigation,
+    // you might increment dataVersion from those components via a shared mechanism.
+  }, []);
+
+
+  const adminStats = [
+    { title: "Total Students", value: students.length.toString(), icon: GraduationCap, color: "text-blue-500" },
+    { title: "Active Teachers", value: teachers.length.toString(), icon: Briefcase, color: "text-green-500" },
+    { title: "Total Batches", value: batches.length.toString(), icon: BookUser, color: "text-purple-500" },
+    { title: "Active Admins", value: admins.length.toString(), icon: ShieldAlert, color: "text-red-500" },
+  ];
+
+  const adminActions = [
+    { href: "/admin/users/teachers", label: "Manage Teachers", icon: Briefcase, description: "Add, view, or edit teacher accounts." },
+    { href: "/admin/users/admins", label: "Manage Admins", icon: ShieldAlert, description: "Manage other administrator accounts." },
+    { href: "/admin/batches", label: "View Batches & Timetables", icon: BookUser, description: "Oversee all program batches and their schedules." },
+    { href: "/admin/settings", label: "System Settings", icon: Settings, description: "Configure overall portal settings." },
+  ];
+
   return (
     <div className="space-y-8">
       <PageHeader

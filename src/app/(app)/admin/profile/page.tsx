@@ -1,4 +1,5 @@
 
+"use client";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -6,19 +7,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UserCircle, Edit3, Mail, Phone, Shield, ImagePlus } from "lucide-react";
+import { admins } from "@/lib/mockData"; // Assuming Harsh Ray is the first/primary admin
+import { USER_ROLES } from "@/lib/constants";
 
-// Mock data for the admin - Harsh Ray
-const mockAdminProfile = {
-  name: "Harsh Ray",
-  email: "harshray2007@gmail.com",
-  role: "Super Admin",
-  phoneNumber: "9002555217",
-  whatsappNumber: "9002555217",
-  avatarUrl: `https://placehold.co/150x150.png?text=HR`, 
+// For this prototype, we'll assume the first admin in the list is the logged-in admin.
+// In a real app, this would come from an authentication context.
+const currentAdmin = admins.find(a => a.email === "harshray2007@gmail.com") || {
+  name: "Admin User",
+  email: "admin@example.com",
+  role: USER_ROLES.ADMIN,
+  phoneNumber: "N/A",
+  whatsappNumber: "N/A",
+  avatarUrl: `https://placehold.co/150x150.png?text=AU`, 
 };
 
+
 export default function AdminProfilePage() {
-  const fallbackName = mockAdminProfile.name || "Admin";
+  const fallbackName = currentAdmin.name || "Admin";
+  const avatarText = fallbackName.split(' ').map(n => n[0]).join('').toUpperCase() || 'A';
+  
   return (
     <div className="space-y-8">
       <PageHeader
@@ -35,11 +42,11 @@ export default function AdminProfilePage() {
       <Card className="shadow-lg max-w-3xl mx-auto">
         <CardHeader className="items-center text-center border-b pb-6">
           <Avatar className="h-24 w-24 mb-4 ring-2 ring-primary ring-offset-2">
-            <AvatarImage src={mockAdminProfile.avatarUrl} alt={mockAdminProfile.name} data-ai-hint="admin avatar" />
-            <AvatarFallback>{fallbackName.split(' ').map(n => n[0]).join('') || 'A'}</AvatarFallback>
+            <AvatarImage src={currentAdmin.avatarUrl || `https://placehold.co/150x150.png?text=${avatarText}`} alt={currentAdmin.name} data-ai-hint="admin avatar" />
+            <AvatarFallback>{avatarText}</AvatarFallback>
           </Avatar>
-          <CardTitle className="text-2xl">{mockAdminProfile.name}</CardTitle>
-          <CardDescription>{mockAdminProfile.email} ({mockAdminProfile.role})</CardDescription>
+          <CardTitle className="text-2xl">{currentAdmin.name}</CardTitle>
+          <CardDescription>{currentAdmin.email} ({currentAdmin.role})</CardDescription>
           <Button variant="outline" className="mt-4">
             <ImagePlus className="mr-2 h-4 w-4" /> Change Photo
           </Button>
@@ -48,19 +55,19 @@ export default function AdminProfilePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <Label htmlFor="email" className="flex items-center text-muted-foreground"><Mail className="mr-2 h-4 w-4" />Email</Label>
-              <Input id="email" value={mockAdminProfile.email} readOnly className="mt-1 bg-muted/30" />
+              <Input id="email" value={currentAdmin.email} readOnly className="mt-1 bg-muted/30" />
             </div>
             <div>
               <Label htmlFor="phone" className="flex items-center text-muted-foreground"><Phone className="mr-2 h-4 w-4" />Phone Number</Label>
-              <Input id="phone" value={mockAdminProfile.phoneNumber} readOnly className="mt-1 bg-muted/30" />
+              <Input id="phone" value={currentAdmin.phoneNumber || 'N/A'} readOnly className="mt-1 bg-muted/30" />
             </div>
              <div>
               <Label htmlFor="whatsapp" className="flex items-center text-muted-foreground"><Phone className="mr-2 h-4 w-4" />WhatsApp Number</Label>
-              <Input id="whatsapp" value={mockAdminProfile.whatsappNumber || 'N/A'} readOnly className="mt-1 bg-muted/30" />
+              <Input id="whatsapp" value={currentAdmin.whatsappNumber || 'N/A'} readOnly className="mt-1 bg-muted/30" />
             </div>
             <div>
               <Label htmlFor="role" className="flex items-center text-muted-foreground"><Shield className="mr-2 h-4 w-4" />Role</Label>
-              <Input id="role" value={mockAdminProfile.role} readOnly className="mt-1 bg-muted/30" />
+              <Input id="role" value={currentAdmin.role} readOnly className="mt-1 bg-muted/30" />
             </div>
           </div>
           

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -18,6 +19,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { USER_ROLES, DEPARTMENTS, type UserRole } from "@/lib/constants";
+import { admins as mockAdmins, teachers as mockTeachers } from "@/lib/mockData"; // Import mutable arrays
+import type { Admin, Teacher } from "@/lib/types";
 
 const userRegistrationSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -39,11 +42,11 @@ const userRegistrationSchema = z.object({
 type UserRegistrationFormValues = z.infer<typeof userRegistrationSchema>;
 
 interface UserRegistrationFormProps {
-  onSuccess?: () => void; // Callback for successful registration, e.g., to close a dialog
+  onSuccess?: () => void; 
 }
 
 export default function UserRegistrationForm({ onSuccess }: UserRegistrationFormProps) {
-  const router = useRouter(); // Or use for navigation if not in a dialog
+  const router = useRouter(); 
   const { toast } = useToast();
 
   const form = useForm<UserRegistrationFormValues>({
@@ -62,13 +65,27 @@ export default function UserRegistrationForm({ onSuccess }: UserRegistrationForm
 
   const onSubmit = async (values: UserRegistrationFormValues) => {
     console.log("User registration form submitted by admin:", values);
-    toast({
-      title: "User Registration Submitted",
-      description: `Registration for ${values.role} ${values.name} is being processed. (Simulated)`,
-    });
+    
+    const userId = `${values.role.toUpperCase()}_${Date.now()}`; // Simple unique ID for mock
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    if (values.role === USER_ROLES.TEACHER) {
+      const newTeacher: Teacher = {
+        id: userId,
+        name: values.name,
+        email: values.email,
+        role: USER_ROLES.TEACHER,
+        department: values.department!,
+      };
+      mockTeachers.push(newTeacher);
+    } else if (values.role === USER_ROLES.ADMIN) {
+      const newAdmin: Admin = {
+        id: userId,
+        name: values.name,
+        email: values.email,
+        role: USER_ROLES.ADMIN,
+      };
+      mockAdmins.push(newAdmin);
+    }
     
     toast({
         title: "User Registration Successful!",
@@ -77,9 +94,14 @@ export default function UserRegistrationForm({ onSuccess }: UserRegistrationForm
     form.reset();
     if (onSuccess) {
       onSuccess();
+    } else {
+      // Redirect to the appropriate user list page
+      if (values.role === USER_ROLES.TEACHER) {
+        router.push("/admin/users/teachers");
+      } else if (values.role === USER_ROLES.ADMIN) {
+        router.push("/admin/users/admins");
+      }
     }
-    // Optionally, redirect or update a list of users
-    // router.push("/admin/users"); 
   };
 
   return (

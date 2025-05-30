@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,8 +20,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { DEPARTMENTS } from "@/lib/constants";
+import { DEPARTMENTS, USER_ROLES } from "@/lib/constants";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { students as mockStudents } from "@/lib/mockData"; // Import the mutable array
+import type { Student } from "@/lib/types";
 
 const studentRegistrationSchema = z.object({
   studentId: z.string().min(1, "Student ID is required"),
@@ -62,19 +65,29 @@ export default function StudentRegistrationForm() {
 
   const onSubmit = async (values: StudentRegistrationFormValues) => {
     console.log("Student registration form submitted:", values);
-    toast({
-      title: "Registration Submitted",
-      description: "Your registration is being processed. (Simulated)",
-    });
-
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
     
+    const newStudent: Student = {
+      id: values.studentId, // Using studentId as the unique ID for mock purposes
+      studentId: values.studentId,
+      name: values.name,
+      email: values.email,
+      rollNumber: values.rollNumber,
+      registrationNumber: values.registrationNumber,
+      department: values.department,
+      phoneNumber: values.phoneNumber,
+      whatsappNumber: values.whatsappNumber || undefined,
+      role: USER_ROLES.STUDENT,
+      // password should not be stored directly in student object in real app
+    };
+
+    // Add to our mock data store
+    mockStudents.push(newStudent);
+
     toast({
         title: "Registration Successful!",
         description: "You can now log in with your credentials.",
     });
-    router.push("/auth/login?role=student");
+    router.push("/auth/login?role=student"); // Redirect to login
   };
 
   return (

@@ -1,20 +1,14 @@
 
-"use client"; // This layout will manage client-side state for navigation
+"use client"; 
 
 import { DashboardLayout } from "@/components/shared/DashboardLayout";
 import type { NavItem } from "@/lib/types";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Users, UserPlus, BookUser, ClipboardList, CalendarDays, BarChart3, Settings, GraduationCap, ShieldAlert, Briefcase, UserCog, UserCircle } from "lucide-react";
 import React from "react";
+import { getMockCurrentUser } from "@/lib/mockData"; // Import helper
 
-// Mock user data - in a real app, this would come from auth context
-const MOCK_USERS = {
-  student: { name: "Student User", email: "student@placeholder.aec.edu.in", role: "Student" },
-  teacher: { name: "Teacher User", email: "teacher@placeholder.aec.edu.in", role: "Teacher" },
-  admin: { name: "Harsh Ray", email: "harshray2007@gmail.com", role: "Admin" },
-};
-
-const getNavItems = (role: "student" | "teacher" | "admin"): NavItem[] => {
+const getNavItems = (role: "student" | "teacher" | "admin" | "guest"): NavItem[] => {
   switch (role) {
     case "student":
       return [
@@ -69,26 +63,14 @@ export default function AppPagesLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  let currentRole: "student" | "teacher" | "admin" = "admin"; // Default role
-  let currentUser = MOCK_USERS.admin;
-
-  if (pathname.startsWith("/admin")) {
-    currentRole = "admin";
-    currentUser = MOCK_USERS.admin;
-  } else if (pathname.startsWith("/teacher")) {
-    currentRole = "teacher";
-    currentUser = MOCK_USERS.teacher;
-  } else if (pathname.startsWith("/student")) {
-    currentRole = "student";
-    currentUser = MOCK_USERS.student;
-  }
+  const currentUser = getMockCurrentUser(pathname); // Get user from mockData
   
-  const navItems = getNavItems(currentRole);
+  const navItems = getNavItems(currentUser.role as "student" | "teacher" | "admin" | "guest");
 
   return (
     <DashboardLayout 
         navItems={navItems} 
-        userRole={currentUser.role}
+        userRole={currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)}
         userName={currentUser.name}
         userEmail={currentUser.email}
     >

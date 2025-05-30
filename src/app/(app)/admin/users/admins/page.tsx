@@ -1,4 +1,6 @@
 
+"use client"; // Marking as client component for potential future interactions
+
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -12,11 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-
-// Mock Data
-const mockAdmins = [
-  { id: "ADMIN001", name: "Harsh Ray", email: "harshray2007@gmail.com", role: "Super Admin", status: "Active" },
-];
+import { admins as mockAdmins } from "@/lib/mockData"; // Import from central store
 
 export default function ManageAdminsPage() {
   return (
@@ -56,10 +54,10 @@ export default function ManageAdminsPage() {
                   <TableCell>{admin.id}</TableCell>
                   <TableCell className="font-medium">{admin.name}</TableCell>
                   <TableCell>{admin.email}</TableCell>
-                  <TableCell>{admin.role}</TableCell>
+                  <TableCell>{admin.role}</TableCell> {/* Role already part of Admin type */}
                    <TableCell>
-                    <Badge variant={admin.status === "Active" ? "default" : "secondary"}>
-                      {admin.status}
+                    <Badge variant={"default"}> {/* Placeholder status */}
+                      Active
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -81,7 +79,7 @@ export default function ManageAdminsPage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {mockAdmins.length === 0 && (
+              {mockAdmins.length === 0 && ( // Should not happen if Harsh Ray is always there
                 <TableRow>
                   <TableCell colSpan={6} className="text-center text-muted-foreground">
                     No administrators found.

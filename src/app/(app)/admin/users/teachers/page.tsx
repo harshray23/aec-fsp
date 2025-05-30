@@ -1,4 +1,6 @@
 
+"use client"; // Marking as client component to use hooks if needed for future interactions
+
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -12,11 +14,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-
-// Mock Data
-const mockTeachers: { id: string, name: string, email: string, department: string, status: string }[] = [];
+import { teachers as mockTeachers } from "@/lib/mockData"; // Import from central store
+import { DEPARTMENTS } from "@/lib/constants";
 
 export default function ManageTeachersPage() {
+  // In a real app, you might want to add delete/edit functionality here
+  // which would modify the mockTeachers array and potentially re-render.
+
   return (
     <div className="space-y-8">
       <PageHeader
@@ -54,10 +58,10 @@ export default function ManageTeachersPage() {
                   <TableCell>{teacher.id}</TableCell>
                   <TableCell className="font-medium">{teacher.name}</TableCell>
                   <TableCell>{teacher.email}</TableCell>
-                  <TableCell>{teacher.department}</TableCell>
+                  <TableCell>{DEPARTMENTS.find(d => d.value === teacher.department)?.label || teacher.department}</TableCell>
                   <TableCell>
-                    <Badge variant={teacher.status === "Active" ? "default" : "secondary"}>
-                      {teacher.status}
+                    <Badge variant={"default"}> {/* Placeholder status */}
+                      Active
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
