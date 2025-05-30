@@ -10,7 +10,7 @@ interface CollegeLogoProps {
 export function CollegeLogo({ width = 132, height = 80, className }: CollegeLogoProps) {
   return (
     <Image
-      src="/college-logo.png" // Assumes college-logo.png is in the public folder
+      src="/logo2.png" // Updated to logo2.png
       alt="Asansol Engineering College Logo"
       width={width}
       height={height}

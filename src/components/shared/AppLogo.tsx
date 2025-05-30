@@ -11,8 +11,8 @@ interface AppLogoProps {
 export function AppLogo({ width = 40, height = 40, className }: AppLogoProps) {
   return (
     <Image
-      src="/app-logo.png" // Assumes app-logo.png is in the public folder
-      alt="AEC FSP Portal Logo"
+      src="/logo1.avif" // Updated to logo1.avif
+      alt="AEC FSP Portal App Logo"
       width={Number(width)}
       height={Number(height)}
       className={className}
