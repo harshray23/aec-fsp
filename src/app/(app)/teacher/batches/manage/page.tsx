@@ -1,4 +1,6 @@
 
+"use client";
+
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -12,11 +14,20 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
-
-// Mock Data - For a specific teacher
-const mockTeacherBatches: { id: string, name: string, department: string, students: number, status: string }[] = [];
+import { batches as mockTeacherBatches, teachers as mockTeachers, getMockCurrentUser } from "@/lib/mockData"; // Import from central store
+import { usePathname } from "next/navigation";
+import React from "react";
 
 export default function ManageBatchesPage() {
+  const pathname = usePathname();
+  const currentUser = getMockCurrentUser(pathname);
+
+  // For now, we assume a teacher might see all batches or batches assigned to them.
+  // This logic can be refined if teacherId assignment becomes more specific.
+  // If using a default teacherId in batch creation, filter by that or by the first teacher's ID.
+  const placeholderTeacherId = mockTeachers.length > 0 ? mockTeachers[0].id : "TCH_DEFAULT";
+  const displayedBatches = mockTeacherBatches.filter(batch => batch.teacherId === currentUser.id || batch.teacherId === placeholderTeacherId || mockTeacherBatches.length <= 3); // Show all if very few, else filter
+
   return (
     <div className="space-y-8">
       <PageHeader
@@ -25,7 +36,7 @@ export default function ManageBatchesPage() {
         icon={Users}
         actions={
           <Button asChild>
-            <Link href="/teacher/batches/create"> {/* Placeholder link for creating batch */}
+            <Link href="/teacher/batches/create">
               <PlusCircle className="mr-2 h-4 w-4" /> Create New Batch
             </Link>
           </Button>
@@ -42,17 +53,19 @@ export default function ManageBatchesPage() {
               <TableRow>
                 <TableHead>Batch ID</TableHead>
                 <TableHead>Batch Name</TableHead>
+                <TableHead>Topic</TableHead>
                 <TableHead>Students</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockTeacherBatches.map((batch) => (
+              {displayedBatches.map((batch) => (
                 <TableRow key={batch.id}>
                   <TableCell>{batch.id}</TableCell>
                   <TableCell className="font-medium">{batch.name}</TableCell>
-                  <TableCell>{batch.students}</TableCell>
+                  <TableCell>{batch.topic}</TableCell>
+                  <TableCell>{batch.studentIds.length}</TableCell>
                   <TableCell>
                     <Badge variant={batch.status === "Ongoing" ? "default" : batch.status === "Scheduled" ? "outline" : "secondary"}>
                       {batch.status}
@@ -67,27 +80,27 @@ export default function ManageBatchesPage() {
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
-                          <Link href={`/teacher/batches/view/${batch.id}`}>
+                          <Link href={`/teacher/batches/view/${batch.id}`}> {/* Placeholder link */}
                             <Eye className="mr-2 h-4 w-4" /> View Details
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                           <Link href={`/teacher/batches/edit/${batch.id}`}>
+                           <Link href={`/teacher/batches/edit/${batch.id}`}> {/* Placeholder link */}
                             <Edit className="mr-2 h-4 w-4" /> Edit Batch
                            </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
-                          <Trash2 className="mr-2 h-4 w-4" /> Delete Batch
+                          <Trash2 className="mr-2 h-4 w-4" /> Delete Batch {/* Add delete functionality later */}
                         </DropdownMenuItem>
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))}
-              {mockTeacherBatches.length === 0 && (
+              {displayedBatches.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center text-muted-foreground">
-                    You are not assigned to any batches.
+                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                    You are not assigned to any batches or no batches have been created yet.
                   </TableCell>
                 </TableRow>
               )}
@@ -98,7 +111,3 @@ export default function ManageBatchesPage() {
     </div>
   );
 }
-
-export const metadata = {
-  title: "Manage Batches - AEC FSP Portal",
-};

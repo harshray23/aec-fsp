@@ -7,8 +7,9 @@ import { BookUser, Eye } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { batches as mockBatches } from "@/lib/mockData"; // Import from central store
-import { teachers as mockTeachersData } from "@/lib/mockData"; // To get teacher names
+import { batches as mockBatches, teachers as mockTeachersData } from "@/lib/mockData"; // Import from central store
+import { DEPARTMENTS } from "@/lib/constants";
+
 
 export default function AdminBatchOverviewPage() {
 
@@ -16,6 +17,11 @@ export default function AdminBatchOverviewPage() {
     const teacher = mockTeachersData.find(t => t.id === teacherId);
     return teacher ? teacher.name : "N/A";
   };
+
+  const getDepartmentLabel = (deptValue: string) => {
+    const dept = DEPARTMENTS.find(d => d.value === deptValue);
+    return dept ? dept.label : deptValue;
+  }
   
   return (
     <div className="space-y-8">
@@ -36,6 +42,7 @@ export default function AdminBatchOverviewPage() {
                 <TableHead>Batch ID</TableHead>
                 <TableHead>Batch Name</TableHead>
                 <TableHead>Department</TableHead>
+                <TableHead>Topic</TableHead>
                 <TableHead>Lead Teacher</TableHead>
                 <TableHead>Students</TableHead>
                 <TableHead>Status</TableHead>
@@ -47,12 +54,13 @@ export default function AdminBatchOverviewPage() {
                 <TableRow key={batch.id}>
                   <TableCell>{batch.id}</TableCell>
                   <TableCell className="font-medium">{batch.name}</TableCell>
-                  <TableCell>{batch.department}</TableCell> {/* Assuming department is on batch type */}
+                  <TableCell>{getDepartmentLabel(batch.department)}</TableCell>
+                  <TableCell>{batch.topic}</TableCell>
                   <TableCell>{getTeacherName(batch.teacherId)}</TableCell>
                   <TableCell>{batch.studentIds.length}</TableCell>
                   <TableCell>
                     <Badge variant={batch.status === "Ongoing" ? "default" : batch.status === "Scheduled" ? "outline" : "secondary"}>
-                      {batch.status || "Scheduled"} {/* Assuming status is on batch type */}
+                      {batch.status || "Scheduled"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -66,7 +74,7 @@ export default function AdminBatchOverviewPage() {
               ))}
               {mockBatches.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground">
                     No batches found.
                   </TableCell>
                 </TableRow>
@@ -78,7 +86,3 @@ export default function AdminBatchOverviewPage() {
     </div>
   );
 }
-
-export const metadata = {
-  title: "Batch Overview - AEC FSP Portal",
-};

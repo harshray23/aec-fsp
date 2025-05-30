@@ -26,6 +26,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { DEPARTMENTS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
+import { batches as mockBatches, teachers as mockTeachers } from "@/lib/mockData"; // Import mutable arrays
+import type { Batch } from "@/lib/types";
 
 const daysOfWeekOptions = [
   { id: "monday", label: "Monday" },
@@ -72,13 +74,22 @@ export default function BatchCreationForm() {
 
   const onSubmit = async (values: BatchCreationFormValues) => {
     console.log("Batch creation form submitted:", values);
-    toast({
-      title: "Batch Creation Submitted (Simulated)",
-      description: `Batch "${values.name}" for topic "${values.topic}" on ${values.daysOfWeek.join(', ')} starting ${format(values.startDate, "PPP")} from ${values.startTime} to ${values.endTime} in ${values.department} department is being created.`,
-    });
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    const newBatch: Batch = {
+      id: `BATCH_${Date.now()}`,
+      name: values.name,
+      department: values.department,
+      topic: values.topic,
+      startDate: values.startDate.toISOString(),
+      daysOfWeek: values.daysOfWeek,
+      startTime: values.startTime,
+      endTime: values.endTime,
+      teacherId: mockTeachers.length > 0 ? mockTeachers[0].id : "TCH_DEFAULT", // Placeholder logic for teacherId
+      studentIds: [],
+      status: "Scheduled",
+    };
+
+    mockBatches.push(newBatch);
     
     toast({
         title: "Batch Creation Successful!",

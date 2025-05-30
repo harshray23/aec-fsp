@@ -1,3 +1,4 @@
+
 import type { UserRole } from "./constants";
 
 export interface User {
@@ -15,24 +16,34 @@ export interface Student extends User {
   department: string;
   phoneNumber: string;
   whatsappNumber?: string;
-  batchId?: string;
+  batchId?: string; // ID of the batch the student is assigned to
 }
 
 export interface Teacher extends User {
   role: "teacher";
   department: string;
+  // Add other Teacher-specific fields if any
 }
 
 export interface Admin extends User {
   role: "admin";
+  phoneNumber?: string;
+  whatsappNumber?: string;
+  // Add other Admin-specific fields if any
 }
 
 export interface Batch {
   id: string;
   name: string;
+  department: string;
+  topic: string;
+  startDate: string; // ISO string format
+  daysOfWeek: string[];
+  startTime: string;
+  endTime: string;
   teacherId: string;
   studentIds: string[];
-  timetableId?: string;
+  status: "Scheduled" | "Ongoing" | "Completed";
 }
 
 export interface AttendanceRecord {
@@ -40,7 +51,8 @@ export interface AttendanceRecord {
   studentId: string;
   date: string; // ISO Date string
   status: "present" | "absent" | "late";
-  classId: string; // Reference to a class in timetable
+  batchId: string; 
+  subject: string; // Subject/module for which attendance was taken
 }
 
 export interface TimetableEntry {

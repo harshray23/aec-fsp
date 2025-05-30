@@ -13,8 +13,10 @@ export let admins: Admin[] = [
     name: "Harsh Ray",
     email: "harshray2007@gmail.com",
     role: USER_ROLES.ADMIN,
-    // Add other Admin-specific fields if any from types.ts, e.g., phoneNumber
-    // For now, keeping it minimal based on existing mock data structure
+    // Assuming these were intended for the admin based on the prompt
+    phoneNumber: "9002555217",
+    whatsappNumber: "9002555217",
+    // No roll number or department for admin in the type, these were in the prompt but might be student-specific
   },
 ];
 
@@ -28,17 +30,13 @@ export let attendanceRecords: AttendanceRecord[] = [];
 // This is a simplified version for the prototype.
 export const getMockCurrentUser = (pathname: string) => {
   if (pathname.startsWith("/admin")) {
-    // Assuming the first admin is the logged-in admin for prototype purposes
-    return admins.find(a => a.id === initialAdminId) || 
-           { name: "Admin User", email: "admin@example.com", role: USER_ROLES.ADMIN };
+    return admins.find(a => a.email === "harshray2007@gmail.com") || 
+           { id: "default-admin", name: "Admin User", email: "admin@example.com", role: USER_ROLES.ADMIN };
   } else if (pathname.startsWith("/teacher")) {
-    // In a real app, you'd have a logged-in teacher ID.
-    // For now, return a generic teacher or the first one if any.
-    return teachers[0] || { name: "Teacher User", email: "teacher@example.com", role: USER_ROLES.TEACHER, department: "N/A" };
+    return teachers[0] || { id: "default-teacher", name: "Teacher User", email: "teacher@example.com", role: USER_ROLES.TEACHER, department: "N/A" };
   } else if (pathname.startsWith("/student")) {
-    // In a real app, you'd have a logged-in student ID.
-    // For now, return a generic student or the first one if any.
     return students[0] || { 
+        id: "default-student",
         name: "Student User", 
         email: "student@example.com", 
         role: USER_ROLES.STUDENT, 
@@ -50,5 +48,5 @@ export const getMockCurrentUser = (pathname: string) => {
     };
   }
   // Default fallback if role cannot be determined from path
-  return { name: "User", email: "user@example.com", role: "guest" as any };
+  return { id: "guest-user", name: "User", email: "user@example.com", role: "guest" as any };
 };
