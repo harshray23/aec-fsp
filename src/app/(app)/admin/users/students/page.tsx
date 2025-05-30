@@ -19,11 +19,11 @@ const mockStudents: { id: string, name: string, email: string, department: strin
 export default function ViewStudentsPage() {
   // Placeholder for filtering logic
   // const [searchTerm, setSearchTerm] = React.useState("");
-  // const [selectedDepartment, setSelectedDepartment] = React.useState("");
+  // const [selectedDepartment, setSelectedDepartment] = React.useState("all"); // Default to all if controlled
 
-  // const filteredStudents = mockStudents.filter(student => 
+  // const filteredStudents = mockStudents.filter(student =>
   //   student.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-  //   (selectedDepartment === "" || student.department === selectedDepartment)
+  //   (selectedDepartment === "all" || student.department === selectedDepartment)
   // );
 
   return (
@@ -39,14 +39,14 @@ export default function ViewStudentsPage() {
           <CardDescription>A comprehensive list of all students enrolled in the FSP.</CardDescription>
           <div className="mt-4 flex gap-4">
             <Input placeholder="Search by name or ID..." className="max-w-sm" />
-            <Select>
+            <Select> {/* This select is not currently controlled, if it were, value and onValueChange would be needed */}
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Filter by Department" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Departments</SelectItem>
                 {DEPARTMENTS.map(dept => (
-                  <SelectItem key={dept.value} value={dept.label}>{dept.label}</SelectItem>
+                  <SelectItem key={dept.value} value={dept.value}>{dept.label}</SelectItem> {/* Changed value to dept.value */}
                 ))}
               </SelectContent>
             </Select>
@@ -72,7 +72,7 @@ export default function ViewStudentsPage() {
                   <TableCell>{student.id}</TableCell>
                   <TableCell className="font-medium">{student.name}</TableCell>
                   <TableCell>{student.email}</TableCell>
-                  <TableCell>{student.department}</TableCell>
+                  <TableCell>{DEPARTMENTS.find(d => d.value === student.department)?.label || student.department}</TableCell>
                   <TableCell>{student.rollNumber}</TableCell>
                   <TableCell>{student.batch}</TableCell>
                   <TableCell>

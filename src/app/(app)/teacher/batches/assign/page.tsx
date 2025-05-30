@@ -22,18 +22,18 @@ export default function AssignStudentsPage() {
   const { toast } = useToast();
   const [selectedBatch, setSelectedBatch] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [selectedDepartment, setSelectedDepartment] = useState<string>("");
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
   const [selectedStudents, setSelectedStudents] = useState<Record<string, boolean>>({});
 
   const handleSelectStudent = (studentId: string, checked: boolean) => {
     setSelectedStudents(prev => ({ ...prev, [studentId]: checked }));
   };
 
-  const filteredStudents = mockStudents.filter(student => 
+  const filteredStudents = mockStudents.filter(student =>
     (student.name.toLowerCase().includes(searchTerm.toLowerCase()) || student.id.toLowerCase().includes(searchTerm.toLowerCase())) &&
-    (selectedDepartment === "" || student.department === selectedDepartment)
+    (selectedDepartment === "all" || student.department === selectedDepartment)
   );
-  
+
   const studentsToDisplay = selectedBatch ? filteredStudents.filter(s => s.currentBatch !== selectedBatch) : filteredStudents;
 
 
@@ -54,7 +54,7 @@ export default function AssignStudentsPage() {
     console.log(`Assigning students ${studentsToAssign.join(", ")} to batch ${selectedBatch}`);
     toast({
       title: "Assignment Successful (Simulated)",
-      description: `${studentsToAssign.length} students assigned to batch ${selectedBatch}.`,
+      description: `${studentsToAssign.length} students assigned to batch ${mockBatches.find(b => b.id === selectedBatch)?.name || selectedBatch}.`,
     });
     setSelectedStudents({}); // Reset selection
   };
@@ -81,10 +81,10 @@ export default function AssignStudentsPage() {
                 {mockBatches.length === 0 && <p className="p-2 text-sm text-muted-foreground">No batches available.</p>}
               </SelectContent>
             </Select>
-            <Input 
-              placeholder="Search students by name or ID..." 
-              value={searchTerm} 
-              onChange={(e) => setSearchTerm(e.target.value)} 
+            <Input
+              placeholder="Search students by name or ID..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="md:col-span-2"
             />
              <Select onValueChange={setSelectedDepartment} value={selectedDepartment}>
@@ -92,9 +92,9 @@ export default function AssignStudentsPage() {
                 <SelectValue placeholder="Filter by Department" />
               </SelectTrigger>
               <SelectContent>
-                 <SelectItem value="">All Departments</SelectItem>
+                 <SelectItem value="all">All Departments</SelectItem>
                 {DEPARTMENTS.map(dept => (
-                  <SelectItem key={dept.value} value={dept.label}>{dept.label}</SelectItem>
+                  <SelectItem key={dept.value} value={dept.value}>{dept.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -107,7 +107,7 @@ export default function AssignStudentsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[50px]">
-                    <Checkbox 
+                    <Checkbox
                       onCheckedChange={(checked) => {
                         const newSelected: Record<string, boolean> = {};
                         if (checked) {
@@ -129,14 +129,14 @@ export default function AssignStudentsPage() {
                 {studentsToDisplay.map((student) => (
                   <TableRow key={student.id}>
                     <TableCell>
-                      <Checkbox 
+                      <Checkbox
                         checked={!!selectedStudents[student.id]}
                         onCheckedChange={(checked) => handleSelectStudent(student.id, !!checked)}
                       />
                     </TableCell>
                     <TableCell>{student.id}</TableCell>
                     <TableCell className="font-medium">{student.name}</TableCell>
-                    <TableCell>{student.department}</TableCell>
+                    <TableCell>{DEPARTMENTS.find(d => d.value === student.department)?.label || student.department}</TableCell>
                     <TableCell>{student.currentBatch ? (mockBatches.find(b=>b.id === student.currentBatch)?.name || "Assigned") : "Not Assigned"}</TableCell>
                   </TableRow>
                 ))}
@@ -150,9 +150,9 @@ export default function AssignStudentsPage() {
               </TableBody>
             </Table>
           </div>
-          <Button 
-            onClick={handleAssignStudents} 
-            className="mt-6 w-full md:w-auto" 
+          <Button
+            onClick={handleAssignStudents}
+            className="mt-6 w-full md:w-auto"
             disabled={Object.values(selectedStudents).every(v => !v) || !selectedBatch}
           >
             <Users className="mr-2 h-4 w-4" /> Assign Selected Students
@@ -162,8 +162,3 @@ export default function AssignStudentsPage() {
     </div>
   );
 }
-
-// Removed metadata export:
-// export const metadata = {
-//   title: "Assign Students - AEC FSP Portal",
-// };
