@@ -1,3 +1,4 @@
+
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
@@ -5,28 +6,9 @@ import { CalendarDays, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 // Mock Data
-const mockTimetables = [
-  {
-    batchId: "B001",
-    batchName: "FSP Batch Alpha - CSE 2024",
-    department: "Computer Science",
-    schedule: [
-      { day: "Monday", time: "09:00 - 11:00", subject: "Advanced Java", teacher: "Dr. Priya Singh" },
-      { day: "Monday", time: "11:30 - 13:30", subject: "Data Structures", teacher: "Prof. Alok Nath" },
-      { day: "Wednesday", time: "09:00 - 11:00", subject: "Advanced Java", teacher: "Dr. Priya Singh" },
-      { day: "Friday", time: "10:00 - 12:00", subject: "Project Work", teacher: "Dr. Priya Singh" },
-    ]
-  },
-  {
-    batchId: "B002",
-    batchName: "FSP Batch Beta - IT 2024",
-    department: "Information Technology",
-    schedule: [
-      { day: "Tuesday", time: "10:00 - 12:00", subject: "Networking Essentials", teacher: "Prof. Rahul Verma" },
-      { day: "Thursday", time: "14:00 - 16:00", subject: "Cyber Security Basics", teacher: "Mr. Anil Kumar" },
-    ]
-  },
-];
+interface ScheduleEntry { day: string; time: string; subject: string; teacher: string; }
+interface Timetable { batchId: string; batchName: string; department: string; schedule: ScheduleEntry[]; }
+const mockTimetables: Timetable[] = [];
 
 export default function AdminTimetableOverviewPage() {
   return (
@@ -71,6 +53,9 @@ export default function AdminTimetableOverviewPage() {
                           </div>
                         </li>
                       ))}
+                       {timetable.schedule.length === 0 && (
+                        <p className="text-sm text-muted-foreground">No sessions scheduled for this batch.</p>
+                       )}
                     </ul>
                   </AccordionContent>
                 </AccordionItem>

@@ -1,19 +1,20 @@
+
+"use client"; // Ensure client component for useState, useEffect if filters were active
+
+import React from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { GraduationCap, Filter } from "lucide-react";
+import { GraduationCap, Filter as FilterIcon } from "lucide-react"; // Renamed Filter to FilterIcon to avoid conflict
 import { DEPARTMENTS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+
 
 // Mock Data
-const mockStudents = [
-  { id: "S001", name: "Aarav Sharma", email: "aarav.sharma@example.com", department: "Computer Science & Engineering", rollNumber: "CSE/20/01", batch: "Alpha", status: "Active" },
-  { id: "S002", name: "Diya Patel", email: "diya.patel@example.com", department: "Information Technology", rollNumber: "IT/20/05", batch: "Beta", status: "Active" },
-  { id: "S003", name: "Rohan Mehta", email: "rohan.mehta@example.com", department: "Electrical Engineering", rollNumber: "EE/21/12", batch: "Gamma", status: "Inactive" },
-  { id: "S004", name: "Priya Kumari", email: "priya.kumari@example.com", department: "Mechanical Engineering", rollNumber: "ME/19/02", batch: "Alpha", status: "Active" },
-];
+const mockStudents: { id: string, name: string, email: string, department: string, rollNumber: string, batch: string, status: string }[] = [];
 
 export default function ViewStudentsPage() {
   // Placeholder for filtering logic
@@ -49,7 +50,7 @@ export default function ViewStudentsPage() {
                 ))}
               </SelectContent>
             </Select>
-            <Button variant="outline"><Filter className="mr-2 h-4 w-4" /> Apply Filters</Button>
+            <Button variant="outline"><FilterIcon className="mr-2 h-4 w-4" /> Apply Filters</Button>
           </div>
         </CardHeader>
         <CardContent>
@@ -84,7 +85,7 @@ export default function ViewStudentsPage() {
               {mockStudents.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center text-muted-foreground">
-                    No students found matching your criteria.
+                    No students found.
                   </TableCell>
                 </TableRow>
               )}
@@ -99,7 +100,3 @@ export default function ViewStudentsPage() {
 export const metadata = {
   title: "View Students - AEC FSP Portal",
 };
-
-const Button = ({ children, ...props }: React.ComponentProps<'button'> & {variant?: string}) => <button {...props}>{children}</button>;
-const GraduationCap = ({className}: {className?: string}) => <svg className={className} />; // Placeholder
-const Filter = ({className}: {className?: string}) => <svg className={className} />; // Placeholder

@@ -1,3 +1,4 @@
+
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -7,12 +8,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 // Mock Data
-const mockBatches = [
-  { id: "B001", name: "FSP Batch Alpha - CSE 2024", department: "Computer Science", teacher: "Dr. Priya Singh", students: 45, status: "Ongoing" },
-  { id: "B002", name: "FSP Batch Beta - IT 2024", department: "Information Technology", teacher: "Prof. Rahul Verma", students: 38, status: "Ongoing" },
-  { id: "B003", name: "FSP Spring Cohort - ECE", department: "Electronics", teacher: "Ms. Anjali Desai", students: 52, status: "Scheduled" },
-  { id: "B004", name: "Advanced Java - CSE Evening", department: "Computer Science", teacher: "Dr. Priya Singh", students: 30, status: "Completed" },
-];
+const mockBatches: { id: string, name: string, department: string, teacher: string, students: number, status: string }[] = [];
 
 export default function AdminBatchOverviewPage() {
   return (

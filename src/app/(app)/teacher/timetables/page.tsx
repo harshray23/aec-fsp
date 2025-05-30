@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from "react";
@@ -32,10 +33,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 
 // Mock Data
-const mockTeacherBatchesForTimetable = [
-  { id: "B001", name: "FSP Batch Alpha - CSE 2024" },
-  { id: "B005", name: "Web Development Workshop" },
-];
+const mockTeacherBatchesForTimetable: { id: string, name: string }[] = [];
 
 interface TimetableEntry {
   id: string;
@@ -46,11 +44,7 @@ interface TimetableEntry {
   subject: string;
 }
 
-const initialTimetable: TimetableEntry[] = [
-  { id: "TT001", batchId: "B001", dayOfWeek: "Monday", startTime: "09:00", endTime: "11:00", subject: "Advanced Java" },
-  { id: "TT002", batchId: "B001", dayOfWeek: "Wednesday", startTime: "09:00", endTime: "11:00", subject: "Advanced Java" },
-  { id: "TT003", batchId: "B005", dayOfWeek: "Tuesday", startTime: "14:00", endTime: "16:00", subject: "React & Next.js" },
-];
+const initialTimetable: TimetableEntry[] = [];
 
 const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
@@ -137,7 +131,10 @@ export default function ManageTimetablesPage() {
                       <FormLabel>Batch</FormLabel>
                       <Select onValueChange={field.onChange} defaultValue={field.value}>
                         <FormControl><SelectTrigger><SelectValue placeholder="Select Batch" /></SelectTrigger></FormControl>
-                        <SelectContent>{mockTeacherBatchesForTimetable.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}</SelectContent>
+                        <SelectContent>
+                            {mockTeacherBatchesForTimetable.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                            {mockTeacherBatchesForTimetable.length === 0 && <p className="p-2 text-sm text-muted-foreground">No batches available.</p>}
+                        </SelectContent>
                       </Select>
                       <FormMessage />
                     </FormItem>
@@ -163,7 +160,7 @@ export default function ManageTimetablesPage() {
                   )} />
                   <DialogFooter>
                     <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-                    <Button type="submit">{editingEntry ? "Save Changes" : "Add Session"}</Button>
+                    <Button type="submit" disabled={mockTeacherBatchesForTimetable.length === 0}>{editingEntry ? "Save Changes" : "Add Session"}</Button>
                   </DialogFooter>
                 </form>
               </Form>

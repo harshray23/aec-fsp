@@ -1,3 +1,4 @@
+
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -13,11 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 // Mock Data
-const mockTeachers = [
-  { id: "T001", name: "Dr. Priya Singh", email: "priya.singh@aec.edu.in", department: "Computer Science", status: "Active" },
-  { id: "T002", name: "Prof. Rahul Verma", email: "rahul.verma@aec.edu.in", department: "Information Technology", status: "Active" },
-  { id: "T003", name: "Ms. Anjali Desai", email: "anjali.desai@aec.edu.in", department: "Electronics", status: "Inactive" },
-];
+const mockTeachers: { id: string, name: string, email: string, department: string, status: string }[] = [];
 
 export default function ManageTeachersPage() {
   return (

@@ -1,3 +1,4 @@
+
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -6,20 +7,14 @@ import { GraduationCap, CheckCircle, XCircle, AlertTriangle } from "lucide-react
 
 // Mock data - replace with actual data fetching
 const mockStudentData = {
-  name: "Aarav Sharma",
-  studentId: "S1001",
+  name: "Student User", // Default from layout if needed, or placeholder
+  studentId: "N/A",
   batch: {
-    name: "FSP Batch Alpha - CSE 2024",
-    timetable: "Morning Session (9 AM - 1 PM)",
-    teacher: "Dr. Priya Singh",
+    name: "No Batch Assigned",
+    timetable: "N/A",
+    teacher: "N/A",
   },
-  attendance: [
-    { date: "2024-07-01", subject: "Advanced Java", status: "present" as const },
-    { date: "2024-07-02", subject: "Data Structures", status: "present" as const },
-    { date: "2024-07-03", subject: "Project Management", status: "absent" as const },
-    { date: "2024-07-04", subject: "Communication Skills", status: "late" as const },
-    { date: "2024-07-05", subject: "Advanced Java", status: "present" as const },
-  ],
+  attendance: [] as { date: string, subject: string, status: "present" | "absent" | "late" }[],
 };
 
 const getStatusIcon = (status: "present" | "absent" | "late") => {
@@ -95,6 +90,13 @@ export default function StudentDashboardPage() {
                   </TableCell>
                 </TableRow>
               ))}
+              {mockStudentData.attendance.length === 0 && (
+                 <TableRow>
+                    <TableCell colSpan={3} className="text-center text-muted-foreground">
+                        No attendance records found.
+                    </TableCell>
+                 </TableRow>
+              )}
             </TableBody>
           </Table>
         </CardContent>

@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState } from "react";
@@ -13,18 +14,9 @@ import { useToast } from "@/hooks/use-toast";
 import { DEPARTMENTS } from "@/lib/constants";
 
 // Mock Data
-const mockBatches = [
-  { id: "B001", name: "FSP Batch Alpha - CSE 2024" },
-  { id: "B005", name: "Web Development Workshop" },
-];
+const mockBatches: { id: string, name: string }[] = [];
 
-const mockStudents = [
-  { id: "S001", name: "Aarav Sharma", department: "Computer Science & Engineering", currentBatch: null },
-  { id: "S002", name: "Diya Patel", department: "Information Technology", currentBatch: "B001" },
-  { id: "S003", name: "Rohan Mehta", department: "Electrical Engineering", currentBatch: null },
-  { id: "S004", name: "Priya Kumari", department: "Mechanical Engineering", currentBatch: null },
-  { id: "S005", name: "Vikram Singh", department: "Computer Science & Engineering", currentBatch: null },
-];
+const mockStudents: { id: string, name: string, department: string, currentBatch: string | null }[] = [];
 
 export default function AssignStudentsPage() {
   const { toast } = useToast();
@@ -62,7 +54,7 @@ export default function AssignStudentsPage() {
     console.log(`Assigning students ${studentsToAssign.join(", ")} to batch ${selectedBatch}`);
     toast({
       title: "Assignment Successful (Simulated)",
-      description: `${studentsToAssign.length} students assigned to batch ${mockBatches.find(b=>b.id === selectedBatch)?.name}.`,
+      description: `${studentsToAssign.length} students assigned to batch ${selectedBatch}.`,
     });
     setSelectedStudents({}); // Reset selection
   };
@@ -86,6 +78,7 @@ export default function AssignStudentsPage() {
                 {mockBatches.map(batch => (
                   <SelectItem key={batch.id} value={batch.id}>{batch.name}</SelectItem>
                 ))}
+                {mockBatches.length === 0 && <p className="p-2 text-sm text-muted-foreground">No batches available.</p>}
               </SelectContent>
             </Select>
             <Input 
@@ -108,7 +101,7 @@ export default function AssignStudentsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {selectedBatch && <p className="mb-4 text-sm font-medium">Assigning to: <span className="text-primary">{mockBatches.find(b=>b.id === selectedBatch)?.name}</span></p>}
+          {selectedBatch && mockBatches.find(b=>b.id === selectedBatch) && <p className="mb-4 text-sm font-medium">Assigning to: <span className="text-primary">{mockBatches.find(b=>b.id === selectedBatch)?.name}</span></p>}
           <div className="max-h-[50vh] overflow-auto">
             <Table>
               <TableHeader>
@@ -144,7 +137,7 @@ export default function AssignStudentsPage() {
                     <TableCell>{student.id}</TableCell>
                     <TableCell className="font-medium">{student.name}</TableCell>
                     <TableCell>{student.department}</TableCell>
-                    <TableCell>{student.currentBatch ? mockBatches.find(b=>b.id === student.currentBatch)?.name || "Assigned" : "Not Assigned"}</TableCell>
+                    <TableCell>{student.currentBatch ? (mockBatches.find(b=>b.id === student.currentBatch)?.name || "Assigned") : "Not Assigned"}</TableCell>
                   </TableRow>
                 ))}
                 {studentsToDisplay.length === 0 && (

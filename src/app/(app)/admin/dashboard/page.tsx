@@ -1,15 +1,18 @@
+
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ShieldAlert, Users, UserPlus, BookUser, CalendarDays, Settings } from "lucide-react";
+import { ShieldAlert, Users, UserPlus, BookUser, CalendarDays, Settings, Briefcase } from "lucide-react";
 import Link from "next/link";
 
-// Mock data or summaries
+// Temporary icon definition
+const GraduationCap = Users; 
+
 const adminStats = [
-  { title: "Total Students", value: "1500+", icon: GraduationCap, color: "text-blue-500" },
-  { title: "Active Teachers", value: "25", icon: Briefcase, color: "text-green-500" },
-  { title: "Total Batches", value: "30", icon: BookUser, color: "text-purple-500" },
-  { title: "Ongoing Programs", value: "5", icon: CalendarDays, color: "text-orange-500" },
+  { title: "Total Students", value: "0", icon: GraduationCap, color: "text-blue-500" },
+  { title: "Active Teachers", value: "0", icon: Briefcase, color: "text-green-500" },
+  { title: "Total Batches", value: "0", icon: BookUser, color: "text-purple-500" },
+  { title: "Active Admins", value: "1", icon: ShieldAlert, color: "text-red-500" },
 ];
 
 const adminActions = [
@@ -76,7 +79,7 @@ export default function AdminDashboardPage() {
           <CardDescription>Overview of system status and recent critical logs.</CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground">System is operating normally. (Placeholder)</p>
+          <p className="text-muted-foreground">System is operating normally.</p>
           {/* Placeholder for system health indicators or log snippets */}
         </CardContent>
       </Card>
@@ -87,7 +90,3 @@ export default function AdminDashboardPage() {
 export const metadata = {
     title: "Admin Dashboard - AEC FSP Portal",
 };
-
-// Temporary icons for stats until full list is available
-const GraduationCap = Users; 
-const Briefcase = Users; 

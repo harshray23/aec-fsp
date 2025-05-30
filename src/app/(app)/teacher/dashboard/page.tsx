@@ -1,20 +1,21 @@
+
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Users, ClipboardList, CalendarDays, BarChart3, PlusCircle } from "lucide-react";
+import { LayoutDashboard, Users, ClipboardList, CalendarDays, BarChart3, PlusCircle, GraduationCap } from "lucide-react";
 import Link from "next/link";
 
 const quickStats = [
-  { title: "Active Batches", value: "5", icon: Users, color: "text-primary" },
-  { title: "Students Enrolled", value: "120", icon: GraduationCap, color: "text-green-500" },
-  { title: "Today's Classes", value: "3", icon: CalendarDays, color: "text-purple-500" },
-  { title: "Overall Attendance", value: "92%", icon: ClipboardList, color: "text-orange-500" },
+  { title: "Active Batches", value: "0", icon: Users, color: "text-primary" },
+  { title: "Students Enrolled", value: "0", icon: GraduationCap, color: "text-green-500" },
+  { title: "Today's Classes", value: "0", icon: CalendarDays, color: "text-purple-500" },
+  { title: "Overall Attendance", value: "0%", icon: ClipboardList, color: "text-orange-500" },
 ];
 
 const actions = [
   { href: "/teacher/batches/assign", label: "Assign Students to Batch", icon: Users },
   { href: "/teacher/attendance", label: "Mark Attendance", icon: ClipboardList },
-  { href: "/teacher/timetables/create", label: "Create New Timetable", icon: CalendarDays },
+  { href: "/teacher/timetables", label: "Create New Timetable", icon: CalendarDays }, // Updated link from /create to /timetables
   { href: "/teacher/reports", label: "View Performance Reports", icon: BarChart3 },
 ];
 
@@ -75,7 +76,7 @@ export default function TeacherDashboardPage() {
           <CardDescription>Overview of recent actions and notifications.</CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-muted-foreground">No recent activity to display. (Placeholder)</p>
+          <p className="text-muted-foreground">No recent activity to display.</p>
           {/* Placeholder for recent activity feed */}
         </CardContent>
       </Card>

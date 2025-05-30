@@ -1,16 +1,17 @@
+
 "use client"; // This layout will manage client-side state for navigation
 
 import { DashboardLayout } from "@/components/shared/DashboardLayout";
 import type { NavItem } from "@/lib/types";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, UserPlus, BookUser, ClipboardList, CalendarDays, BarChart3, Settings, GraduationCap, ShieldAlert, Briefcase, UserCog } from "lucide-react";
+import { LayoutDashboard, Users, UserPlus, BookUser, ClipboardList, CalendarDays, BarChart3, Settings, GraduationCap, ShieldAlert, Briefcase, UserCog, UserCircle } from "lucide-react";
 import React from "react";
 
 // Mock user data - in a real app, this would come from auth context
 const MOCK_USERS = {
-  student: { name: "Student User", email: "student@aec.edu.in", role: "Student" },
-  teacher: { name: "Teacher User", email: "teacher@aec.edu.in", role: "Teacher" },
-  admin: { name: "Admin User", email: "admin@aec.edu.in", role: "Admin" },
+  student: { name: "Student User", email: "student@placeholder.aec.edu.in", role: "Student" },
+  teacher: { name: "Teacher User", email: "teacher@placeholder.aec.edu.in", role: "Teacher" },
+  admin: { name: "Harsh Ray", email: "harshray2007@gmail.com", role: "Admin" },
 };
 
 const getNavItems = (role: "student" | "teacher" | "admin"): NavItem[] => {
@@ -19,11 +20,11 @@ const getNavItems = (role: "student" | "teacher" | "admin"): NavItem[] => {
       return [
         { href: "/student/dashboard", label: "My Dashboard", icon: LayoutDashboard, tooltip: "View your batch and attendance" },
         { href: "/student/profile", label: "My Profile", icon: GraduationCap, tooltip: "View your profile" },
-        // Add more student-specific links here
       ];
     case "teacher":
       return [
         { href: "/teacher/dashboard", label: "Dashboard", icon: LayoutDashboard, tooltip: "Teacher overview" },
+        { href: "/teacher/profile", label: "My Profile", icon: UserCircle, tooltip: "View your profile" },
         { 
           href: "/teacher/batches", 
           label: "Batches", 
@@ -41,6 +42,7 @@ const getNavItems = (role: "student" | "teacher" | "admin"): NavItem[] => {
     case "admin":
       return [
         { href: "/admin/dashboard", label: "Admin Dashboard", icon: ShieldAlert, tooltip: "System overview" },
+        { href: "/admin/profile", label: "My Profile", icon: UserCircle, tooltip: "View your admin profile" },
         { 
           href: "/admin/users", 
           label: "User Management", 
@@ -67,8 +69,8 @@ export default function AppPagesLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  let currentRole: "student" | "teacher" | "admin" = "student"; // Default or derive from path/auth
-  let currentUser = MOCK_USERS.student;
+  let currentRole: "student" | "teacher" | "admin" = "admin"; // Default role
+  let currentUser = MOCK_USERS.admin;
 
   if (pathname.startsWith("/admin")) {
     currentRole = "admin";

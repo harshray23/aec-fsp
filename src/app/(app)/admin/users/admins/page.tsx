@@ -1,3 +1,4 @@
+
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -14,8 +15,7 @@ import { Badge } from "@/components/ui/badge";
 
 // Mock Data
 const mockAdmins = [
-  { id: "A001", name: "Mr. Suresh Kumar", email: "suresh.kumar@aec.edu.in", role: "Super Admin", status: "Active" },
-  { id: "A002", name: "Ms. Deepa Reddy", email: "deepa.reddy@aec.edu.in", role: "Portal Admin", status: "Active" },
+  { id: "ADMIN001", name: "Harsh Ray", email: "harshray2007@gmail.com", role: "Super Admin", status: "Active" },
 ];
 
 export default function ManageAdminsPage() {

@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -11,24 +12,11 @@ import { DEPARTMENTS } from "@/lib/constants";
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Bar } from 'recharts';
 
 // Mock Data
-const mockBatchesForReport = [
-  { id: "B001", name: "FSP Batch Alpha - CSE 2024", department: "Computer Science & Engineering" },
-  { id: "B002", name: "FSP Batch Beta - IT 2024", department: "Information Technology" },
-  { id: "B005", name: "Web Development Workshop", department: "Computer Science & Engineering" },
-];
+const mockBatchesForReport: {id: string, name: string, department: string}[] = [];
 
-const mockAttendanceData = [ // Batch-wise overall
-  { batchId: "B001", batchName: "Batch Alpha", present: 85, absent: 10, late: 5, total: 100 },
-  { batchId: "B002", batchName: "Batch Beta", present: 92, absent: 5, late: 3, total: 100 },
-  { batchId: "B005", batchName: "Web Dev W...", present: 70, absent: 25, late: 5, total: 100 },
-];
+const mockAttendanceData: { batchId: string, batchName: string, present: number, absent: number, late: number, total: number }[] = [];
 
-const mockPerformanceData = [ // Department-wise average scores (example)
-    { department: "CSE", avgScore: 82 },
-    { department: "IT", avgScore: 78 },
-    { department: "ECE", avgScore: 85 },
-    { department: "ME", avgScore: 75 },
-];
+const mockPerformanceData: { department: string, avgScore: number }[] = [];
 
 
 export default function ViewReportsPage() {
@@ -37,10 +25,10 @@ export default function ViewReportsPage() {
   const [selectedDepartment, setSelectedDepartment] = useState<string>("");
 
   const chartData = useMemo(() => {
-    if (reportType === "attendance-batch") {
+    if (reportType === "attendance-batch" && mockAttendanceData.length > 0) {
       return mockAttendanceData.map(d => ({ name: d.batchName, Present: d.present, Absent: d.absent, Late: d.late }));
     }
-    if (reportType === "performance-department") {
+    if (reportType === "performance-department" && mockPerformanceData.length > 0) {
       return mockPerformanceData.map(d => ({ name: d.department, "Avg. Score": d.avgScore }));
     }
     return [];
@@ -57,7 +45,7 @@ export default function ViewReportsPage() {
         description="Analyze attendance and performance data for batches and departments."
         icon={BarChart3}
         actions={
-          <Button onClick={handleDownloadReport} disabled={!reportType}>
+          <Button onClick={handleDownloadReport} disabled={!reportType || chartData.length === 0}>
             <Download className="mr-2 h-4 w-4" /> Download Report
           </Button>
         }
@@ -82,6 +70,7 @@ export default function ViewReportsPage() {
                 <SelectContent>
                   <SelectItem value="">All Batches</SelectItem>
                   {mockBatchesForReport.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                  {mockBatchesForReport.length === 0 && <p className="p-2 text-sm text-muted-foreground">No batches.</p>}
                 </SelectContent>
               </Select>
             )}
@@ -103,31 +92,37 @@ export default function ViewReportsPage() {
         <Card className="shadow-lg">
           <CardHeader><CardTitle>Batch-wise Attendance Overview</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="Present" fill="hsl(var(--chart-2))" />
-                <Bar dataKey="Absent" fill="hsl(var(--chart-1))" />
-                <Bar dataKey="Late" fill="hsl(var(--chart-4))" />
-              </BarChart>
-            </ResponsiveContainer>
-            <Table className="mt-4">
-              <TableHeader><TableRow><TableHead>Batch</TableHead><TableHead>Present (%)</TableHead><TableHead>Absent (%)</TableHead><TableHead>Late (%)</TableHead></TableRow></TableHeader>
-              <TableBody>
-                {mockAttendanceData.map(d => (
-                  <TableRow key={d.batchId}>
-                    <TableCell>{d.batchName}</TableCell>
-                    <TableCell>{(d.present / d.total * 100).toFixed(1)}%</TableCell>
-                    <TableCell>{(d.absent / d.total * 100).toFixed(1)}%</TableCell>
-                    <TableCell>{(d.late / d.total * 100).toFixed(1)}%</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            {mockAttendanceData.length > 0 ? (
+              <>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={chartData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip />
+                    <Legend />
+                    <Bar dataKey="Present" fill="hsl(var(--chart-2))" />
+                    <Bar dataKey="Absent" fill="hsl(var(--chart-1))" />
+                    <Bar dataKey="Late" fill="hsl(var(--chart-4))" />
+                  </BarChart>
+                </ResponsiveContainer>
+                <Table className="mt-4">
+                  <TableHeader><TableRow><TableHead>Batch</TableHead><TableHead>Present (%)</TableHead><TableHead>Absent (%)</TableHead><TableHead>Late (%)</TableHead></TableRow></TableHeader>
+                  <TableBody>
+                    {mockAttendanceData.map(d => (
+                      <TableRow key={d.batchId}>
+                        <TableCell>{d.batchName}</TableCell>
+                        <TableCell>{(d.total > 0 ? (d.present / d.total * 100) : 0).toFixed(1)}%</TableCell>
+                        <TableCell>{(d.total > 0 ? (d.absent / d.total * 100) : 0).toFixed(1)}%</TableCell>
+                        <TableCell>{(d.total > 0 ? (d.late / d.total * 100) : 0).toFixed(1)}%</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </>
+            ) : (
+              <p className="text-muted-foreground text-center py-8">No attendance data available for batches.</p>
+            )}
           </CardContent>
         </Card>
       )}
@@ -136,27 +131,33 @@ export default function ViewReportsPage() {
          <Card className="shadow-lg">
           <CardHeader><CardTitle>Department-wise Average Performance</CardTitle></CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="Avg. Score" fill="hsl(var(--chart-3))" />
-              </BarChart>
-            </ResponsiveContainer>
-            <Table className="mt-4">
-              <TableHeader><TableRow><TableHead>Department</TableHead><TableHead>Average Score</TableHead></TableRow></TableHeader>
-              <TableBody>
-                {mockPerformanceData.map(d => (
-                  <TableRow key={d.department}>
-                    <TableCell>{d.department}</TableCell>
-                    <TableCell>{d.avgScore}%</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+           {mockPerformanceData.length > 0 ? (
+            <>
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="Avg. Score" fill="hsl(var(--chart-3))" />
+                </BarChart>
+              </ResponsiveContainer>
+              <Table className="mt-4">
+                <TableHeader><TableRow><TableHead>Department</TableHead><TableHead>Average Score</TableHead></TableRow></TableHeader>
+                <TableBody>
+                  {mockPerformanceData.map(d => (
+                    <TableRow key={d.department}>
+                      <TableCell>{d.department}</TableCell>
+                      <TableCell>{d.avgScore}%</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </>
+            ) : (
+              <p className="text-muted-foreground text-center py-8">No performance data available for departments.</p>
+            )}
           </CardContent>
         </Card>
       )}
@@ -165,7 +166,7 @@ export default function ViewReportsPage() {
          <Card className="shadow-lg">
           <CardHeader><CardTitle>Report Data</CardTitle></CardHeader>
           <CardContent>
-            <p className="text-muted-foreground text-center py-8">Report type selected. Data for this report will be displayed here. (Placeholder for: {reportType})</p>
+            <p className="text-muted-foreground text-center py-8">No data available for report type: {reportType}</p>
           </CardContent>
         </Card>
       )}

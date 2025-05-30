@@ -1,3 +1,4 @@
+
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -13,11 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 
 // Mock Data - For a specific teacher
-const mockTeacherBatches = [
-  { id: "B001", name: "FSP Batch Alpha - CSE 2024", department: "Computer Science", students: 45, status: "Ongoing" },
-  { id: "B005", name: "Web Development Workshop", department: "Computer Science", students: 28, status: "Scheduled" },
-  { id: "B004", name: "Advanced Java - CSE Evening", department: "Computer Science", students: 30, status: "Completed" },
-];
+const mockTeacherBatches: { id: string, name: string, department: string, students: number, status: string }[] = [];
 
 export default function ManageBatchesPage() {
   return (

@@ -1,25 +1,27 @@
+
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GraduationCap, Edit3, Mail, Phone, UserSquare2, Hash, Building } from "lucide-react";
+import { GraduationCap, Edit3, Mail, Phone, UserSquare2, Hash, Building, ImagePlus } from "lucide-react";
 
-// Mock data
+// Mock data - updated to placeholder
 const mockStudentProfile = {
-  name: "Aarav Sharma",
-  studentId: "S1001",
-  email: "aarav.sharma@example.com",
-  rollNumber: "CSE/20/01",
-  registrationNumber: "AECREG20CSE001",
-  department: "Computer Science & Engineering",
-  phoneNumber: "9876543210",
-  whatsappNumber: "9876543210",
-  avatarUrl: "https://placehold.co/150x150.png?text=AS",
+  name: "Student User",
+  studentId: "N/A",
+  email: "student@placeholder.aec.edu.in",
+  rollNumber: "N/A",
+  registrationNumber: "N/A",
+  department: "N/A",
+  phoneNumber: "N/A",
+  whatsappNumber: "N/A",
+  avatarUrl: "https://placehold.co/150x150.png?text=SU", // SU for Student User
 };
 
 export default function StudentProfilePage() {
+  const fallbackName = mockStudentProfile.name || "Student";
   return (
     <div className="space-y-8">
       <PageHeader
@@ -37,10 +39,13 @@ export default function StudentProfilePage() {
         <CardHeader className="items-center text-center border-b pb-6">
           <Avatar className="h-24 w-24 mb-4 ring-2 ring-primary ring-offset-2">
             <AvatarImage src={mockStudentProfile.avatarUrl} alt={mockStudentProfile.name} data-ai-hint="student avatar" />
-            <AvatarFallback>{mockStudentProfile.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+            <AvatarFallback>{fallbackName.split(' ').map(n => n[0]).join('') || 'S'}</AvatarFallback>
           </Avatar>
           <CardTitle className="text-2xl">{mockStudentProfile.name}</CardTitle>
           <CardDescription>{mockStudentProfile.studentId}</CardDescription>
+          <Button variant="outline" className="mt-4">
+            <ImagePlus className="mr-2 h-4 w-4" /> Change Photo
+          </Button>
         </CardHeader>
         <CardContent className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
