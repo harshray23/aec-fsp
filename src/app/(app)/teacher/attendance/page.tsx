@@ -169,7 +169,3 @@ export default function ManageAttendancePage() {
     </div>
   );
 }
-
-export const metadata = {
-  title: "Manage Attendance - AEC FSP Portal",
-};
