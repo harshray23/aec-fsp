@@ -22,9 +22,13 @@ export interface Student extends User {
   isPhoneVerified: boolean;
 }
 
+export type UserApprovalStatus = "pending_approval" | "active" | "rejected";
+
 export interface Teacher extends User {
   role: "teacher";
   department: string;
+  status: UserApprovalStatus;
+  username?: string; // Assigned by Host
   // Add other Teacher-specific fields if any
 }
 
@@ -32,6 +36,8 @@ export interface Admin extends User {
   role: "admin";
   phoneNumber?: string;
   whatsappNumber?: string;
+  status: UserApprovalStatus;
+  username?: string; // Assigned by Host
   // Add other Admin-specific fields if any
 }
 

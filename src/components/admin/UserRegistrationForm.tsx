@@ -42,7 +42,7 @@ const userRegistrationSchema = z.object({
 type UserRegistrationFormValues = z.infer<typeof userRegistrationSchema>;
 
 interface UserRegistrationFormProps {
-  onSuccess?: () => void; 
+  onSuccess?: (role?: 'teacher' | 'admin') => void; 
 }
 
 export default function UserRegistrationForm({ onSuccess }: UserRegistrationFormProps) {
@@ -64,7 +64,7 @@ export default function UserRegistrationForm({ onSuccess }: UserRegistrationForm
   const selectedRole = form.watch("role");
 
   const onSubmit = async (values: UserRegistrationFormValues) => {
-    console.log("User registration form submitted by admin:", values);
+    console.log("User registration form submitted:", values);
     
     const userId = `${values.role.toUpperCase()}_${Date.now()}`; // Simple unique ID for mock
 
@@ -75,6 +75,8 @@ export default function UserRegistrationForm({ onSuccess }: UserRegistrationForm
         email: values.email,
         role: USER_ROLES.TEACHER,
         department: values.department!,
+        status: "pending_approval", // New users start as pending
+        username: undefined, // Username assigned by host
       };
       mockTeachers.push(newTeacher);
     } else if (values.role === USER_ROLES.ADMIN) {
@@ -83,19 +85,21 @@ export default function UserRegistrationForm({ onSuccess }: UserRegistrationForm
         name: values.name,
         email: values.email,
         role: USER_ROLES.ADMIN,
+        status: "pending_approval", // New users start as pending
+        username: undefined, // Username assigned by host
       };
       mockAdmins.push(newAdmin);
     }
     
     toast({
-        title: "User Registration Successful!",
-        description: `${values.name} has been registered as a ${values.role}.`,
+        title: "User Registration Submitted",
+        description: `${values.name} has been registered as a ${values.role} and is awaiting host approval.`,
     });
     form.reset();
     if (onSuccess) {
-      onSuccess();
+      onSuccess(values.role as 'teacher' | 'admin');
     } else {
-      // Redirect to the appropriate user list page
+      // Default redirect logic if no onSuccess provided
       if (values.role === USER_ROLES.TEACHER) {
         router.push("/admin/users/teachers");
       } else if (values.role === USER_ROLES.ADMIN) {
@@ -205,7 +209,7 @@ export default function UserRegistrationForm({ onSuccess }: UserRegistrationForm
           )}
         />
         <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? "Registering User..." : "Register User"}
+          {form.formState.isSubmitting ? "Submitting Registration..." : "Submit for Approval"}
         </Button>
       </form>
     </Form>

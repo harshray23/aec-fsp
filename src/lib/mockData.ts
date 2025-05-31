@@ -15,12 +15,14 @@ export let admins: Admin[] = [
     role: USER_ROLES.ADMIN,
     phoneNumber: "9002555217",
     whatsappNumber: "9002555217",
+    status: "active",
+    username: "harsh_admin",
   },
 ];
 
 export let teachers: Teacher[] = [
-  { id: "TEACH_001", name: "Dr. Ananya Sharma", email: "ananya.sharma@example.com", role: USER_ROLES.TEACHER, department: DEPARTMENTS[0].value },
-  { id: "TEACH_002", name: "Prof. Rohan Gupta", email: "rohan.gupta@example.com", role: USER_ROLES.TEACHER, department: DEPARTMENTS[1].value },
+  { id: "TEACH_001", name: "Dr. Ananya Sharma", email: "ananya.sharma@example.com", role: USER_ROLES.TEACHER, department: DEPARTMENTS[0].value, status: "active", username: "ananya_teacher" },
+  { id: "TEACH_002", name: "Prof. Rohan Gupta", email: "rohan.gupta@example.com", role: USER_ROLES.TEACHER, department: DEPARTMENTS[1].value, status: "active", username: "rohan_teacher" },
 ];
 
 export let students: Student[] = [
@@ -49,14 +51,17 @@ export let hosts: User[] = [ // Using generic User type for Host for now
 
 // Helper to get the current logged-in user details for the dashboard layout
 // This is a simplified version for the prototype.
-export const getMockCurrentUser = (pathname: string) => {
+export const getMockCurrentUser = (pathname: string): User & { department?: string; username?: string } => {
   if (pathname.startsWith("/admin")) {
-    return admins.find(a => a.email === "harshray2007@gmail.com") || 
-           { id: "default-admin", name: "Admin User", email: "admin@example.com", role: USER_ROLES.ADMIN };
+    const adminUser = admins.find(a => a.email === "harshray2007@gmail.com");
+    return adminUser || 
+           { id: "default-admin", name: "Admin User", email: "admin@example.com", role: USER_ROLES.ADMIN, status: "active", username: "default_admin" };
   } else if (pathname.startsWith("/teacher")) {
-    return teachers[0] || { id: "default-teacher", name: "Teacher User", email: "teacher@example.com", role: USER_ROLES.TEACHER, department: "N/A" };
+    const teacherUser = teachers[0]; // Assuming first teacher for mock, improve if specific teacher login is needed
+    return teacherUser || { id: "default-teacher", name: "Teacher User", email: "teacher@example.com", role: USER_ROLES.TEACHER, department: "N/A", status: "active", username: "default_teacher" };
   } else if (pathname.startsWith("/student")) {
-    return students[0] || { 
+    const studentUser = students[0]; // Assuming first student for mock
+    return studentUser || { 
         id: "default-student",
         name: "Student User", 
         email: "student@example.com", 

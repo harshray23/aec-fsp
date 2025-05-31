@@ -6,23 +6,27 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { UserCircle, Edit3, Mail, Phone, Shield, ImagePlus } from "lucide-react";
-import { admins } from "@/lib/mockData"; // Assuming Harsh Ray is the first/primary admin
+import { UserCircle, Edit3, Mail, Phone, Shield, ImagePlus, BadgePercent } from "lucide-react"; // BadgePercent for username
+import { admins } from "@/lib/mockData"; 
 import { USER_ROLES } from "@/lib/constants";
-
-// For this prototype, we'll assume the first admin in the list is the logged-in admin.
-// In a real app, this would come from an authentication context.
-const currentAdmin = admins.find(a => a.email === "harshray2007@gmail.com") || {
-  name: "Admin User",
-  email: "admin@example.com",
-  role: USER_ROLES.ADMIN,
-  phoneNumber: "N/A",
-  whatsappNumber: "N/A",
-  avatarUrl: `https://placehold.co/150x150.png?text=AU`, 
-};
-
+import React from "react";
 
 export default function AdminProfilePage() {
+  // For this prototype, we'll assume the first admin in the list is the logged-in admin.
+  // In a real app, this would come from an authentication context.
+  const [currentAdmin, setCurrentAdmin] = React.useState(() => 
+    admins.find(a => a.email === "harshray2007@gmail.com") || {
+    id: "default-admin",
+    name: "Admin User",
+    email: "admin@example.com",
+    role: USER_ROLES.ADMIN,
+    phoneNumber: "N/A",
+    whatsappNumber: "N/A",
+    status: "active",
+    username: "admin_user_default",
+    avatarUrl: `https://placehold.co/150x150.png?text=AU`, 
+  });
+
   const fallbackName = currentAdmin.name || "Admin";
   const avatarText = fallbackName.split(' ').map(n => n[0]).join('').toUpperCase() || 'A';
   
@@ -47,12 +51,19 @@ export default function AdminProfilePage() {
           </Avatar>
           <CardTitle className="text-2xl">{currentAdmin.name}</CardTitle>
           <CardDescription>{currentAdmin.email} ({currentAdmin.role})</CardDescription>
+          {currentAdmin.username && (
+            <CardDescription className="text-sm mt-1">Username: <span className="font-semibold text-primary">@{currentAdmin.username}</span></CardDescription>
+          )}
           <Button variant="outline" className="mt-4">
             <ImagePlus className="mr-2 h-4 w-4" /> Change Photo
           </Button>
         </CardHeader>
         <CardContent className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <Label htmlFor="usernameDisplay" className="flex items-center text-muted-foreground"><BadgePercent className="mr-2 h-4 w-4" />Username</Label>
+              <Input id="usernameDisplay" value={currentAdmin.username || 'N/A'} readOnly className="mt-1 bg-muted/30" />
+            </div>
             <div>
               <Label htmlFor="email" className="flex items-center text-muted-foreground"><Mail className="mr-2 h-4 w-4" />Email</Label>
               <Input id="email" value={currentAdmin.email} readOnly className="mt-1 bg-muted/30" />
@@ -68,6 +79,10 @@ export default function AdminProfilePage() {
             <div>
               <Label htmlFor="role" className="flex items-center text-muted-foreground"><Shield className="mr-2 h-4 w-4" />Role</Label>
               <Input id="role" value={currentAdmin.role} readOnly className="mt-1 bg-muted/30" />
+            </div>
+             <div>
+              <Label htmlFor="status" className="flex items-center text-muted-foreground"><Shield className="mr-2 h-4 w-4" />Account Status</Label>
+              <Input id="status" value={currentAdmin.status} readOnly className="mt-1 bg-muted/30 capitalize" />
             </div>
           </div>
           
