@@ -19,16 +19,7 @@ const getNavItems = (role: "student" | "teacher" | "admin" | "guest"): NavItem[]
       return [
         { href: "/teacher/dashboard", label: "Dashboard", icon: LayoutDashboard, tooltip: "Teacher overview" },
         { href: "/teacher/profile", label: "My Profile", icon: UserCircle, tooltip: "View your profile" },
-        { 
-          href: "/teacher/batches", 
-          label: "Batches", 
-          icon: Users, 
-          tooltip: "Manage student batches",
-          children: [
-            { href: "/teacher/batches/manage", label: "Manage Batches", icon: Users, tooltip: "View and manage batches" },
-            { href: "/teacher/batches/assign", label: "Assign Students", icon: UserPlus, tooltip: "Assign students to batches" },
-          ]
-        },
+        { href: "/teacher/my-assigned-batches", label: "My Assigned Batches", icon: BookUser, tooltip: "View batches assigned to you" },
         { href: "/teacher/attendance", label: "Attendance", icon: ClipboardList, tooltip: "Manage student attendance" },
         { href: "/teacher/timetables", label: "Timetables", icon: CalendarDays, tooltip: "Manage timetables" },
         { href: "/teacher/reports", label: "Reports", icon: BarChart3, tooltip: "View reports" },
@@ -48,7 +39,16 @@ const getNavItems = (role: "student" | "teacher" | "admin" | "guest"): NavItem[]
              { href: "/admin/users/students", label: "View Students", icon: GraduationCap, tooltip: "View student accounts" },
           ]
         },
-        { href: "/admin/batches", label: "Batch Overview", icon: BookUser, tooltip: "View all batches" },
+        { 
+          href: "/admin/batches", 
+          label: "Batch Management", 
+          icon: BookUser, 
+          tooltip: "Oversee and manage program batches",
+          children: [
+            { href: "/admin/batches", label: "Batch Overview", icon: BookUser, tooltip: "View all batches and create new ones" },
+            { href: "/admin/batches/assign", label: "Assign Students", icon: UserPlus, tooltip: "Assign students to batches" },
+          ]
+        },
         { href: "/admin/timetables", label: "Timetable Overview", icon: CalendarDays, tooltip: "View all timetables" },
         { href: "/admin/settings", label: "System Settings", icon: Settings, tooltip: "Configure system settings" },
       ];
