@@ -6,8 +6,7 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AppLogo } from "@/components/shared/AppLogo";
-import { CollegeLogo } from "@/components/shared/CollegeLogo";
-import { GraduationCap, Briefcase, UserCog, UserRound } from "lucide-react"; // Added UserRound
+import { GraduationCap, Briefcase, UserCog, UserRound } from "lucide-react"; 
 import { USER_ROLES, type UserRole } from "@/lib/constants";
 
 interface RoleCardProps {
@@ -73,7 +72,6 @@ export default function RoleSelector() {
       <div className="text-center mb-12">
         <div className="flex justify-center items-center gap-4 mb-4">
           <AppLogo width="80" height="80" />
-          <CollegeLogo width="132" height="80" />
         </div>
         <h1 className="text-4xl font-bold tracking-tight text-foreground">
           AEC FSP Portal
