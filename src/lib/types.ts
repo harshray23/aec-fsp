@@ -18,6 +18,8 @@ export interface Student extends User {
   phoneNumber: string;
   whatsappNumber?: string;
   batchId?: string; // ID of the batch the student is assigned to
+  isEmailVerified: boolean;
+  isPhoneVerified: boolean;
 }
 
 export interface Teacher extends User {
