@@ -1,4 +1,3 @@
-
 "use client";
 import UserRegistrationForm from "@/components/admin/UserRegistrationForm"; // Re-using the existing form
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -41,7 +40,3 @@ export default function HostUserGenerationPage() {
     </div>
   );
 }
-
-export const metadata = {
-  title: "User Generation - Host Panel - AEC FSP Portal",
-};
