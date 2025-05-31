@@ -4,7 +4,7 @@
 import { DashboardLayout } from "@/components/shared/DashboardLayout";
 import type { NavItem } from "@/lib/types";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, UserPlus, BookUser, ClipboardList, CalendarDays, BarChart3, Settings, GraduationCap, ShieldAlert, Briefcase, UserCog, UserCircle, CheckSquare, MonitorPlay, ServerCog, ListChecks, FileCog, UsersCog } from "lucide-react"; 
+import { LayoutDashboard, Users, UserPlus, BookUser, ClipboardList, CalendarDays, BarChart3, Settings, GraduationCap, ShieldAlert, Briefcase, UserCog, UserCircle, CheckSquare, MonitorPlay, ServerCog, ListChecks, FileCog } from "lucide-react"; 
 import React from "react";
 import { getMockCurrentUser } from "@/lib/mockData"; 
 
@@ -52,7 +52,7 @@ const getNavItems = (role: "student" | "teacher" | "admin" | "host" | "guest"): 
         { href: "/admin/timetables", label: "Timetable Overview", icon: CalendarDays, tooltip: "View all timetables" },
         { href: "/admin/settings", label: "System Settings", icon: Settings, tooltip: "Configure system settings" },
       ];
-    case "host": // Added Host navigation
+    case "host":
       return [
         { href: "/host/dashboard", label: "Host Dashboard", icon: ServerCog, tooltip: "Host overview" },
         { href: "/host/user-generation", label: "User Generation", icon: UserPlus, tooltip: "Generate teacher/admin accounts" },
@@ -65,7 +65,7 @@ const getNavItems = (role: "student" | "teacher" | "admin" | "host" | "guest"): 
             { href: "/host/monitoring/website", label: "Website Status", icon: FileCog, tooltip: "Monitor website" },
             { href: "/host/monitoring/batches", label: "Batch Monitor", icon: BookUser, tooltip: "Monitor batches" },
             { href: "/host/monitoring/timetables", label: "Timetable Monitor", icon: CalendarDays, tooltip: "Monitor timetables" },
-            { href: "/host/monitoring/teachers", label: "Teacher Monitor", icon: UsersCog, tooltip: "Monitor teachers" },
+            { href: "/host/monitoring/teachers", label: "Teacher Monitor", icon: Users, tooltip: "Monitor teachers" }, 
             { href: "/host/monitoring/admins", label: "Admin Monitor", icon: ShieldAlert, tooltip: "Monitor admins" },
           ],
         },
