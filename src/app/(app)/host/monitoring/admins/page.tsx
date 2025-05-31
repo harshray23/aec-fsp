@@ -80,6 +80,3 @@ export default function HostMonitorAdminsPage() {
   );
 }
 
-export const metadata = {
-  title: "Monitor Admins - Host Panel - AEC FSP Portal",
-};
