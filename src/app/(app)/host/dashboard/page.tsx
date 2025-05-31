@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ServerCog, UserPlus, MonitorPlay, Users, BookUser, CalendarDays, ShieldAlert, FileCog, UsersCog } from "lucide-react";
+import { ServerCog, UserPlus, MonitorPlay, Users, BookUser, CalendarDays, ShieldAlert, FileCog, Briefcase, GraduationCap } from "lucide-react"; // Added Briefcase, GraduationCap
 import { admins, batches, teachers, students, timetableEntries } from "@/lib/mockData";
 
 export default function HostDashboardPage() {
@@ -72,3 +72,4 @@ export default function HostDashboardPage() {
     </div>
   );
 }
+
