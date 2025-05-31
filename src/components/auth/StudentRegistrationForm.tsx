@@ -13,11 +13,12 @@ import {
   Form,
   FormControl,
   FormField,
-  FormItem,
-  FormLabel,
+  FormItem, // Keep for the main form
+  FormLabel as RHFFormLabel, // Alias original FormLabel to avoid conflict
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label"; // Use basic Label for verification steps
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
@@ -125,6 +126,7 @@ export default function StudentRegistrationForm() {
         role: USER_ROLES.STUDENT,
         isEmailVerified: true, 
         isPhoneVerified: true,
+        // batchId is optional and not set during registration
       };
       mockStudents.push(newStudent);
       toast({
@@ -152,8 +154,8 @@ export default function StudentRegistrationForm() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <FormItem>
-            <FormLabel htmlFor="emailOtp">Email Verification Code</FormLabel>
+          <div className="space-y-2"> {/* Replaces FormItem */}
+            <Label htmlFor="emailOtp">Email Verification Code</Label> {/* Uses basic Label */}
             <Input 
               id="emailOtp" 
               placeholder="Enter 6-digit code" 
@@ -161,7 +163,7 @@ export default function StudentRegistrationForm() {
               onChange={(e) => setEmailOtp(e.target.value)}
               maxLength={6}
             />
-          </FormItem>
+          </div>
           <Button onClick={handleEmailVerify} className="w-full">Verify Email</Button>
           <Button variant="outline" onClick={() => {
              toast({ title: "Code Resent (Simulated)", description: "Another verification code has been (simulated) sent."});
@@ -183,8 +185,8 @@ export default function StudentRegistrationForm() {
         </CardHeader>
         <CardContent className="space-y-4">
            <Button onClick={handleSendPhoneOtp} className="w-full" variant="outline">Send Verification Code (SMS)</Button>
-          <FormItem>
-            <FormLabel htmlFor="phoneOtp">SMS Verification Code</FormLabel>
+          <div className="space-y-2"> {/* Replaces FormItem */}
+            <Label htmlFor="phoneOtp">SMS Verification Code</Label> {/* Uses basic Label */}
             <Input 
               id="phoneOtp" 
               placeholder="Enter 6-digit code" 
@@ -192,7 +194,7 @@ export default function StudentRegistrationForm() {
               onChange={(e) => setPhoneOtp(e.target.value)}
               maxLength={6}
             />
-          </FormItem>
+          </div>
           <Button onClick={handlePhoneVerifyAndRegister} className="w-full">Verify Phone & Register</Button>
            <Button variant="link" onClick={() => setRegistrationStep("emailVerify")} className="w-full text-muted-foreground">Back to Email Verification</Button>
         </CardContent>
@@ -209,7 +211,7 @@ export default function StudentRegistrationForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Form {...form}>
+        <Form {...form}> {/* This Form (FormProvider) is for the main registration form */}
           <form onSubmit={form.handleSubmit(onSubmitDetails)} className="space-y-4">
             <ScrollArea className="h-[50vh] pr-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -218,7 +220,7 @@ export default function StudentRegistrationForm() {
                 name="studentId"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Student ID</FormLabel>
+                    <RHFFormLabel>Student ID</RHFFormLabel>
                     <FormControl>
                       <Input placeholder="Enter your Student ID" {...field} />
                     </FormControl>
@@ -231,7 +233,7 @@ export default function StudentRegistrationForm() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Full Name</FormLabel>
+                    <RHFFormLabel>Full Name</RHFFormLabel>
                     <FormControl>
                       <Input placeholder="Enter your full name" {...field} />
                     </FormControl>
@@ -244,7 +246,7 @@ export default function StudentRegistrationForm() {
                 name="email"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Email Address</FormLabel>
+                    <RHFFormLabel>Email Address</RHFFormLabel>
                     <FormControl>
                       <Input type="email" placeholder="Enter your email" {...field} />
                     </FormControl>
@@ -257,7 +259,7 @@ export default function StudentRegistrationForm() {
                 name="rollNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Roll Number</FormLabel>
+                    <RHFFormLabel>Roll Number</RHFFormLabel>
                     <FormControl>
                       <Input placeholder="Enter your roll number" {...field} />
                     </FormControl>
@@ -270,7 +272,7 @@ export default function StudentRegistrationForm() {
                 name="registrationNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Registration Number</FormLabel>
+                    <RHFFormLabel>Registration Number</RHFFormLabel>
                     <FormControl>
                       <Input placeholder="Enter your registration number" {...field} />
                     </FormControl>
@@ -283,7 +285,7 @@ export default function StudentRegistrationForm() {
                 name="department"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Department</FormLabel>
+                    <RHFFormLabel>Department</RHFFormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -305,7 +307,7 @@ export default function StudentRegistrationForm() {
                 name="section"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Section</FormLabel>
+                    <RHFFormLabel>Section</RHFFormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger>
@@ -327,7 +329,7 @@ export default function StudentRegistrationForm() {
                 name="phoneNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Phone Number</FormLabel>
+                    <RHFFormLabel>Phone Number</RHFFormLabel>
                     <FormControl>
                       <Input type="tel" placeholder="Enter your 10-digit phone number" {...field} />
                     </FormControl>
@@ -340,7 +342,7 @@ export default function StudentRegistrationForm() {
                 name="whatsappNumber"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>WhatsApp Number (Optional)</FormLabel>
+                    <RHFFormLabel>WhatsApp Number (Optional)</RHFFormLabel>
                     <FormControl>
                       <Input type="tel" placeholder="Enter your 10-digit WhatsApp number" {...field} />
                     </FormControl>
@@ -353,7 +355,7 @@ export default function StudentRegistrationForm() {
                 name="password"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Password</FormLabel>
+                    <RHFFormLabel>Password</RHFFormLabel>
                     <FormControl>
                       <Input type="password" placeholder="Create a password" {...field} />
                     </FormControl>
@@ -366,7 +368,7 @@ export default function StudentRegistrationForm() {
                 name="confirmPassword"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
+                    <RHFFormLabel>Confirm Password</RHFFormLabel>
                     <FormControl>
                       <Input type="password" placeholder="Confirm your password" {...field} />
                     </FormControl>
@@ -396,3 +398,5 @@ export default function StudentRegistrationForm() {
     </Card>
   );
 }
+
+    
