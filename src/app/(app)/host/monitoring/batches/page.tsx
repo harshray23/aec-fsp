@@ -1,40 +1,39 @@
 
 "use client";
-
-import React from "react";
-import { usePathname } from "next/navigation";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { BookUser, Eye } from "lucide-react";
-import { getMockCurrentUser, batches as allBatches, students as allStudents } from "@/lib/mockData";
-import { DEPARTMENTS } from "@/lib/constants";
-import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { batches as mockBatches, teachers as mockTeachersData } from "@/lib/mockData"; 
+import { DEPARTMENTS } from "@/lib/constants";
 
-export default function TeacherMyAssignedBatchesPage() {
-  const pathname = usePathname();
-  const currentUser = getMockCurrentUser(pathname);
 
-  const assignedBatches = allBatches.filter(batch => batch.teacherId === currentUser.id);
+export default function HostMonitorBatchesPage() {
+
+  const getTeacherName = (teacherId: string) => {
+    const teacher = mockTeachersData.find(t => t.id === teacherId);
+    return teacher ? teacher.name : "N/A";
+  };
 
   const getDepartmentLabel = (deptValue: string) => {
     const dept = DEPARTMENTS.find(d => d.value === deptValue);
     return dept ? dept.label : deptValue;
-  };
-
+  }
+  
   return (
     <div className="space-y-8">
       <PageHeader
-        title="My Assigned Batches"
-        description="View the FSP batches you are currently assigned to teach."
+        title="Monitor Batches (Host)"
+        description="Oversee all Finishing School Program batches across the system."
         icon={BookUser}
       />
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle>Assigned Batch List</CardTitle>
-          <CardDescription>These are the batches you are responsible for.</CardDescription>
+          <CardTitle>All System Batches</CardTitle>
+          <CardDescription>A comprehensive list of current, scheduled, and completed FSP batches.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
@@ -44,38 +43,40 @@ export default function TeacherMyAssignedBatchesPage() {
                 <TableHead>Batch Name</TableHead>
                 <TableHead>Department</TableHead>
                 <TableHead>Topic</TableHead>
-                <TableHead>Students</TableHead>
+                <TableHead>Assigned Teacher</TableHead>
+                <TableHead>Students Enrolled</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Details</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {assignedBatches.map((batch) => (
+              {mockBatches.map((batch) => (
                 <TableRow key={batch.id}>
                   <TableCell>{batch.id}</TableCell>
                   <TableCell className="font-medium">{batch.name}</TableCell>
                   <TableCell>{getDepartmentLabel(batch.department)}</TableCell>
                   <TableCell>{batch.topic}</TableCell>
+                  <TableCell>{getTeacherName(batch.teacherId)}</TableCell>
                   <TableCell>{batch.studentIds.length}</TableCell>
                   <TableCell>
                     <Badge variant={batch.status === "Ongoing" ? "default" : batch.status === "Scheduled" ? "outline" : "secondary"}>
-                      {batch.status}
+                      {batch.status || "Scheduled"}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    {/* Button remains disabled as there is no specific detail view implemented for teachers yet */}
-                    <Button variant="ghost" size="icon" asChild disabled>
-                      <Link href={`/teacher/batches/view/${batch.id}`}> 
+                    <Button variant="ghost" size="icon" asChild disabled> 
+                      {/* Link to a detailed batch view if available, disabled for now */}
+                      <Link href={`/host/monitoring/batches/${batch.id}`}> 
                         <Eye className="h-4 w-4" />
                       </Link>
                     </Button>
                   </TableCell>
                 </TableRow>
               ))}
-              {assignedBatches.length === 0 && (
+              {mockBatches.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground">
-                    You are not currently assigned to any batches.
+                  <TableCell colSpan={8} className="text-center text-muted-foreground">
+                    No batches found in the system.
                   </TableCell>
                 </TableRow>
               )}
@@ -87,3 +88,6 @@ export default function TeacherMyAssignedBatchesPage() {
   );
 }
 
+export const metadata = {
+  title: "Monitor Batches - Host Panel - AEC FSP Portal",
+};

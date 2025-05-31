@@ -4,197 +4,37 @@
 import React, { useState, useEffect } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-  DialogClose,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm } from "react-hook-form";
-import * as z from "zod";
-import { CalendarDays, PlusCircle, Edit, Trash2, Clock } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { CalendarDays, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { timetableEntries as globalTimetableEntries, batches as mockTeacherBatchesForTimetable } from "@/lib/mockData"; // Import global store & batches
-import type { TimetableEntry } from "@/lib/types"; // Import type
+import { timetableEntries as globalTimetableEntries, batches as mockTeacherBatchesForTimetable } from "@/lib/mockData"; 
+import type { TimetableEntry } from "@/lib/types"; 
 
-const daysOfWeek = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-
-const timetableEntrySchema = z.object({
-  batchId: z.string().min(1, "Batch is required."),
-  dayOfWeek: z.string().min(1, "Day of week is required."),
-  startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid start time (HH:MM)."),
-  endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid end time (HH:MM)."),
-  subject: z.string().min(2, "Subject must be at least 2 characters."),
-}).refine(data => data.startTime < data.endTime, {
-  message: "End time must be after start time.",
-  path: ["endTime"],
-});
-
-type TimetableEntryFormValues = z.infer<typeof timetableEntrySchema>;
-
-export default function ManageTimetablesPage() {
-  const { toast } = useToast();
-  // Local state for rendering, derived from global store
+export default function ViewTimetablesPage() {
   const [timetable, setTimetable] = useState<TimetableEntry[]>([]);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingEntry, setEditingEntry] = useState<TimetableEntry | null>(null);
 
-  // Sync local state with global store on mount and when global store might change (e.g., after an update)
-  // For mock data, a simple copy on mount. In a real app, this would be more robust.
   useEffect(() => {
     // In a real app, you might filter these for the current teacher's batches
-    setTimetable([...globalTimetableEntries]);
-  }, []); // Note: This won't auto-update if another component changes globalTimetableEntries without a page refresh.
+    // For this view-only page, we will display all relevant entries from global store
+    // Teachers would typically only see entries for batches they are assigned to.
+    // This logic would need refinement if current user context was available here to filter batches.
+    const teacherId = "TEACH_001"; // Placeholder for actual current teacher ID
+    const teacherBatches = mockTeacherBatchesForTimetable.filter(b => b.teacherId === teacherId).map(b => b.id);
+    setTimetable(globalTimetableEntries.filter(entry => teacherBatches.includes(entry.batchId)));
+  }, []);
 
-  const form = useForm<TimetableEntryFormValues>({
-    resolver: zodResolver(timetableEntrySchema),
-    defaultValues: { batchId: "", dayOfWeek: "", startTime: "", endTime: "", subject: "" },
-  });
-
-  useEffect(() => {
-    if (editingEntry) {
-      form.reset(editingEntry);
-    } else {
-      form.reset({ batchId: "", dayOfWeek: "", startTime: "", endTime: "", subject: "" });
-    }
-  }, [editingEntry, form]);
-
-  const onSubmit = (values: TimetableEntryFormValues) => {
-    if (editingEntry) {
-      const updatedEntry = { ...editingEntry, ...values };
-      const index = globalTimetableEntries.findIndex(entry => entry.id === editingEntry.id);
-      if (index !== -1) {
-        globalTimetableEntries[index] = updatedEntry;
-      }
-      setTimetable(prev => prev.map(entry => entry.id === editingEntry.id ? updatedEntry : entry));
-      toast({ title: "Timetable Updated", description: "The session has been updated." });
-    } else {
-      const newEntry: TimetableEntry = { ...values, id: `TT-${Date.now()}` }; // Ensure unique ID
-      globalTimetableEntries.push(newEntry);
-      setTimetable(prev => [...prev, newEntry]);
-      toast({ title: "Timetable Session Added", description: "New session added to the timetable." });
-    }
-    setIsDialogOpen(false);
-    setEditingEntry(null);
-    form.reset({ batchId: "", dayOfWeek: "", startTime: "", endTime: "", subject: "" }); // Reset form
-  };
-
-  const handleEdit = (entry: TimetableEntry) => {
-    setEditingEntry(entry);
-    setIsDialogOpen(true);
-  };
-  
-  const handleDelete = (entryId: string) => {
-    if(confirm("Are you sure you want to delete this timetable entry?")){
-        const index = globalTimetableEntries.findIndex(entry => entry.id === entryId);
-        if (index !== -1) {
-          globalTimetableEntries.splice(index, 1);
-        }
-        setTimetable(prev => prev.filter(entry => entry.id !== entryId));
-        toast({ title: "Session Deleted", description: "The timetable session has been removed.", variant: "destructive" });
-    }
-  };
-
-  // Refresh local state if global entries might have changed (e.g. through another browser tab if using local storage sync, or after an action)
-  // This is a simplified way to "refresh" the view of the global data.
-  const refreshLocalTimetable = () => {
-    setTimetable([...globalTimetableEntries]);
-  };
-
-  // Call refreshLocalTimetable when dialog closes to see changes made
-  const onDialogChange = (open: boolean) => {
-    setIsDialogOpen(open);
-    if (!open) {
-      setEditingEntry(null);
-      refreshLocalTimetable(); // Refresh data when dialog closes
-    }
-  }
 
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Manage Timetables"
-        description="Create, view, and edit timetables for your batches."
+        title="View Timetables"
+        description="View timetables for your assigned batches."
         icon={CalendarDays}
-        actions={
-          <Dialog open={isDialogOpen} onOpenChange={onDialogChange}>
-            <DialogTrigger asChild>
-              <Button><PlusCircle className="mr-2 h-4 w-4" /> Add New Session</Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
-              <DialogHeader>
-                <DialogTitle>{editingEntry ? "Edit Timetable Session" : "Add New Timetable Session"}</DialogTitle>
-                <DialogDescription>
-                  {editingEntry ? "Update the details for this session." : "Fill in the details for the new session."}
-                </DialogDescription>
-              </DialogHeader>
-              <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 py-4">
-                  <FormField control={form.control} name="batchId" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Batch</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value} defaultValue="">
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select Batch" /></SelectTrigger></FormControl>
-                        <SelectContent>
-                            {mockTeacherBatchesForTimetable.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
-                            {mockTeacherBatchesForTimetable.length === 0 && <p className="p-2 text-sm text-muted-foreground">No batches assigned to you or available.</p>}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="dayOfWeek" render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Day of Week</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value} defaultValue="">
-                        <FormControl><SelectTrigger><SelectValue placeholder="Select Day" /></SelectTrigger></FormControl>
-                        <SelectContent>{daysOfWeek.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )} />
-                  <FormField control={form.control} name="startTime" render={({ field }) => (
-                    <FormItem><FormLabel>Start Time</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name="endTime" render={({ field }) => (
-                    <FormItem><FormLabel>End Time</FormLabel><FormControl><Input type="time" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <FormField control={form.control} name="subject" render={({ field }) => (
-                    <FormItem><FormLabel>Subject/Module</FormLabel><FormControl><Input placeholder="Enter subject or module name" {...field} /></FormControl><FormMessage /></FormItem>
-                  )} />
-                  <DialogFooter>
-                    <DialogClose asChild><Button type="button" variant="outline">Cancel</Button></DialogClose>
-                    <Button type="submit" disabled={mockTeacherBatchesForTimetable.length === 0 && !editingEntry?.batchId}>
-                      {editingEntry ? "Save Changes" : "Add Session"}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </Form>
-            </DialogContent>
-          </Dialog>
-        }
+        // "Add New Session" button removed as teachers can only view
       />
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle>Current Timetable Sessions</CardTitle>
-          <CardDescription>Overview of all scheduled sessions. (Ensure batches are created and assigned to you to manage their timetables)</CardDescription>
+          <CardTitle>Scheduled Timetable Sessions</CardTitle>
+          <CardDescription>Overview of scheduled sessions for your batches.</CardDescription>
         </CardHeader>
         <CardContent>
           {timetable.length > 0 ? (
@@ -211,10 +51,7 @@ export default function ManageTimetablesPage() {
                             {batchName}
                           </CardDescription>
                         </div>
-                        <div className="flex gap-2">
-                          <Button variant="ghost" size="icon" onClick={() => handleEdit(entry)}><Edit className="h-4 w-4" /></Button>
-                          <Button variant="ghost" size="icon" onClick={() => handleDelete(entry.id)} className="text-destructive hover:text-destructive hover:bg-destructive/10"><Trash2 className="h-4 w-4" /></Button>
-                        </div>
+                        {/* Edit and Delete buttons removed */}
                       </div>
                     </CardHeader>
                     <CardContent className="p-4 pt-0 text-sm text-muted-foreground">
@@ -225,11 +62,10 @@ export default function ManageTimetablesPage() {
               })}
             </div>
           ) : (
-            <p className="text-center text-muted-foreground py-4">No timetable sessions found. Add a new session to get started.</p>
+            <p className="text-center text-muted-foreground py-4">No timetable sessions found for your assigned batches.</p>
           )}
         </CardContent>
       </Card>
     </div>
   );
 }
-

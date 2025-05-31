@@ -20,7 +20,7 @@ const getNavItems = (role: "student" | "teacher" | "admin" | "host" | "guest"): 
         { href: "/teacher/dashboard", label: "Dashboard", icon: LayoutDashboard, tooltip: "Teacher overview" },
         { href: "/teacher/profile", label: "My Profile", icon: UserCircle, tooltip: "View your profile" },
         { href: "/teacher/my-assigned-batches", label: "My Assigned Batches", icon: BookUser, tooltip: "View batches assigned to you" },
-        { href: "/teacher/timetables", label: "Timetables", icon: CalendarDays, tooltip: "Manage timetables for assigned batches" },
+        { href: "/teacher/timetables", label: "View Timetables", icon: CalendarDays, tooltip: "View timetables for assigned batches" }, // Label updated
         { href: "/teacher/reports", label: "Reports", icon: BarChart3, tooltip: "View reports for assigned batches" },
       ];
     case "admin":
@@ -50,6 +50,7 @@ const getNavItems = (role: "student" | "teacher" | "admin" | "host" | "guest"): 
         },
         { href: "/admin/attendance", label: "Attendance Management", icon: CheckSquare, tooltip: "Mark and manage student attendance" },
         { href: "/admin/timetables", label: "Timetable Overview", icon: CalendarDays, tooltip: "View all timetables" },
+        { href: "/admin/reports", label: "View Reports", icon: BarChart3, tooltip: "View system-wide reports" }, // Added Admin Reports
         { href: "/admin/settings", label: "System Settings", icon: Settings, tooltip: "Configure system settings" },
       ];
     case "host":
@@ -85,7 +86,6 @@ export default function AppPagesLayout({
   
   const navItems = getNavItems(currentUser.role as "student" | "teacher" | "admin" | "host" | "guest");
 
-  // Ensure userRole is capitalized for display
   const displayUserRole = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
 
   return (
