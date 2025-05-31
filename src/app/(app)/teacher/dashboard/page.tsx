@@ -2,20 +2,22 @@
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Users, ClipboardList, CalendarDays, BarChart3, GraduationCap } from "lucide-react";
+import { LayoutDashboard, Users, ClipboardList, CalendarDays, BarChart3, GraduationCap, BookUser } from "lucide-react"; // Removed ClipboardList as it's for attendance
 import Link from "next/link";
 
 const quickStats = [
   { title: "Active Batches", value: "0", icon: Users, color: "text-primary" },
   { title: "Students Enrolled", value: "0", icon: GraduationCap, color: "text-green-500" },
   { title: "Today's Classes", value: "0", icon: CalendarDays, color: "text-purple-500" },
-  { title: "Overall Attendance", value: "0%", icon: ClipboardList, color: "text-orange-500" },
+  // Overall attendance might be complex to calculate here without backend, keeping as placeholder or removing
+  // { title: "Overall Attendance", value: "0%", icon: ClipboardList, color: "text-orange-500" }, 
 ];
 
 const actions = [
-  { href: "/teacher/batches/assign", label: "Assign Students to Batch", icon: Users },
-  { href: "/teacher/attendance", label: "Mark Attendance", icon: ClipboardList },
-  { href: "/teacher/timetables", label: "Create New Timetable", icon: CalendarDays }, // Updated link from /create to /timetables
+  // "Assign Students to Batch" was already deprecated for teachers.
+  // "Mark Attendance" removed.
+  { href: "/teacher/my-assigned-batches", label: "View My Assigned Batches", icon: BookUser },
+  { href: "/teacher/timetables", label: "Manage Timetables", icon: CalendarDays }, 
   { href: "/teacher/reports", label: "View Performance Reports", icon: BarChart3 },
 ];
 
@@ -26,7 +28,6 @@ export default function TeacherDashboardPage() {
         title="Teacher Dashboard"
         description="Manage your FSP activities and student progress."
         icon={LayoutDashboard}
-        // "Create New Batch" button removed from actions
       />
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">

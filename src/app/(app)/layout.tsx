@@ -4,7 +4,7 @@
 import { DashboardLayout } from "@/components/shared/DashboardLayout";
 import type { NavItem } from "@/lib/types";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, UserPlus, BookUser, ClipboardList, CalendarDays, BarChart3, Settings, GraduationCap, ShieldAlert, Briefcase, UserCog, UserCircle } from "lucide-react";
+import { LayoutDashboard, Users, UserPlus, BookUser, ClipboardList, CalendarDays, BarChart3, Settings, GraduationCap, ShieldAlert, Briefcase, UserCog, UserCircle, CheckSquare } from "lucide-react"; // Added CheckSquare for attendance
 import React from "react";
 import { getMockCurrentUser } from "@/lib/mockData"; // Import helper
 
@@ -20,9 +20,9 @@ const getNavItems = (role: "student" | "teacher" | "admin" | "guest"): NavItem[]
         { href: "/teacher/dashboard", label: "Dashboard", icon: LayoutDashboard, tooltip: "Teacher overview" },
         { href: "/teacher/profile", label: "My Profile", icon: UserCircle, tooltip: "View your profile" },
         { href: "/teacher/my-assigned-batches", label: "My Assigned Batches", icon: BookUser, tooltip: "View batches assigned to you" },
-        { href: "/teacher/attendance", label: "Attendance", icon: ClipboardList, tooltip: "Manage student attendance" },
-        { href: "/teacher/timetables", label: "Timetables", icon: CalendarDays, tooltip: "Manage timetables" },
-        { href: "/teacher/reports", label: "Reports", icon: BarChart3, tooltip: "View reports" },
+        // Attendance removed from teacher
+        { href: "/teacher/timetables", label: "Timetables", icon: CalendarDays, tooltip: "Manage timetables for assigned batches" },
+        { href: "/teacher/reports", label: "Reports", icon: BarChart3, tooltip: "View reports for assigned batches" },
       ];
     case "admin":
       return [
@@ -49,6 +49,7 @@ const getNavItems = (role: "student" | "teacher" | "admin" | "guest"): NavItem[]
             { href: "/admin/batches/assign", label: "Assign Students", icon: UserPlus, tooltip: "Assign students to batches" },
           ]
         },
+        { href: "/admin/attendance", label: "Attendance Management", icon: CheckSquare, tooltip: "Mark and manage student attendance" }, // Added for Admin
         { href: "/admin/timetables", label: "Timetable Overview", icon: CalendarDays, tooltip: "View all timetables" },
         { href: "/admin/settings", label: "System Settings", icon: Settings, tooltip: "Configure system settings" },
       ];
