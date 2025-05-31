@@ -1,6 +1,7 @@
-"use client";
 
-import * as React from "react";
+"use client"; 
+
+import React from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import {
@@ -29,7 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bell, LogOut, ChevronDown, Settings, UserCircle } from "lucide-react";
+import { Bell, LogOut, ChevronDown, Settings, UserCircle, UserRound } from "lucide-react"; // Added UserRound
 import type { NavItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -155,8 +156,19 @@ export function DashboardLayout({
 
       <SidebarInset>
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-md sm:px-6">
-            <SidebarTrigger className="md:hidden" /> {/* Mobile toggle */}
-          <div className="flex items-center gap-4 ml-auto">
+          {/* Left section of the header */}
+          <div className="flex items-center gap-2">
+            <SidebarTrigger className="md:hidden" /> {/* Mobile sidebar toggle */}
+            {/* New Profile Icon for Desktop */}
+            <Button asChild variant="ghost" size="icon" className="hidden md:flex rounded-full" aria-label="Profile">
+              <Link href={`/${userRole.toLowerCase()}/profile`}>
+                <UserRound className="h-6 w-6" />
+              </Link>
+            </Button>
+          </div>
+
+          {/* Right section of the header */}
+          <div className="flex items-center gap-4"> {/* Removed ml-auto */}
             <Button variant="ghost" size="icon" className="rounded-full" aria-label="Notifications">
               <Bell className="h-5 w-5" />
             </Button>
@@ -164,7 +176,7 @@ export function DashboardLayout({
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
                   <Avatar className="h-9 w-9">
-                    <AvatarImage src={`https://placehold.co/100x100.png?text=${userName.charAt(0)}`} alt={userName} data-ai-hint="user avatar" />
+                    <AvatarImage src={`https://placehold.co/100x100.png?text=${userName.charAt(0)}`} alt={userName} data-ai-hint="user avatar"/>
                     <AvatarFallback>{userName.charAt(0).toUpperCase()}</AvatarFallback>
                   </Avatar>
                 </Button>
@@ -179,11 +191,13 @@ export function DashboardLayout({
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
-                  <UserCircle className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
+                <DropdownMenuItem asChild>
+                  <Link href={`/${userRole.toLowerCase()}/profile`}>
+                    <UserCircle className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem>
+                <DropdownMenuItem> {/* This can be expanded later */}
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
                 </DropdownMenuItem>
