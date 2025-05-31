@@ -94,6 +94,8 @@ export default function ManageAdminsPage() {
   );
 }
 
-export const metadata = {
-  title: "Manage Admins - AEC FSP Portal",
-};
+// Metadata removed as this is a client component
+// export const metadata = {
+//   title: "Manage Admins - AEC FSP Portal",
+// };
+
