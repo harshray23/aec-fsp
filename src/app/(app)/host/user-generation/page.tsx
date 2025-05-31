@@ -1,42 +1,15 @@
-"use client";
-import UserRegistrationForm from "@/components/admin/UserRegistrationForm"; // Re-using the existing form
-import { PageHeader } from "@/components/shared/PageHeader";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { UserPlus } from "lucide-react";
-import { useRouter } from "next/navigation";
 
-export default function HostUserGenerationPage() {
-  const router = useRouter();
+// This page's functionality has been removed from the Host panel.
+// User registration is now primarily handled by Admins and then approved by Hosts.
 
-  const handleSuccess = (role?: 'teacher' | 'admin') => {
-    // After successful user creation by host, maybe redirect to a list or back to host dashboard
-    if (role === 'teacher') {
-        router.push('/host/monitoring/teachers'); // Or a general success page
-    } else if (role === 'admin') {
-        router.push('/host/monitoring/admins');
-    } else {
-        router.push('/host/dashboard');
-    }
-  };
-
-
+export default function DeprecatedHostUserGenerationPage() {
   return (
-    <div className="space-y-8">
-      <PageHeader
-        title="Generate User Accounts (Host)"
-        description="Create new accounts for Teachers or Administrators."
-        icon={UserPlus}
-      />
-      <Card className="max-w-2xl mx-auto shadow-lg">
-        <CardHeader>
-          <CardTitle>New User Details</CardTitle>
-          <CardDescription>Fill in the form below to create a new Teacher or Admin account. The account will be provisioned immediately.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {/* Pass a custom onSuccess to UserRegistrationForm if needed, or let it use its default redirect */}
-          <UserRegistrationForm onSuccess={() => handleSuccess()} />
-        </CardContent>
-      </Card>
+    <div className="p-4">
+      <h1 className="text-xl font-semibold">Page Not Available</h1>
+      <p className="text-muted-foreground">
+        User generation functionality has been removed from the Host panel.
+        Admins can register new users, who will then appear in the Host's "User Approval" section.
+      </p>
     </div>
   );
 }

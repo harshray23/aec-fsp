@@ -4,7 +4,7 @@
 import { DashboardLayout } from "@/components/shared/DashboardLayout";
 import type { NavItem } from "@/lib/types";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, UserPlus, BookUser, ClipboardList, CalendarDays, BarChart3, Settings, GraduationCap, ShieldAlert, Briefcase, UserCog, UserCircle, CheckSquare, MonitorPlay, ServerCog, FileCog, UserCheck } from "lucide-react"; 
+import { LayoutDashboard, Users, UserPlus, BookUser, CalendarDays, BarChart3, Settings, GraduationCap, ShieldAlert, Briefcase, UserCog, UserCircle, CheckSquare, MonitorPlay, ServerCog, FileCog, UserCheck } from "lucide-react"; 
 import React from "react";
 import { getMockCurrentUser } from "@/lib/mockData"; 
 
@@ -56,7 +56,6 @@ const getNavItems = (role: "student" | "teacher" | "admin" | "host" | "guest"): 
     case "host":
       return [
         { href: "/host/dashboard", label: "Host Dashboard", icon: ServerCog, tooltip: "Host overview" },
-        { href: "/host/user-generation", label: "User Generation", icon: UserPlus, tooltip: "Generate teacher/admin accounts" },
         { href: "/host/user-approval", label: "User Approval", icon: UserCheck, tooltip: "Approve or reject new user registrations" },
         {
           href: "/host/monitoring",
