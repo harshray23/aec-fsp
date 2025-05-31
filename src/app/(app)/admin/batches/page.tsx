@@ -3,7 +3,7 @@
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BookUser, Eye } from "lucide-react";
+import { BookUser, Eye, PlusCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -15,7 +15,12 @@ export default function AdminBatchOverviewPage() {
 
   const getTeacherName = (teacherId: string) => {
     const teacher = mockTeachersData.find(t => t.id === teacherId);
-    return teacher ? teacher.name : "N/A";
+    if (teacher) return teacher.name;
+    // If teacherId matches an admin's ID (because admin created it)
+    // For now, we can show "Admin Created" or similar.
+    // A more robust solution would involve checking admin list or having a dedicated field.
+    if (teacherId.startsWith("ADMIN_")) return "Admin (Self-Assigned)";
+    return "N/A";
   };
 
   const getDepartmentLabel = (deptValue: string) => {
@@ -27,8 +32,15 @@ export default function AdminBatchOverviewPage() {
     <div className="space-y-8">
       <PageHeader
         title="Batch Overview"
-        description="View all Finishing School Program batches across departments."
+        description="View and manage all Finishing School Program batches."
         icon={BookUser}
+        actions={
+          <Button asChild>
+            <Link href="/admin/batches/create">
+              <PlusCircle className="mr-2 h-4 w-4" /> Create New Batch
+            </Link>
+          </Button>
+        }
       />
       <Card className="shadow-lg">
         <CardHeader>
@@ -43,7 +55,7 @@ export default function AdminBatchOverviewPage() {
                 <TableHead>Batch Name</TableHead>
                 <TableHead>Department</TableHead>
                 <TableHead>Topic</TableHead>
-                <TableHead>Lead Teacher</TableHead>
+                <TableHead>Lead Teacher/Creator</TableHead>
                 <TableHead>Students</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Details</TableHead>

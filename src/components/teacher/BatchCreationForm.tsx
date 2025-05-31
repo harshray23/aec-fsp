@@ -55,7 +55,11 @@ const batchCreationSchema = z.object({
 
 type BatchCreationFormValues = z.infer<typeof batchCreationSchema>;
 
-export default function BatchCreationForm() {
+interface BatchCreationFormProps {
+  redirectPathAfterSuccess?: string;
+}
+
+export default function BatchCreationForm({ redirectPathAfterSuccess }: BatchCreationFormProps) {
   const router = useRouter();
   const { toast } = useToast();
   const pathname = usePathname();
@@ -74,9 +78,9 @@ export default function BatchCreationForm() {
   });
 
   const onSubmit = async (values: BatchCreationFormValues) => {
-    const currentUser = getMockCurrentUser(pathname); // Get current user at submit time
+    const currentUser = getMockCurrentUser(pathname); 
     console.log("Batch creation form submitted:", values);
-    console.log("Current user for batch creation:", currentUser);
+    console.log("Current user for batch creation (used as teacherId for now):", currentUser);
 
 
     const newBatch: Batch = {
@@ -88,7 +92,7 @@ export default function BatchCreationForm() {
       daysOfWeek: values.daysOfWeek,
       startTime: values.startTime,
       endTime: values.endTime,
-      teacherId: currentUser.id, // Use current user's ID
+      teacherId: currentUser.id, // This will be the admin's ID if an admin is creating
       studentIds: [],
       status: "Scheduled",
     };
@@ -101,7 +105,7 @@ export default function BatchCreationForm() {
         description: `Batch "${values.name}" for topic "${values.topic}" on ${values.daysOfWeek.join(', ')} starting ${format(values.startDate, "PPP")} has been created.`,
     });
     form.reset();
-    router.push("/teacher/batches/manage"); 
+    router.push(redirectPathAfterSuccess || "/admin/batches"); // Default to admin batches if not specified
   };
 
   return (

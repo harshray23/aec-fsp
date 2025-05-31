@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Users, PlusCircle, MoreHorizontal, Edit, Trash2, Eye } from "lucide-react";
+import { Users, MoreHorizontal, Edit, Trash2, Eye } from "lucide-react";
 import Link from "next/link";
 import {
   DropdownMenu,
@@ -39,13 +39,7 @@ export default function ManageBatchesPage() {
         title="Manage My Batches"
         description="View, create, or edit the batches you are assigned to."
         icon={Users}
-        actions={
-          <Button asChild>
-            <Link href="/teacher/batches/create">
-              <PlusCircle className="mr-2 h-4 w-4" /> Create New Batch
-            </Link>
-          </Button>
-        }
+        // "Create New Batch" button removed from actions
       />
       <Card className="shadow-lg">
         <CardHeader>

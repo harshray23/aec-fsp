@@ -2,7 +2,7 @@
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Users, ClipboardList, CalendarDays, BarChart3, PlusCircle, GraduationCap } from "lucide-react";
+import { LayoutDashboard, Users, ClipboardList, CalendarDays, BarChart3, GraduationCap } from "lucide-react";
 import Link from "next/link";
 
 const quickStats = [
@@ -26,13 +26,7 @@ export default function TeacherDashboardPage() {
         title="Teacher Dashboard"
         description="Manage your FSP activities and student progress."
         icon={LayoutDashboard}
-        actions={
-          <Button asChild>
-            <Link href="/teacher/batches/manage">
-              <PlusCircle className="mr-2 h-4 w-4" /> Create New Batch
-            </Link>
-          </Button>
-        }
+        // "Create New Batch" button removed from actions
       />
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
