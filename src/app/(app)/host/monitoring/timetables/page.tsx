@@ -131,6 +131,8 @@ export default function HostMonitorTimetablesPage() {
   );
 }
 
-export const metadata = {
-  title: "Monitor Timetables - Host Panel - AEC FSP Portal",
-};
+// Removed metadata export
+// export const metadata = {
+//   title: "Monitor Timetables - Host Panel - AEC FSP Portal",
+// };
+
