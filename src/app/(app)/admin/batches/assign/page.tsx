@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { UserPlus, Search, Users, UserMinus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { DEPARTMENTS, SECTION_OPTIONS } from "@/lib/constants"; // Added SECTION_OPTIONS
+import { DEPARTMENTS, SECTION_OPTIONS } from "@/lib/constants";
 import { batches as mockBatches, students as mockStudents, teachers as mockTeachers } from "@/lib/mockData";
 import type { Student, Batch } from "@/lib/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -21,23 +21,39 @@ export default function AdminAssignStudentsPage() {
   const [selectedBatchId, setSelectedBatchId] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState<string>("all");
-  const [selectedSectionFilter, setSelectedSectionFilter] = useState<string>("all"); // New state for section filter
+  const [selectedSectionFilter, setSelectedSectionFilter] = useState<string>("all");
   const [selectedStudents, setSelectedStudents] = useState<Record<string, boolean>>({});
 
   const selectedBatch = useMemo(() => mockBatches.find(b => b.id === selectedBatchId), [selectedBatchId]);
+
+  React.useEffect(() => {
+    // Reset filters and selections when batch changes
+    setSelectedStudents({});
+    setSearchTerm("");
+    // If a batch is selected, its department should dictate the student pool
+    if (selectedBatch) {
+      setSelectedDepartmentFilter(selectedBatch.department);
+      setSelectedSectionFilter("all"); // Reset section filter when batch changes
+    } else {
+      setSelectedDepartmentFilter("all");
+      setSelectedSectionFilter("all");
+    }
+  }, [selectedBatchId, selectedBatch]);
 
   const handleSelectStudent = (studentId: string, checked: boolean) => {
     setSelectedStudents(prev => ({ ...prev, [studentId]: checked }));
   };
 
   const studentsAvailableForAssignment = useMemo(() => {
+    if (!selectedBatch) { // If no batch is selected, show no students for assignment
+      return [];
+    }
     return mockStudents.filter(student =>
-      (selectedDepartmentFilter === "all" || student.department === selectedDepartmentFilter) &&
-      (student.name.toLowerCase().includes(searchTerm.toLowerCase()) || student.studentId.toLowerCase().includes(searchTerm.toLowerCase())) &&
-      (!selectedBatch || student.department === selectedBatch.department) && // Only show students from batch's department
-      (selectedSectionFilter === "all" || student.section === selectedSectionFilter) // Added section filter
+      student.department === selectedBatch.department && // Filter by selected batch's department
+      (selectedSectionFilter === "all" || student.section === selectedSectionFilter) && // Filter by selected section
+      (student.name.toLowerCase().includes(searchTerm.toLowerCase()) || student.studentId.toLowerCase().includes(searchTerm.toLowerCase()))
     );
-  }, [searchTerm, selectedDepartmentFilter, selectedSectionFilter, selectedBatch]);
+  }, [searchTerm, selectedSectionFilter, selectedBatch]);
 
 
   const handleAssignStudents = () => {
@@ -64,19 +80,26 @@ export default function AdminAssignStudentsPage() {
     studentIdsToAssign.forEach(studentId => {
       const studentIndex = mockStudents.findIndex(s => s.id === studentId);
       if (studentIndex !== -1) {
-        if (mockStudents[studentIndex].batchId !== selectedBatchId) {
-            if (mockStudents[studentIndex].batchId) {
-                const oldBatchIndex = mockBatches.findIndex(b => b.id === mockStudents[studentIndex].batchId);
-                if (oldBatchIndex !== -1) {
-                    mockBatches[oldBatchIndex].studentIds = mockBatches[oldBatchIndex].studentIds.filter(id => id !== studentId);
-                }
-            }
-            mockStudents[studentIndex].batchId = selectedBatchId;
-            if (!mockBatches[batchIndex].studentIds.includes(studentId)) {
-                 mockBatches[batchIndex].studentIds.push(studentId);
-            }
-            assignedCount++;
+        // Check if student is already in the target batch
+        if (mockStudents[studentIndex].batchId === selectedBatchId) {
+          // Already in this batch, skip
+          return;
         }
+
+        // If student is in another batch, unassign from old batch
+        if (mockStudents[studentIndex].batchId) {
+            const oldBatchIndex = mockBatches.findIndex(b => b.id === mockStudents[studentIndex].batchId);
+            if (oldBatchIndex !== -1) {
+                mockBatches[oldBatchIndex].studentIds = mockBatches[oldBatchIndex].studentIds.filter(id => id !== studentId);
+            }
+        }
+        
+        // Assign to new batch
+        mockStudents[studentIndex].batchId = selectedBatchId;
+        if (!mockBatches[batchIndex].studentIds.includes(studentId)) {
+             mockBatches[batchIndex].studentIds.push(studentId);
+        }
+        assignedCount++;
       }
     });
 
@@ -88,11 +111,11 @@ export default function AdminAssignStudentsPage() {
     } else {
         toast({
             title: "No Changes",
-            description: "Selected students were already in the batch or no new students were assigned.",
+            description: "Selected students may have already been in the batch or no new valid students were selected.",
             variant: "default"
         });
     }
-    setSelectedStudents({});
+    setSelectedStudents({}); // Clear selection after assignment
   };
 
   const handleUnassignStudents = () => {
@@ -110,13 +133,16 @@ export default function AdminAssignStudentsPage() {
     }
 
     const batchIndex = mockBatches.findIndex(b => b.id === selectedBatchId);
-    if (batchIndex === -1) return;
+    if (batchIndex === -1) {
+        toast({ title: "Error", description: "Selected batch not found.", variant: "destructive" });
+        return;
+    }
 
     let unassignedCount = 0;
     studentIdsToUnassign.forEach(studentId => {
         const studentIndex = mockStudents.findIndex(s => s.id === studentId && s.batchId === selectedBatchId);
         if (studentIndex !== -1) {
-            mockStudents[studentIndex].batchId = undefined;
+            mockStudents[studentIndex].batchId = undefined; // Clear batch assignment for student
             mockBatches[batchIndex].studentIds = mockBatches[batchIndex].studentIds.filter(id => id !== studentId);
             unassignedCount++;
         }
@@ -130,10 +156,10 @@ export default function AdminAssignStudentsPage() {
     } else {
          toast({
             title: "No Changes",
-            description: "Selected students were not in this batch.",
+            description: "Selected students were not in this batch or no valid students were selected.",
         });
     }
-    setSelectedStudents({});
+    setSelectedStudents({}); // Clear selection after unassignment
   };
 
 
@@ -141,14 +167,16 @@ export default function AdminAssignStudentsPage() {
     <div className="space-y-8">
       <PageHeader
         title="Assign Students to Batch (Admin)"
-        description="Manage student enrollments for FSP batches."
+        description="Manage student enrollments for FSP batches. Select a batch to see eligible students from its department."
         icon={UserPlus}
       />
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle>Student Assignment</CardTitle>
-          <CardDescription>Select a batch, then filter and select students to assign or unassign. Students must match the batch's department.</CardDescription>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+          <CardDescription>
+            Select a batch to view students from its department. You can then filter by section and search.
+          </CardDescription>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
             <Select onValueChange={setSelectedBatchId} value={selectedBatchId}>
               <SelectTrigger className="lg:col-span-1">
                 <SelectValue placeholder="Select a Batch" />
@@ -165,18 +193,8 @@ export default function AdminAssignStudentsPage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="lg:col-span-1"
+              disabled={!selectedBatchId}
             />
-            <Select onValueChange={setSelectedDepartmentFilter} value={selectedDepartmentFilter} disabled={!!selectedBatchId}>
-              <SelectTrigger className="lg:col-span-1">
-                <SelectValue placeholder="Filter by Department" />
-              </SelectTrigger>
-              <SelectContent>
-                 <SelectItem value="all">All Departments (Students)</SelectItem>
-                {DEPARTMENTS.map(dept => (
-                  <SelectItem key={dept.value} value={dept.value}>{dept.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
             <Select onValueChange={setSelectedSectionFilter} value={selectedSectionFilter} disabled={!selectedBatchId}>
                 <SelectTrigger className="lg:col-span-1">
                     <SelectValue placeholder="Filter by Section" />
@@ -192,7 +210,7 @@ export default function AdminAssignStudentsPage() {
             {selectedBatch && (
                 <p className="mt-2 text-sm text-muted-foreground">
                     Selected Batch Department: <span className="font-semibold text-primary">{DEPARTMENTS.find(d=>d.value === selectedBatch.department)?.label || selectedBatch.department}</span>.
-                    Only students from this department (and matching section filter) will be shown.
+                    {selectedSectionFilter !== 'all' && ` Section: <span className="font-semibold text-primary">${selectedSectionFilter}</span>.`}
                 </p>
             )}
         </CardHeader>
@@ -211,13 +229,14 @@ export default function AdminAssignStudentsPage() {
                         setSelectedStudents(newSelected);
                       }}
                       checked={studentsAvailableForAssignment.length > 0 && studentsAvailableForAssignment.every(s => selectedStudents[s.id])}
-                      disabled={studentsAvailableForAssignment.length === 0}
+                      disabled={studentsAvailableForAssignment.length === 0 || !selectedBatchId}
+                      aria-label="Select all students in current view"
                     />
                   </TableHead>
                   <TableHead>Student ID</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Department</TableHead>
-                  <TableHead>Section</TableHead> {/* New Table Head */}
+                  <TableHead>Section</TableHead>
                   <TableHead>Current Batch</TableHead>
                 </TableRow>
               </TableHeader>
@@ -228,19 +247,28 @@ export default function AdminAssignStudentsPage() {
                       <Checkbox
                         checked={!!selectedStudents[student.id]}
                         onCheckedChange={(checked) => handleSelectStudent(student.id, !!checked)}
+                        aria-labelledby={`student-name-${student.id}`}
                       />
                     </TableCell>
                     <TableCell>{student.studentId}</TableCell>
-                    <TableCell className="font-medium">{student.name}</TableCell>
+                    <TableCell id={`student-name-${student.id}`} className="font-medium">{student.name}</TableCell>
                     <TableCell>{DEPARTMENTS.find(d => d.value === student.department)?.label || student.department}</TableCell>
-                    <TableCell>{student.section}</TableCell> {/* New Table Cell */}
-                    <TableCell>{student.batchId ? (mockBatches.find(b=>b.id === student.batchId)?.name || "Assigned") : <span className="text-muted-foreground">Not Assigned</span>}</TableCell>
+                    <TableCell>{student.section}</TableCell>
+                    <TableCell>
+                        {student.batchId 
+                            ? (student.batchId === selectedBatchId 
+                                ? <span className="text-primary font-semibold">{mockBatches.find(b=>b.id === student.batchId)?.name} (Current)</span>
+                                : mockBatches.find(b=>b.id === student.batchId)?.name || "Assigned Elsewhere"
+                              ) 
+                            : <span className="text-muted-foreground">Not Assigned</span>
+                        }
+                    </TableCell>
                   </TableRow>
                 ))}
                 {studentsAvailableForAssignment.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground h-24"> {/* Updated colSpan */}
-                      {selectedBatch ? "No eligible students found for this batch's department/section or matching search/filter." : "Select a batch to see eligible students."}
+                    <TableCell colSpan={6} className="text-center text-muted-foreground h-24">
+                      {!selectedBatchId ? "Select a batch to see eligible students." : "No eligible students found for this batch's department/section or matching search/filter."}
                     </TableCell>
                   </TableRow>
                 )}
@@ -250,20 +278,26 @@ export default function AdminAssignStudentsPage() {
           <div className="mt-6 flex flex-wrap gap-2">
             <Button
                 onClick={handleAssignStudents}
-                disabled={Object.values(selectedStudents).every(v => !v) || !selectedBatchId}
+                disabled={Object.values(selectedStudents).filter(Boolean).length === 0 || !selectedBatchId}
             >
-                <UserPlus className="mr-2 h-4 w-4" /> Assign Selected
+                <UserPlus className="mr-2 h-4 w-4" /> Assign Selected to Batch
             </Button>
             <Button
                 onClick={handleUnassignStudents}
                 variant="outline"
-                disabled={Object.values(selectedStudents).every(v => !v) || !selectedBatchId}
+                disabled={Object.values(selectedStudents).filter(Boolean).length === 0 || !selectedBatchId}
             >
                 <UserMinus className="mr-2 h-4 w-4" /> Unassign Selected from Batch
             </Button>
           </div>
+           <p className="mt-4 text-xs text-muted-foreground">
+            Students already in the selected batch will not be re-assigned. Assigning a student to this batch will remove them from any other batch they might currently be in.
+          </p>
         </CardContent>
       </Card>
     </div>
   );
 }
+
+
+    
