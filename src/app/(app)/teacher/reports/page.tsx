@@ -174,7 +174,3 @@ export default function ViewReportsPage() {
     </div>
   );
 }
-
-export const metadata = {
-  title: "View Reports - AEC FSP Portal",
-};
