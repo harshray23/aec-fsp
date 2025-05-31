@@ -81,6 +81,8 @@ export default function HostMonitorTeachersPage() {
   );
 }
 
-export const metadata = {
-  title: "Monitor Teachers - Host Panel - AEC FSP Portal",
-};
+// Removed metadata export
+// export const metadata = {
+//   title: "Monitor Teachers - Host Panel - AEC FSP Portal",
+// };
+
