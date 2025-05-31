@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -10,6 +9,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { BarChart3, Download, Filter } from "lucide-react";
 import { DEPARTMENTS } from "@/lib/constants";
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Bar } from 'recharts';
+import * as XLSX from 'xlsx';
+import { useToast } from "@/hooks/use-toast";
 
 // Mock Data
 const mockBatchesForReport: {id: string, name: string, department: string}[] = [];
@@ -20,6 +21,7 @@ const mockPerformanceData: { department: string, avgScore: number }[] = [];
 
 
 export default function ViewReportsPage() {
+  const { toast } = useToast();
   const [reportType, setReportType] = useState<string>("attendance-batch");
   const [selectedBatch, setSelectedBatch] = useState<string>("");
   const [selectedDepartment, setSelectedDepartment] = useState<string>("");
@@ -34,9 +36,70 @@ export default function ViewReportsPage() {
     return [];
   }, [reportType]);
 
-  const handleDownloadReport = () => {
-    alert("Simulating report download..."); // Placeholder
+  const exportToExcel = (data: any[], fileName: string) => {
+    if (data.length === 0) {
+      toast({
+        title: "No Data",
+        description: "There is no data to export for the selected report type.",
+        variant: "destructive",
+      });
+      return;
+    }
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "ReportData");
+    XLSX.writeFile(workbook, `${fileName}.xlsx`);
+    toast({
+      title: "Export Successful",
+      description: `${fileName}.xlsx has been downloaded.`,
+    });
   };
+
+  const handleDownloadReport = () => {
+    let dataToExport: any[] = [];
+    let fileName = "report";
+
+    switch (reportType) {
+      case "attendance-batch":
+        dataToExport = mockAttendanceData.map(d => ({
+          'Batch Name': d.batchName,
+          'Present': d.present,
+          'Absent': d.absent,
+          'Late': d.late,
+          'Total Students': d.total,
+          'Present (%)': (d.total > 0 ? (d.present / d.total * 100) : 0).toFixed(1),
+          'Absent (%)': (d.total > 0 ? (d.absent / d.total * 100) : 0).toFixed(1),
+          'Late (%)': (d.total > 0 ? (d.late / d.total * 100) : 0).toFixed(1),
+        }));
+        fileName = "Batch_Attendance_Report";
+        break;
+      case "performance-department":
+        dataToExport = mockPerformanceData.map(d => ({
+          'Department': d.department,
+          'Average Score (%)': d.avgScore,
+        }));
+        fileName = "Department_Performance_Report";
+        break;
+      // Add cases for other report types if/when data is available
+      default:
+        toast({
+          title: "Not Implemented",
+          description: `Excel export for "${reportType}" is not yet available.`,
+          variant: "default",
+        });
+        return;
+    }
+    exportToExcel(dataToExport, fileName);
+  };
+
+  const isDownloadDisabled = () => {
+    if (reportType === "attendance-batch") return mockAttendanceData.length === 0;
+    if (reportType === "performance-department") return mockPerformanceData.length === 0;
+    // For other types, disable if no specific data handling exists for download
+    if (reportType === "attendance-department" || reportType === "performance-batch") return true; 
+    return chartData.length === 0; // Fallback, though specific checks are better
+  }
+
 
   return (
     <div className="space-y-8">
@@ -45,7 +108,7 @@ export default function ViewReportsPage() {
         description="Analyze attendance and performance data for batches and departments."
         icon={BarChart3}
         actions={
-          <Button onClick={handleDownloadReport} disabled={!reportType || chartData.length === 0}>
+          <Button onClick={handleDownloadReport} disabled={isDownloadDisabled()}>
             <Download className="mr-2 h-4 w-4" /> Download Report
           </Button>
         }
@@ -166,7 +229,7 @@ export default function ViewReportsPage() {
          <Card className="shadow-lg">
           <CardHeader><CardTitle>Report Data</CardTitle></CardHeader>
           <CardContent>
-            <p className="text-muted-foreground text-center py-8">No data available for report type: {reportType}</p>
+            <p className="text-muted-foreground text-center py-8">No data available to display or export for report type: {reportType}</p>
           </CardContent>
         </Card>
       )}
