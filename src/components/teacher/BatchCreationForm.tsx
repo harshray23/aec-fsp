@@ -1,10 +1,11 @@
 
 "use client";
 
+import React from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 
@@ -26,8 +27,9 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { DEPARTMENTS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { batches as mockBatches, getMockCurrentUser } from "@/lib/mockData"; // Import mutable arrays
-import type { Batch } from "@/lib/types";
+import { batches as mockBatches, teachers as mockTeachers, students as mockStudents } from "@/lib/mockData";
+import type { Batch, Student } from "@/lib/types";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 const daysOfWeekOptions = [
   { id: "monday", label: "Monday" },
@@ -42,12 +44,14 @@ const batchCreationSchema = z.object({
   name: z.string().min(3, "Batch name must be at least 3 characters"),
   department: z.string().min(1, "Department is required"),
   topic: z.string().min(2, "Topic must be at least 2 characters"),
+  teacherId: z.string().min(1, "Teacher assignment is required."),
   startDate: z.date({ required_error: "Start date is required." }),
   daysOfWeek: z.array(z.string()).refine(value => value.length > 0, {
     message: "Please select at least one day of the week.",
   }),
   startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid start time (HH:MM)."),
   endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid end time (HH:MM)."),
+  selectedStudentIds: z.array(z.string()).optional(),
 }).refine(data => data.startTime < data.endTime, {
   message: "End time must be after start time.",
   path: ["endTime"],
@@ -62,7 +66,6 @@ interface BatchCreationFormProps {
 export default function BatchCreationForm({ redirectPathAfterSuccess }: BatchCreationFormProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const pathname = usePathname();
 
   const form = useForm<BatchCreationFormValues>({
     resolver: zodResolver(batchCreationSchema),
@@ -70,96 +73,138 @@ export default function BatchCreationForm({ redirectPathAfterSuccess }: BatchCre
       name: "",
       department: "",
       topic: "",
+      teacherId: "",
       startDate: undefined,
       daysOfWeek: [],
       startTime: "",
       endTime: "",
+      selectedStudentIds: [],
     },
   });
 
-  const onSubmit = async (values: BatchCreationFormValues) => {
-    const currentUser = getMockCurrentUser(pathname); 
-    console.log("Batch creation form submitted:", values);
-    console.log("Current user for batch creation (used as teacherId for now):", currentUser);
+  const selectedDepartment = form.watch("department");
 
+  const availableStudents = React.useMemo(() => {
+    if (!selectedDepartment) return [];
+    return mockStudents.filter(
+      (student) => student.department === selectedDepartment && !student.batchId
+    );
+  }, [selectedDepartment]);
+
+  const onSubmit = async (values: BatchCreationFormValues) => {
+    console.log("Batch creation form submitted by admin:", values);
 
     const newBatch: Batch = {
       id: `BATCH_${Date.now()}`,
       name: values.name,
       department: values.department,
       topic: values.topic,
+      teacherId: values.teacherId,
       startDate: values.startDate.toISOString(),
       daysOfWeek: values.daysOfWeek,
       startTime: values.startTime,
       endTime: values.endTime,
-      teacherId: currentUser.id, // This will be the admin's ID if an admin is creating
-      studentIds: [],
+      studentIds: values.selectedStudentIds || [],
       status: "Scheduled",
     };
 
     mockBatches.push(newBatch);
-    console.log("Batches after adding new one:", mockBatches);
+
+    // Update batchId for selected students
+    if (values.selectedStudentIds) {
+      values.selectedStudentIds.forEach(studentId => {
+        const studentIndex = mockStudents.findIndex(s => s.id === studentId);
+        if (studentIndex !== -1) {
+          mockStudents[studentIndex].batchId = newBatch.id;
+        }
+      });
+    }
     
     toast({
         title: "Batch Creation Successful!",
-        description: `Batch "${values.name}" for topic "${values.topic}" on ${values.daysOfWeek.join(', ')} starting ${format(values.startDate, "PPP")} has been created.`,
+        description: `Batch "${values.name}" for topic "${values.topic}" has been created.`,
     });
-    form.reset();
-    router.push(redirectPathAfterSuccess || "/admin/batches"); // Default to admin batches if not specified
+    form.reset(); // Reset form to default values
+    router.push(redirectPathAfterSuccess || "/admin/batches");
   };
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Batch Name</FormLabel>
-              <FormControl>
-                <Input placeholder="E.g., FSP-CSE-2024-A" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="department"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Department</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Batch Name</FormLabel>
                 <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
+                    <Input placeholder="E.g., FSP-CSE-2024-A" {...field} />
                 </FormControl>
-                <SelectContent>
-                  {DEPARTMENTS.map(dept => (
-                    <SelectItem key={dept.value} value={dept.value}>{dept.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="topic"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Topic / Module Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Enter the main topic or module for this batch" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            <FormField
+            control={form.control}
+            name="topic"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Topic / Module Name</FormLabel>
+                <FormControl>
+                    <Input placeholder="Enter the main topic for this batch" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            <FormField
+            control={form.control}
+            name="department"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Department</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                    <SelectTrigger>
+                        <SelectValue placeholder="Select department" />
+                    </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                    {DEPARTMENTS.map(dept => (
+                        <SelectItem key={dept.value} value={dept.value}>{dept.label}</SelectItem>
+                    ))}
+                    </SelectContent>
+                </Select>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+            <FormField
+            control={form.control}
+            name="teacherId"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Assign Teacher</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={mockTeachers.length === 0}>
+                    <FormControl>
+                    <SelectTrigger>
+                        <SelectValue placeholder={mockTeachers.length === 0 ? "No teachers available" : "Select teacher"} />
+                    </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                    {mockTeachers.map(teacher => (
+                        <SelectItem key={teacher.id} value={teacher.id}>{teacher.name} ({teacher.department})</SelectItem>
+                    ))}
+                    </SelectContent>
+                </Select>
+                 {mockTeachers.length === 0 && <FormDescription className="text-destructive">Please add teachers to the system first.</FormDescription>}
+                <FormMessage />
+                </FormItem>
+            )}
+            />
+        </div>
+        
         <FormField
           control={form.control}
           name="startDate"
@@ -172,7 +217,7 @@ export default function BatchCreationForm({ redirectPathAfterSuccess }: BatchCre
                     <Button
                       variant={"outline"}
                       className={cn(
-                        "w-full pl-3 text-left font-normal",
+                        "w-full pl-3 text-left font-normal md:w-1/2",
                         !field.value && "text-muted-foreground"
                       )}
                     >
@@ -191,7 +236,7 @@ export default function BatchCreationForm({ redirectPathAfterSuccess }: BatchCre
                     selected={field.value}
                     onSelect={field.onChange}
                     disabled={(date) =>
-                      date < new Date(new Date().setHours(0,0,0,0)) // Disable past dates
+                      date < new Date(new Date().setHours(0,0,0,0))
                     }
                     initialFocus
                   />
@@ -205,17 +250,17 @@ export default function BatchCreationForm({ redirectPathAfterSuccess }: BatchCre
         <FormField
           control={form.control}
           name="daysOfWeek"
-          render={({ field }) => (
+          render={() => (
             <FormItem>
               <FormLabel>Days of the Week</FormLabel>
               <FormDescription>Select the days this batch will be conducted.</FormDescription>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 pt-2">
                 {daysOfWeekOptions.map((item) => (
                   <FormField
                     key={item.id}
                     control={form.control}
                     name="daysOfWeek"
-                    render={({ field: innerField }) => { // Use innerField to avoid conflict
+                    render={({ field }) => {
                       return (
                         <FormItem
                           key={item.id}
@@ -223,12 +268,12 @@ export default function BatchCreationForm({ redirectPathAfterSuccess }: BatchCre
                         >
                           <FormControl>
                             <Checkbox
-                              checked={innerField.value?.includes(item.label)}
+                              checked={field.value?.includes(item.label)}
                               onCheckedChange={(checked) => {
                                 return checked
-                                  ? innerField.onChange([...(innerField.value || []), item.label])
-                                  : innerField.onChange(
-                                    (innerField.value || []).filter(
+                                  ? field.onChange([...(field.value || []), item.label])
+                                  : field.onChange(
+                                    (field.value || []).filter(
                                         (value) => value !== item.label
                                       )
                                     );
@@ -249,7 +294,7 @@ export default function BatchCreationForm({ redirectPathAfterSuccess }: BatchCre
           )}
         />
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField
             control={form.control}
             name="startTime"
@@ -277,7 +322,67 @@ export default function BatchCreationForm({ redirectPathAfterSuccess }: BatchCre
             )}
           />
         </div>
-        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
+
+        {selectedDepartment && (
+          <FormField
+            control={form.control}
+            name="selectedStudentIds"
+            render={() => (
+              <FormItem>
+                <FormLabel>Assign Students from {DEPARTMENTS.find(d=>d.value === selectedDepartment)?.label || 'Selected Department'}</FormLabel>
+                <FormDescription>
+                  Select students to assign to this batch. Only students from the selected department not already in a batch are shown.
+                </FormDescription>
+                {availableStudents.length > 0 ? (
+                  <ScrollArea className="h-40 w-full rounded-md border p-4 mt-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                      {availableStudents.map((student) => (
+                        <FormField
+                          key={student.id}
+                          control={form.control}
+                          name="selectedStudentIds"
+                          render={({ field }) => {
+                            return (
+                              <FormItem
+                                key={student.id}
+                                className="flex flex-row items-start space-x-3 space-y-0"
+                              >
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value?.includes(student.id)}
+                                    onCheckedChange={(checked) => {
+                                      return checked
+                                        ? field.onChange([...(field.value || []), student.id])
+                                        : field.onChange(
+                                          (field.value || []).filter(
+                                              (value) => value !== student.id
+                                            )
+                                          );
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormLabel className="font-normal">
+                                  {student.name} ({student.studentId})
+                                </FormLabel>
+                              </FormItem>
+                            );
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </ScrollArea>
+                ) : (
+                  <p className="text-sm text-muted-foreground mt-2 p-4 border rounded-md">
+                    No students available for assignment in the selected department, or all eligible students are already assigned.
+                  </p>
+                )}
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
+
+        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || (mockTeachers.length === 0 && !form.getValues("teacherId"))}>
           {form.formState.isSubmitting ? "Creating Batch..." : "Create Batch"}
         </Button>
       </form>
