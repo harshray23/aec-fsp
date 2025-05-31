@@ -1,5 +1,5 @@
 
-import type { UserRole } from "./constants";
+import type { UserRole, Section } from "./constants";
 
 export interface User {
   id: string;
@@ -14,6 +14,7 @@ export interface Student extends User {
   rollNumber: string;
   registrationNumber: string;
   department: string;
+  section: Section;
   phoneNumber: string;
   whatsappNumber?: string;
   batchId?: string; // ID of the batch the student is assigned to

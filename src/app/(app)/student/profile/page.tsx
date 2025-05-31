@@ -5,7 +5,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GraduationCap, Edit3, Mail, Phone, UserSquare2, Hash, Building, ImagePlus } from "lucide-react";
+import { GraduationCap, Edit3, Mail, Phone, UserSquare2, Hash, Building, ImagePlus, ClipboardList } from "lucide-react";
+import { SECTIONS } from "@/lib/constants"; // Import SECTIONS to infer type if needed, though not directly used here for mock
 
 // Mock data - updated to placeholder
 const mockStudentProfile = {
@@ -15,6 +16,7 @@ const mockStudentProfile = {
   rollNumber: "N/A",
   registrationNumber: "N/A",
   department: "N/A",
+  section: "N/A" as (typeof SECTIONS[number] | "N/A"), // Ensure section type matches
   phoneNumber: "N/A",
   whatsappNumber: "N/A",
   avatarUrl: "https://placehold.co/150x150.png?text=SU", // SU for Student User
@@ -64,6 +66,10 @@ export default function StudentProfilePage() {
             <div>
               <Label htmlFor="department" className="flex items-center text-muted-foreground"><Building className="mr-2 h-4 w-4" />Department</Label>
               <Input id="department" value={mockStudentProfile.department} readOnly className="mt-1 bg-muted/30" />
+            </div>
+            <div>
+              <Label htmlFor="section" className="flex items-center text-muted-foreground"><ClipboardList className="mr-2 h-4 w-4" />Section</Label>
+              <Input id="section" value={mockStudentProfile.section} readOnly className="mt-1 bg-muted/30" />
             </div>
             <div>
               <Label htmlFor="rollNumber" className="flex items-center text-muted-foreground"><UserSquare2 className="mr-2 h-4 w-4" />Roll Number</Label>

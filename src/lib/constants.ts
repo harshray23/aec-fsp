@@ -1,3 +1,4 @@
+
 export const DEPARTMENTS = [
   { value: "cse", label: "Computer Science & Engineering" },
   { value: "it", label: "Information Technology" },
@@ -21,3 +22,8 @@ export const USER_ROLE_OPTIONS = [
   { value: USER_ROLES.TEACHER, label: "Teacher" },
   { value: USER_ROLES.ADMIN, label: "Admin" },
 ];
+
+export const SECTIONS = ["A", "B", "C", "D", "E", "F", "G"] as const;
+export type Section = typeof SECTIONS[number];
+
+export const SECTION_OPTIONS = SECTIONS.map(section => ({ value: section, label: `Section ${section}` }));

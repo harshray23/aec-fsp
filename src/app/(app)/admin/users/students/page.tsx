@@ -63,9 +63,10 @@ export default function ViewStudentsPage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Department</TableHead>
+                <TableHead>Section</TableHead>
                 <TableHead>Roll No.</TableHead>
                 <TableHead>Batch</TableHead>
-                <TableHead>Status</TableHead> {/* Status field not in Student type yet */}
+                <TableHead>Status</TableHead> 
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -75,10 +76,11 @@ export default function ViewStudentsPage() {
                   <TableCell className="font-medium">{student.name}</TableCell>
                   <TableCell>{student.email}</TableCell>
                   <TableCell>{DEPARTMENTS.find(d => d.value === student.department)?.label || student.department}</TableCell>
+                  <TableCell>{student.section}</TableCell>
                   <TableCell>{student.rollNumber}</TableCell>
-                  <TableCell>{student.batchId || "N/A"}</TableCell> {/* Assuming batchId on student */}
+                  <TableCell>{student.batchId || "N/A"}</TableCell> 
                   <TableCell>
-                    <Badge variant={"default"}> {/* Placeholder status */}
+                    <Badge variant={"default"}> 
                       Active
                     </Badge>
                   </TableCell>
@@ -86,7 +88,7 @@ export default function ViewStudentsPage() {
               ))}
               {filteredStudents.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground">
                     No students found.
                   </TableCell>
                 </TableRow>
@@ -98,8 +100,3 @@ export default function ViewStudentsPage() {
     </div>
   );
 }
-
-// Metadata removed as this is a client component
-// export const metadata = {
-//   title: "View Students - AEC FSP Portal",
-// };

@@ -3,7 +3,7 @@
 // In a real application, this would be a database.
 
 import type { Student, Teacher, Admin, Batch, TimetableEntry, AttendanceRecord } from "./types";
-import { DEPARTMENTS, USER_ROLES } from "./constants";
+import { DEPARTMENTS, USER_ROLES, SECTIONS } from "./constants";
 
 // Initial Admin Data (Harsh Ray)
 const initialAdminId = "ADMIN_HARSH_RAY";
@@ -44,6 +44,7 @@ export const getMockCurrentUser = (pathname: string) => {
         rollNumber: "N/A",
         registrationNumber: "N/A",
         department: "N/A",
+        section: SECTIONS[0], // Default to Section A or make it "N/A"
         phoneNumber: "N/A"
     };
   }
