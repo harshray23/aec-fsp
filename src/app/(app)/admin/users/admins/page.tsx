@@ -55,7 +55,7 @@ export default function ManageAdminsPage() {
                   <TableCell className="font-medium">{admin.name}</TableCell>
                   <TableCell>{admin.email}</TableCell>
                   <TableCell>{admin.role}</TableCell> {/* Role already part of Admin type */}
-                   <TableCell>
+                  <TableCell> {/* Leading space removed */}
                     <Badge variant={"default"}> {/* Placeholder status */}
                       Active
                     </Badge>
@@ -93,9 +93,4 @@ export default function ManageAdminsPage() {
     </div>
   );
 }
-
-// Metadata removed as this is a client component
-// export const metadata = {
-//   title: "Manage Admins - AEC FSP Portal",
-// };
 
