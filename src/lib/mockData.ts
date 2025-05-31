@@ -2,7 +2,7 @@
 // This file will store our "live" mock data for the session.
 // In a real application, this would be a database.
 
-import type { Student, Teacher, Admin, Batch, TimetableEntry, AttendanceRecord } from "./types";
+import type { Student, Teacher, Admin, Batch, TimetableEntry, AttendanceRecord, User } from "./types";
 import { DEPARTMENTS, USER_ROLES, SECTIONS } from "./constants";
 
 // Initial Admin Data (Harsh Ray)
@@ -43,6 +43,10 @@ export let timetableEntries: TimetableEntry[] = [
 
 export let attendanceRecords: AttendanceRecord[] = [];
 
+export let hosts: User[] = [ // Using generic User type for Host for now
+  { id: "HOST_001", name: "Site Host", email: "host@example.com", role: USER_ROLES.HOST },
+];
+
 // Helper to get the current logged-in user details for the dashboard layout
 // This is a simplified version for the prototype.
 export const getMockCurrentUser = (pathname: string) => {
@@ -50,7 +54,6 @@ export const getMockCurrentUser = (pathname: string) => {
     return admins.find(a => a.email === "harshray2007@gmail.com") || 
            { id: "default-admin", name: "Admin User", email: "admin@example.com", role: USER_ROLES.ADMIN };
   } else if (pathname.startsWith("/teacher")) {
-    // Simulate a logged-in teacher, e.g., the first one in the array
     return teachers[0] || { id: "default-teacher", name: "Teacher User", email: "teacher@example.com", role: USER_ROLES.TEACHER, department: "N/A" };
   } else if (pathname.startsWith("/student")) {
     return students[0] || { 
@@ -67,6 +70,8 @@ export const getMockCurrentUser = (pathname: string) => {
         isEmailVerified: true,
         isPhoneVerified: true,
     };
+  } else if (pathname.startsWith("/host")) {
+    return hosts[0] || { id: "default-host", name: "Host User", email: "host@example.com", role: USER_ROLES.HOST };
   }
   // Default fallback if role cannot be determined from path
   return { id: "guest-user", name: "User", email: "user@example.com", role: "guest" as any };

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -30,7 +31,7 @@ const getLoginFormSchema = (role: UserRole | null) => {
       ...baseSchema,
       identifier: z.string().min(1, "Student ID or Email is required"), // Can be Student ID or Email
     });
-  } else {
+  } else { // For Teacher, Admin, Host
     return z.object({
       ...baseSchema,
       email: z.string().email("Invalid email address"),
@@ -75,6 +76,9 @@ export default function LoginForm() {
       case USER_ROLES.ADMIN:
         router.push("/admin/dashboard");
         break;
+      case USER_ROLES.HOST: // Added Host redirect
+        router.push("/host/dashboard");
+        break;
       default:
         toast({
           title: "Error",
@@ -86,8 +90,6 @@ export default function LoginForm() {
   };
 
   if (!role || !Object.values(USER_ROLES).includes(role)) {
-     // This case should ideally be handled by redirecting to role selection page or showing an error.
-     // For now, we can show a message or redirect.
      if (typeof window !== 'undefined') router.push('/');
      return <p>Invalid role. Redirecting...</p>;
   }

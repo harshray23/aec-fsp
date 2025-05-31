@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button";
 import { AppLogo } from "@/components/shared/AppLogo";
 import { CollegeLogo } from "@/components/shared/CollegeLogo";
-import { GraduationCap, Briefcase, UserCog } from "lucide-react";
+import { GraduationCap, Briefcase, UserCog, UserRound } from "lucide-react"; // Added UserRound
 import { USER_ROLES, type UserRole } from "@/lib/constants";
 
 interface RoleCardProps {
@@ -55,7 +55,21 @@ export default function RoleSelector() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-background to-secondary">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-background to-secondary relative">
+      {/* Host Login Icon */}
+      <div className="absolute top-4 right-4">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="rounded-full h-12 w-12 text-primary hover:bg-primary/10" 
+          onClick={() => router.push(`/auth/login?role=${USER_ROLES.HOST}`)}
+          aria-label="Host Login"
+          title="Host Panel Login"
+        >
+          <UserRound className="h-7 w-7" />
+        </Button>
+      </div>
+      
       <div className="text-center mb-12">
         <div className="flex justify-center items-center gap-4 mb-4">
           <AppLogo width="80" height="80" />

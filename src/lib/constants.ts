@@ -13,6 +13,7 @@ export const USER_ROLES = {
   STUDENT: "student",
   TEACHER: "teacher",
   ADMIN: "admin",
+  HOST: "host", // Added Host role
 } as const;
 
 export type UserRole = typeof USER_ROLES[keyof typeof USER_ROLES];
@@ -21,6 +22,7 @@ export const USER_ROLE_OPTIONS = [
   { value: USER_ROLES.STUDENT, label: "Student" },
   { value: USER_ROLES.TEACHER, label: "Teacher" },
   { value: USER_ROLES.ADMIN, label: "Admin" },
+  { value: USER_ROLES.HOST, label: "Host" }, // Added Host option
 ];
 
 export const SECTIONS = ["A", "B", "C", "D", "E", "F", "G"] as const;

@@ -4,11 +4,11 @@
 import { DashboardLayout } from "@/components/shared/DashboardLayout";
 import type { NavItem } from "@/lib/types";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, UserPlus, BookUser, ClipboardList, CalendarDays, BarChart3, Settings, GraduationCap, ShieldAlert, Briefcase, UserCog, UserCircle, CheckSquare } from "lucide-react"; // Added CheckSquare for attendance
+import { LayoutDashboard, Users, UserPlus, BookUser, ClipboardList, CalendarDays, BarChart3, Settings, GraduationCap, ShieldAlert, Briefcase, UserCog, UserCircle, CheckSquare, MonitorPlay, ServerCog, ListChecks, FileCog, UsersCog } from "lucide-react"; 
 import React from "react";
-import { getMockCurrentUser } from "@/lib/mockData"; // Import helper
+import { getMockCurrentUser } from "@/lib/mockData"; 
 
-const getNavItems = (role: "student" | "teacher" | "admin" | "guest"): NavItem[] => {
+const getNavItems = (role: "student" | "teacher" | "admin" | "host" | "guest"): NavItem[] => {
   switch (role) {
     case "student":
       return [
@@ -20,7 +20,6 @@ const getNavItems = (role: "student" | "teacher" | "admin" | "guest"): NavItem[]
         { href: "/teacher/dashboard", label: "Dashboard", icon: LayoutDashboard, tooltip: "Teacher overview" },
         { href: "/teacher/profile", label: "My Profile", icon: UserCircle, tooltip: "View your profile" },
         { href: "/teacher/my-assigned-batches", label: "My Assigned Batches", icon: BookUser, tooltip: "View batches assigned to you" },
-        // Attendance removed from teacher
         { href: "/teacher/timetables", label: "Timetables", icon: CalendarDays, tooltip: "Manage timetables for assigned batches" },
         { href: "/teacher/reports", label: "Reports", icon: BarChart3, tooltip: "View reports for assigned batches" },
       ];
@@ -49,9 +48,27 @@ const getNavItems = (role: "student" | "teacher" | "admin" | "guest"): NavItem[]
             { href: "/admin/batches/assign", label: "Assign Students", icon: UserPlus, tooltip: "Assign students to batches" },
           ]
         },
-        { href: "/admin/attendance", label: "Attendance Management", icon: CheckSquare, tooltip: "Mark and manage student attendance" }, // Added for Admin
+        { href: "/admin/attendance", label: "Attendance Management", icon: CheckSquare, tooltip: "Mark and manage student attendance" },
         { href: "/admin/timetables", label: "Timetable Overview", icon: CalendarDays, tooltip: "View all timetables" },
         { href: "/admin/settings", label: "System Settings", icon: Settings, tooltip: "Configure system settings" },
+      ];
+    case "host": // Added Host navigation
+      return [
+        { href: "/host/dashboard", label: "Host Dashboard", icon: ServerCog, tooltip: "Host overview" },
+        { href: "/host/user-generation", label: "User Generation", icon: UserPlus, tooltip: "Generate teacher/admin accounts" },
+        {
+          href: "/host/monitoring",
+          label: "Monitoring",
+          icon: MonitorPlay,
+          tooltip: "Monitor system components",
+          children: [
+            { href: "/host/monitoring/website", label: "Website Status", icon: FileCog, tooltip: "Monitor website" },
+            { href: "/host/monitoring/batches", label: "Batch Monitor", icon: BookUser, tooltip: "Monitor batches" },
+            { href: "/host/monitoring/timetables", label: "Timetable Monitor", icon: CalendarDays, tooltip: "Monitor timetables" },
+            { href: "/host/monitoring/teachers", label: "Teacher Monitor", icon: UsersCog, tooltip: "Monitor teachers" },
+            { href: "/host/monitoring/admins", label: "Admin Monitor", icon: ShieldAlert, tooltip: "Monitor admins" },
+          ],
+        },
       ];
     default:
       return [];
@@ -64,14 +81,17 @@ export default function AppPagesLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const currentUser = getMockCurrentUser(pathname); // Get user from mockData
+  const currentUser = getMockCurrentUser(pathname); 
   
-  const navItems = getNavItems(currentUser.role as "student" | "teacher" | "admin" | "guest");
+  const navItems = getNavItems(currentUser.role as "student" | "teacher" | "admin" | "host" | "guest");
+
+  // Ensure userRole is capitalized for display
+  const displayUserRole = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
 
   return (
     <DashboardLayout 
         navItems={navItems} 
-        userRole={currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1)}
+        userRole={displayUserRole}
         userName={currentUser.name}
         userEmail={currentUser.email}
     >

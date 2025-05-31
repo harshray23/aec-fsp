@@ -30,14 +30,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Bell, LogOut, ChevronDown, Settings, UserCircle, UserRound } from "lucide-react"; // Added UserRound
+import { Bell, LogOut, ChevronDown, Settings, UserCircle } from "lucide-react"; 
 import type { NavItem } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
   navItems: NavItem[];
-  userRole: string; // e.g., "Student", "Teacher", "Admin"
+  userRole: string; 
   userName?: string;
   userEmail?: string;
 }
@@ -53,9 +53,8 @@ export function DashboardLayout({
   const pathname = usePathname();
 
   const handleLogout = () => {
-    // Placeholder for actual logout logic
     console.log("User logged out");
-    router.push("/"); // Redirect to role selection
+    router.push("/"); 
   };
 
   const [openMenus, setOpenMenus] = React.useState<Record<string, boolean>>({});
@@ -65,14 +64,13 @@ export function DashboardLayout({
   };
   
   React.useEffect(() => {
-    // Open parent menus of active sub-items on initial load or path change
     const newOpenMenus: Record<string, boolean> = {};
     const checkAndOpenParent = (item: NavItem) => {
       if (item.children) {
         const isActiveParent = item.children.some(child => pathname.startsWith(child.href));
         if (isActiveParent) {
           newOpenMenus[item.href] = true;
-          item.children.forEach(checkAndOpenParent); // Recurse for nested submenus
+          item.children.forEach(checkAndOpenParent); 
         }
       }
     };
@@ -159,16 +157,11 @@ export function DashboardLayout({
           {/* Left section of the header */}
           <div className="flex items-center gap-2">
             <SidebarTrigger className="md:hidden" /> {/* Mobile sidebar toggle */}
-            {/* New Profile Icon for Desktop */}
-            <Button asChild variant="ghost" size="icon" className="hidden md:flex rounded-full" aria-label="Profile">
-              <Link href={`/${userRole.toLowerCase()}/profile`}>
-                <UserRound className="h-6 w-6" />
-              </Link>
-            </Button>
+            {/* The UserRound icon previously here has been removed as per request */}
           </div>
 
           {/* Right section of the header */}
-          <div className="flex items-center gap-4"> {/* Removed ml-auto */}
+          <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" className="rounded-full" aria-label="Notifications">
               <Bell className="h-5 w-5" />
             </Button>
@@ -197,7 +190,7 @@ export function DashboardLayout({
                     <span>Profile</span>
                   </Link>
                 </DropdownMenuItem>
-                <DropdownMenuItem> {/* This can be expanded later */}
+                <DropdownMenuItem> 
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
                 </DropdownMenuItem>
