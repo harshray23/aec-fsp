@@ -54,9 +54,9 @@ export default function ManageAdminsPage() {
                   <TableCell>{admin.id}</TableCell>
                   <TableCell className="font-medium">{admin.name}</TableCell>
                   <TableCell>{admin.email}</TableCell>
-                  <TableCell>{admin.role}</TableCell> {/* Role already part of Admin type */}
-                  <TableCell> {/* Leading space removed */}
-                    <Badge variant={"default"}> {/* Placeholder status */}
+                  <TableCell>{admin.role}</TableCell>
+                  <TableCell>
+                    <Badge variant={"default"}>
                       Active
                     </Badge>
                   </TableCell>
@@ -79,7 +79,7 @@ export default function ManageAdminsPage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {mockAdmins.length === 0 && ( // Should not happen if Harsh Ray is always there
+              {mockAdmins.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={6} className="text-center text-muted-foreground">
                     No administrators found.
