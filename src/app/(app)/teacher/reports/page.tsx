@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -131,7 +132,7 @@ export default function ViewReportsPage() {
               <Select onValueChange={setSelectedBatch} value={selectedBatch}>
                 <SelectTrigger><SelectValue placeholder="Select Batch (Optional)" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Batches</SelectItem>
+                  <SelectItem value="all">All Batches</SelectItem>
                   {mockBatchesForReport.map(b => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
                   {mockBatchesForReport.length === 0 && <p className="p-2 text-sm text-muted-foreground">No batches.</p>}
                 </SelectContent>
@@ -141,7 +142,7 @@ export default function ViewReportsPage() {
               <Select onValueChange={setSelectedDepartment} value={selectedDepartment}>
                 <SelectTrigger><SelectValue placeholder="Select Department (Optional)" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Departments</SelectItem>
+                  <SelectItem value="all">All Departments</SelectItem>
                   {DEPARTMENTS.map(d => <SelectItem key={d.value} value={d.label}>{d.label}</SelectItem>)}
                 </SelectContent>
               </Select>
@@ -237,3 +238,4 @@ export default function ViewReportsPage() {
     </div>
   );
 }
+
