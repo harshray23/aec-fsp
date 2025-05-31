@@ -88,6 +88,8 @@ export default function HostMonitorBatchesPage() {
   );
 }
 
-export const metadata = {
-  title: "Monitor Batches - Host Panel - AEC FSP Portal",
-};
+// Removed metadata export
+// export const metadata = {
+//   title: "Monitor Batches - Host Panel - AEC FSP Portal",
+// };
+
