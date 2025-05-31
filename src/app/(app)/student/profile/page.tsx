@@ -1,4 +1,6 @@
 
+"use client";
+
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -96,6 +98,7 @@ export default function StudentProfilePage() {
   );
 }
 
-export const metadata = {
-  title: "My Profile - AEC FSP Portal",
-};
+// Removed static metadata export
+// export const metadata = {
+//   title: "My Profile - AEC FSP Portal",
+// };
