@@ -15,6 +15,7 @@ export function AppLogo({ width = 40, height = 40, className }: AppLogoProps) {
       alt="AEC FSP Portal App Logo"
       width={Number(width)}
       height={Number(height)}
+      style={{ width: 'auto', height: 'auto' }}
       className={className}
       priority // Consider adding priority if this logo is above the fold
     />
