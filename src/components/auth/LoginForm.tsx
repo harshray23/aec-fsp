@@ -20,11 +20,11 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { USER_ROLES, type UserRole } from "@/lib/constants";
-import { loginUser } from "@/lib/auth"; // Assuming an auth service for login
+// import { loginUser } from "@/lib/auth"; // Assuming an auth service for login
 
 const getLoginFormSchema = (role: UserRole | null) => {
   const baseSchema = {
-    password: z.string().min(1, "Password is required"), // Keep min(1) or adjust as needed
+    password: z.string().min(1, "Password is required"),
   };
 
   if (role === USER_ROLES.STUDENT) {
@@ -82,29 +82,35 @@ export default function LoginForm() {
         body: JSON.stringify({ ...values, role }), 
       });
 
+      if (!response) {
+        console.error("Login API error: No response received from server.");
+        throw new Error("Login failed: Server did not respond.");
+      }
+
       const data = await response.json();
 
       if (!response.ok) {
-        console.error("Login API error response:", data);
-        throw new Error(data.message || "Login failed. Please check your credentials.");
+        console.error("Login API error response (status not OK):", data);
+        throw new Error(data?.message || `Login failed with status: ${response.status}`);
       }
       
-      if (data.user) {
+      if (data && data.user) {
         localStorage.setItem("currentUser", JSON.stringify(data.user));
+        toast({
+          title: "Login Successful!",
+          description: `Welcome back! Redirecting...`,
+        });
+        router.push(successRedirectPath);
+      } else {
+        console.error("Login API success, but no user data in response:", data);
+        throw new Error("Login successful, but user data was not returned correctly from the server.");
       }
-
-
-      toast({
-        title: "Login Successful!",
-        description: `Welcome back! Redirecting...`,
-      });
-      router.push(successRedirectPath);
 
     } catch (error: any) {
       console.error("Login submit error:", error);
       toast({
         title: "Login Failed",
-        description: error.message || "An unexpected error occurred. Check server logs for more details.",
+        description: error.message || "An unexpected error occurred. Please try again or check server logs.",
         variant: "destructive",
       });
     } 
@@ -197,4 +203,3 @@ export default function LoginForm() {
     </Card>
   );
 }
-
