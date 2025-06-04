@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ServerCog, UserPlus, MonitorPlay, Users, BookUser, CalendarDays, ShieldAlert, FileCog, Briefcase, GraduationCap } from "lucide-react"; // Added Briefcase, GraduationCap
+import { ServerCog, UserPlus, MonitorPlay, Users, BookUser, CalendarDays, ShieldAlert, FileCog, Briefcase, GraduationCap, UserCheck } from "lucide-react"; 
 import { admins, batches, teachers, students, timetableEntries } from "@/lib/mockData";
 
 export default function HostDashboardPage() {
@@ -13,11 +13,11 @@ export default function HostDashboardPage() {
     { title: "Total Teachers", value: teachers.length.toString(), icon: Briefcase, color: "text-green-500", href: "/host/monitoring/teachers" },
     { title: "Total Admins", value: admins.length.toString(), icon: ShieldAlert, color: "text-red-500", href: "/host/monitoring/admins" },
     { title: "Total Batches", value: batches.length.toString(), icon: BookUser, color: "text-purple-500", href: "/host/monitoring/batches" },
-    { title: "Total Students", value: students.length.toString(), icon: GraduationCap, color: "text-blue-500" }, // No direct monitor page for students under host yet
+    { title: "Total Students", value: students.length.toString(), icon: GraduationCap, color: "text-blue-500" }, 
   ];
 
   const hostActions = [
-    { href: "/host/user-generation", label: "Generate User Accounts", icon: UserPlus, description: "Create new accounts for teachers or administrators." },
+    { href: "/host/user-approval", label: "Approve User Registrations", icon: UserCheck, description: "Review and approve new Admin/Teacher accounts." },
     { href: "/host/monitoring/website", label: "Monitor Website Status", icon: FileCog, description: "View overall website health and status." },
     { href: "/host/monitoring/batches", label: "Monitor Batches", icon: BookUser, description: "Oversee all program batches." },
     { href: "/host/monitoring/timetables", label: "Monitor Timetables", icon: CalendarDays, description: "View all batch timetables." },
@@ -26,8 +26,8 @@ export default function HostDashboardPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Host Dashboard"
-        description="System overview and management tools for the Host."
+        title="Management Dashboard"
+        description="System overview and management tools for Management."
         icon={ServerCog}
       />
 
@@ -52,8 +52,8 @@ export default function HostDashboardPage() {
 
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle>Host Actions</CardTitle>
-          <CardDescription>Key management functions for the Host panel.</CardDescription>
+          <CardTitle>Management Actions</CardTitle>
+          <CardDescription>Key management functions for the Management panel.</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {hostActions.map((action) => (
@@ -72,4 +72,3 @@ export default function HostDashboardPage() {
     </div>
   );
 }
-

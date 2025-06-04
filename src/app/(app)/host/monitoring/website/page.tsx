@@ -3,7 +3,7 @@
 
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { FileCog, CheckCircle, AlertTriangle, Server } from "lucide-react";
+import { FileCog, CheckCircle, AlertTriangle, Server, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function HostMonitorWebsitePage() {
@@ -12,7 +12,7 @@ export default function HostMonitorWebsitePage() {
     overall: "Operational",
     responseTime: "120ms",
     lastChecked: new Date().toLocaleString(),
-    activeUsers: 0,
+    activeUsers: 0, // Initialize activeUsers
   });
 
   useEffect(() => {
@@ -27,7 +27,7 @@ export default function HostMonitorWebsitePage() {
     }, 5000); // Update every 5 seconds
 
     // Initial random active users
-    setWebsiteStatus(prevStatus => ({
+     setWebsiteStatus(prevStatus => ({
         ...prevStatus,
         activeUsers: Math.floor(Math.random() * 100) + 10,
     }));
@@ -40,7 +40,7 @@ export default function HostMonitorWebsitePage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Monitor Website Status (Host)"
+        title="Monitor Website Status (Management)"
         description="View overall website health, uptime, and performance metrics."
         icon={FileCog}
       />
@@ -61,7 +61,7 @@ export default function HostMonitorWebsitePage() {
                 <p className="text-2xl font-bold">{websiteStatus.responseTime}</p>
             </Card>
              <Card className="p-4 bg-muted/30">
-                <CardTitle className="text-sm font-medium">Active Users (Simulated)</CardTitle>
+                <CardTitle className="text-sm font-medium flex items-center gap-1"><Users className="h-4 w-4"/>Active Users (Simulated)</CardTitle>
                 <p className="text-2xl font-bold">{websiteStatus.activeUsers}</p>
             </Card>
              <Card className="p-4 bg-muted/30 md:col-span-2">
@@ -77,8 +77,4 @@ export default function HostMonitorWebsitePage() {
   );
 }
 
-// Removed metadata export
-// export const metadata = {
-//   title: "Monitor Website - Host Panel - AEC FSP Portal",
-// };
-
+// Removed metadata as it's a client component with dynamic data

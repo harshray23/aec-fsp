@@ -56,7 +56,7 @@ const getNavItems = (role: "student" | "teacher" | "admin" | "host" | "guest"): 
       ];
     case "host":
       return [
-        { href: "/host/dashboard", label: "Host Dashboard", icon: ServerCog, tooltip: "Host overview" },
+        { href: "/host/dashboard", label: "Management Dashboard", icon: ServerCog, tooltip: "Management overview" },
         { href: "/host/user-approval", label: "User Approval", icon: UserCheck, tooltip: "Approve or reject new user registrations" },
         {
           href: "/host/monitoring",
@@ -64,7 +64,7 @@ const getNavItems = (role: "student" | "teacher" | "admin" | "host" | "guest"): 
           icon: MonitorPlay,
           tooltip: "Monitor system components",
           children: [
-            { href: "/host/monitoring/website", label: "Website Status", icon: FileCog, tooltip: "Monitor website" },
+            { href: "/host/monitoring/website", label: "Website Status", icon: FileCog, tooltip: "Monitor website health" },
             { href: "/host/monitoring/batches", label: "Batch Monitor", icon: BookUser, tooltip: "Monitor batches" },
             { href: "/host/monitoring/timetables", label: "Timetable Monitor", icon: CalendarDays, tooltip: "Monitor timetables" },
             { href: "/host/monitoring/teachers", label: "Teacher Monitor", icon: Users, tooltip: "Monitor teachers" }, 
@@ -85,9 +85,13 @@ export default function AppPagesLayout({
   const pathname = usePathname();
   const currentUser = getMockCurrentUser(pathname); 
   
+  let displayUserRole = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
+  if (currentUser.role === USER_ROLES.HOST) {
+    displayUserRole = "Management";
+  }
+  
   const navItems = getNavItems(currentUser.role as "student" | "teacher" | "admin" | "host" | "guest");
 
-  const displayUserRole = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
 
   return (
     <DashboardLayout 
