@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -86,4 +87,61 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Custom styles for attendance calendar days */
+  /* These classes are applied to the cell (td/div wrapper by react-day-picker) */
+  .day-present .rdp-button { /* Style the button inside the cell */
+    @apply bg-green-500/30 text-green-800 font-semibold rounded-md hover:bg-green-500/40;
+    /* Dark mode adjustments if needed */
+  }
+  .dark .day-present .rdp-button {
+     @apply bg-green-500/40 text-green-200 hover:bg-green-500/50;
+  }
+
+  .day-absent .rdp-button {
+    @apply bg-red-500/30 text-red-800 font-semibold rounded-md hover:bg-red-500/40;
+  }
+  .dark .day-absent .rdp-button {
+    @apply bg-red-500/40 text-red-200 hover:bg-red-500/50;
+  }
+
+  .day-late .rdp-button {
+    @apply bg-yellow-500/30 text-yellow-800 font-semibold rounded-md hover:bg-yellow-500/40;
+  }
+  .dark .day-late .rdp-button {
+    @apply bg-yellow-500/40 text-yellow-200 hover:bg-yellow-500/50;
+  }
+
+  /* Ensure these styles take precedence over default selection if a day is also selected */
+  .rdp-day_selected.day-present .rdp-button,
+  .day-present[aria-selected="true"] .rdp-button { /* For selection via keyboard */
+    @apply bg-green-500/50 text-green-900;
+  }
+  .dark .rdp-day_selected.day-present .rdp-button,
+  .dark .day-present[aria-selected="true"] .rdp-button {
+    @apply bg-green-500/60 text-green-100;
+  }
+  
+  .rdp-day_selected.day-absent .rdp-button,
+  .day-absent[aria-selected="true"] .rdp-button {
+    @apply bg-red-500/50 text-red-900;
+  }
+  .dark .rdp-day_selected.day-absent .rdp-button,
+  .dark .day-absent[aria-selected="true"] .rdp-button {
+    @apply bg-red-500/60 text-red-100;
+  }
+
+  .rdp-day_selected.day-late .rdp-button,
+  .day-late[aria-selected="true"] .rdp-button {
+    @apply bg-yellow-500/50 text-yellow-900;
+  }
+  .dark .rdp-day_selected.day-late .rdp-button,
+  .dark .day-late[aria-selected="true"] .rdp-button {
+    @apply bg-yellow-500/60 text-yellow-100;
+  }
+
+  /* Ensure today's style is also distinct if it has a status */
+  .rdp-day_today.day-present .rdp-button { @apply ring-2 ring-green-600; }
+  .rdp-day_today.day-absent .rdp-button { @apply ring-2 ring-red-600; }
+  .rdp-day_today.day-late .rdp-button { @apply ring-2 ring-yellow-600; }
 }

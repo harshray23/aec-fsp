@@ -4,7 +4,7 @@
 import { DashboardLayout } from "@/components/shared/DashboardLayout";
 import type { NavItem } from "@/lib/types";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, UserPlus, BookUser, CalendarDays, BarChart3, Settings, GraduationCap, ShieldAlert, Briefcase, UserCog, UserCircle, CheckSquare, MonitorPlay, ServerCog, FileCog, UserCheck } from "lucide-react"; 
+import { LayoutDashboard, Users, UserPlus, BookUser, CalendarDays, BarChart3, Settings, GraduationCap, ShieldAlert, Briefcase, UserCog, UserCircle, CheckSquare, MonitorPlay, ServerCog, FileCog, UserCheck, CalendarCheck2 } from "lucide-react"; 
 import React from "react";
 import { getMockCurrentUser } from "@/lib/mockData"; 
 
@@ -13,14 +13,15 @@ const getNavItems = (role: "student" | "teacher" | "admin" | "host" | "guest"): 
     case "student":
       return [
         { href: "/student/dashboard", label: "My Dashboard", icon: LayoutDashboard, tooltip: "View your batch and attendance" },
-        { href: "/student/profile", label: "My Profile", icon: GraduationCap, tooltip: "View your profile" },
+        { href: "/student/profile", label: "My Profile", icon: UserCircle, tooltip: "View your profile" }, // Changed icon
+        { href: "/student/attendance-calendar", label: "Attendance Calendar", icon: CalendarCheck2, tooltip: "View attendance on calendar" },
       ];
     case "teacher":
       return [
         { href: "/teacher/dashboard", label: "Dashboard", icon: LayoutDashboard, tooltip: "Teacher overview" },
         { href: "/teacher/profile", label: "My Profile", icon: UserCircle, tooltip: "View your profile" },
         { href: "/teacher/my-assigned-batches", label: "My Assigned Batches", icon: BookUser, tooltip: "View batches assigned to you" },
-        { href: "/teacher/timetables", label: "View Timetables", icon: CalendarDays, tooltip: "View timetables for assigned batches" }, // Label updated
+        { href: "/teacher/timetables", label: "View Timetables", icon: CalendarDays, tooltip: "View timetables for assigned batches" }, 
         { href: "/teacher/reports", label: "Reports", icon: BarChart3, tooltip: "View reports for assigned batches" },
       ];
     case "admin":
@@ -50,7 +51,7 @@ const getNavItems = (role: "student" | "teacher" | "admin" | "host" | "guest"): 
         },
         { href: "/admin/attendance", label: "Attendance Management", icon: CheckSquare, tooltip: "Mark and manage student attendance" },
         { href: "/admin/timetables", label: "Timetable Overview", icon: CalendarDays, tooltip: "View all timetables" },
-        { href: "/admin/reports", label: "View Reports", icon: BarChart3, tooltip: "View system-wide reports" }, // Added Admin Reports
+        { href: "/admin/reports", label: "View Reports", icon: BarChart3, tooltip: "View system-wide reports" }, 
         { href: "/admin/settings", label: "System Settings", icon: Settings, tooltip: "Configure system settings" },
       ];
     case "host":
