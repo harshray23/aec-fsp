@@ -45,39 +45,73 @@ export let timetableEntries: TimetableEntry[] = [
 
 export let attendanceRecords: AttendanceRecord[] = [];
 
-export let hosts: User[] = [ // Using generic User type for Host for now
-  { id: "HOST_001", name: "Site Host", email: "host@example.com", role: USER_ROLES.HOST },
+export let hosts: User[] = [
+  { id: "HOST_001", name: "Management Lead", email: "management@aec.edu.in", role: USER_ROLES.HOST },
 ];
 
 // Helper to get the current logged-in user details for the dashboard layout
 // This is a simplified version for the prototype.
 export const getMockCurrentUser = (pathname: string): User & { department?: string; username?: string } => {
+  if (typeof window !== 'undefined') {
+    const storedUserString = localStorage.getItem("currentUser");
+    if (storedUserString) {
+      try {
+        const storedUser = JSON.parse(storedUserString) as User & { department?: string; username?: string; status?: string; studentId?: string; rollNumber?: string; registrationNumber?: string; section?: string; phoneNumber?: string; isEmailVerified?: boolean; isPhoneVerified?: boolean; avatarUrl?: string;};
+        if (storedUser && storedUser.id && storedUser.role) {
+          // Consolidate with mock data to ensure all fields are present, prioritizing mockData as source of truth for fixed fields.
+          switch (storedUser.role) {
+            case USER_ROLES.ADMIN:
+              const adminDetails = admins.find(a => a.id === storedUser.id);
+              if (adminDetails) return { ...adminDetails, ...storedUser }; // Spread storedUser last to keep any dynamic fields from localStorage
+              break;
+            case USER_ROLES.TEACHER:
+              const teacherDetails = teachers.find(t => t.id === storedUser.id);
+              if (teacherDetails) return { ...teacherDetails, ...storedUser };
+              break;
+            case USER_ROLES.STUDENT:
+              const studentDetails = students.find(s => s.id === storedUser.id);
+              if (studentDetails) return { ...studentDetails, ...storedUser };
+              break;
+            case USER_ROLES.HOST:
+              const hostDetails = hosts.find(h => h.id === storedUser.id);
+              if (hostDetails) return { ...hostDetails, ...storedUser }; // Ensures mockData (like updated email) is primary
+              break; // Fallthrough if hostDetails not found, but shouldn't happen if localStorage is consistent
+            default:
+               // If role is unknown or doesn't need merging, but is valid & in localStorage
+              return storedUser;
+          }
+          // If details not found in mockData (e.g. ID mismatch), indicates inconsistency
+          console.warn(`User with ID ${storedUser.id} and role ${storedUser.role} found in localStorage but not in mockData. Clearing localStorage.`);
+          localStorage.removeItem("currentUser");
+        }
+      } catch (e) {
+        console.error("Error parsing currentUser from localStorage:", e);
+        localStorage.removeItem("currentUser"); // Clear corrupted data
+      }
+    }
+  }
+
+
+  // Fallback to path-based determination if localStorage is empty or invalid
   if (pathname.startsWith("/admin")) {
-    const adminUser = admins.find(a => a.email === "harshray2007@gmail.com");
+    const adminUser = admins.find(a => a.email === "harshray2007@gmail.com"); // Keep admin specific
     return adminUser || 
-           { id: "default-admin", name: "Admin User", email: "admin@example.com", role: USER_ROLES.ADMIN, status: "active", username: "default_admin" };
+           { id: "default-admin-fallback", name: "Admin User", email: "admin@example.com", role: USER_ROLES.ADMIN, status: "active", username: "default_admin_fallback" };
   } else if (pathname.startsWith("/teacher")) {
-    const teacherUser = teachers[0]; // Assuming first teacher for mock, improve if specific teacher login is needed
-    return teacherUser || { id: "default-teacher", name: "Teacher User", email: "teacher@example.com", role: USER_ROLES.TEACHER, department: "N/A", status: "active", username: "default_teacher" };
+    const teacherUser = teachers[0]; 
+    return teacherUser || { id: "default-teacher-fallback", name: "Teacher User", email: "teacher@example.com", role: USER_ROLES.TEACHER, department: "N/A", status: "active", username: "default_teacher_fallback" };
   } else if (pathname.startsWith("/student")) {
-    const studentUser = students[0]; // Assuming first student for mock
+    const studentUser = students[0]; 
     return studentUser || { 
-        id: "default-student",
-        name: "Student User", 
-        email: "student@example.com", 
-        role: USER_ROLES.STUDENT, 
-        studentId: "S000",
-        rollNumber: "N/A",
-        registrationNumber: "N/A",
-        department: "N/A",
-        section: SECTIONS[0], 
-        phoneNumber: "N/A",
-        isEmailVerified: true,
-        isPhoneVerified: true,
+        id: "default-student-fallback", name: "Student User", email: "student@example.com", role: USER_ROLES.STUDENT, 
+        studentId: "S000F", rollNumber: "N/AF", registrationNumber: "N/AF", department: "N/AF", section: SECTIONS[0], 
+        phoneNumber: "N/AF", isEmailVerified: true, isPhoneVerified: true
     };
   } else if (pathname.startsWith("/host")) {
-    return hosts[0] || { id: "default-host", name: "Host User", email: "host@example.com", role: USER_ROLES.HOST };
+    const hostUser = hosts.find(h => h.email === "management@aec.edu.in"); // Use the new email
+    return hostUser || { id: "default-host-fallback", name: "Management User", email: "management@aec.edu.in", role: USER_ROLES.HOST };
   }
   // Default fallback if role cannot be determined from path
-  return { id: "guest-user", name: "User", email: "user@example.com", role: "guest" as any };
+  return { id: "guest-user-fallback", name: "User", email: "user@example.com", role: "guest" as any };
 };
+
