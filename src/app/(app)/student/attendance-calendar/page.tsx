@@ -43,6 +43,7 @@ export default function StudentAttendanceCalendarPage() {
           return;
         }
 
+        // Assuming your API is set up to handle studentId as a query param
         const response = await fetch(`/api/attendance?studentId=${studentId}`);
         if (!response.ok) {
           const errorData = await response.json();
@@ -164,7 +165,3 @@ export default function StudentAttendanceCalendarPage() {
     </div>
   );
 }
-
-export const metadata = {
-  title: "Attendance Calendar - AEC FSP Portal",
-};
