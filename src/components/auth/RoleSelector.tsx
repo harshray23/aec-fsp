@@ -55,15 +55,15 @@ export default function RoleSelector() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-gradient-to-br from-background to-secondary relative">
-      {/* Host Login Icon */}
+      {/* Management Icon */}
       <div className="absolute top-4 right-4">
         <Button 
           variant="ghost" 
           size="icon" 
           className="rounded-full h-12 w-12 text-primary hover:bg-primary/10" 
           onClick={() => router.push(`/auth/login?role=${USER_ROLES.HOST}`)}
-          aria-label="Host Login"
-          title="Host Panel Login"
+          aria-label="Management Login"
+          title="Management Panel"
         >
           <UserRound className="h-7 w-7" />
         </Button>
