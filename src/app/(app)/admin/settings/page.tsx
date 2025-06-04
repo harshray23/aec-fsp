@@ -1,3 +1,4 @@
+
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Settings, BellDot, Lock, Palette } from "lucide-react";
@@ -10,7 +11,7 @@ export default function AdminSettingsPage() {
     <div className="space-y-8">
       <PageHeader
         title="System Settings"
-        description="Configure global settings for the FSP portal."
+        description="Configure global settings for the FSP application."
         icon={Settings}
       />
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -45,7 +46,7 @@ export default function AdminSettingsPage() {
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Lock className="h-5 w-5 text-primary" /> Security Settings</CardTitle>
-            <CardDescription>Manage portal security configurations.</CardDescription>
+            <CardDescription>Manage system security configurations.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
              <div className="flex items-center justify-between">
@@ -73,7 +74,7 @@ export default function AdminSettingsPage() {
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Palette className="h-5 w-5 text-primary" /> Appearance Settings</CardTitle>
-            <CardDescription>Customize portal appearance (Branding options).</CardDescription>
+            <CardDescription>Customize appearance (Branding options).</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
              <p className="text-sm text-muted-foreground">
@@ -88,5 +89,6 @@ export default function AdminSettingsPage() {
 }
 
 export const metadata = {
-  title: "System Settings - AEC FSP Portal",
+  title: "System Settings - AEC FSP",
 };
+

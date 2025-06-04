@@ -26,5 +26,6 @@ export default function AdminCreateBatchPage() {
 }
 
 export const metadata = {
-  title: "Create New Batch - AEC FSP Portal",
+  title: "Create New Batch - AEC FSP",
 };
+

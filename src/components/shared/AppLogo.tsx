@@ -12,7 +12,7 @@ export function AppLogo({ width = 40, height = 40, className }: AppLogoProps) {
   return (
     <Image
       src="/logo1.avif" // Updated to logo1.avif
-      alt="AEC FSP Portal App Logo"
+      alt="AEC FSP App Logo"
       width={Number(width)}
       height={Number(height)}
       style={{ width: 'auto', height: 'auto' }}
@@ -21,3 +21,4 @@ export function AppLogo({ width = 40, height = 40, className }: AppLogoProps) {
     />
   );
 }
+

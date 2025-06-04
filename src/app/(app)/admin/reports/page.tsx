@@ -287,5 +287,6 @@ export default function AdminViewReportsPage() {
 }
 
 export const metadata = {
-  title: "Admin Reports - AEC FSP Portal",
+  title: "Admin Reports - AEC FSP",
 };
+

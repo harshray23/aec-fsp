@@ -117,14 +117,14 @@ export default function AdminTimetableOverviewPage() {
                       ))}
                     </ul>
                     ) : (
-                       <p className="text-sm text-muted-foreground pl-4 pt-2 border-l ml-2">No sessions scheduled for this batch in the timetable system.</p>
+                       <p className="text-sm text-muted-foreground pl-4 pt-2 border-l ml-2">No sessions scheduled for this batch in the system.</p>
                     )}
                   </AccordionContent>
                 </AccordionItem>
               ))}
             </Accordion>
           ) : (
-             <p className="text-center text-muted-foreground py-4">No timetable entries found in the system. Teachers can add sessions via their portal.</p>
+             <p className="text-center text-muted-foreground py-4">No timetable entries found in the system. Teachers can add sessions via their dashboard.</p>
           )}
         </CardContent>
       </Card>
@@ -133,5 +133,6 @@ export default function AdminTimetableOverviewPage() {
 }
 
 export const metadata = {
-  title: "Timetable Overview - AEC FSP Portal",
+  title: "Timetable Overview - AEC FSP",
 };
+

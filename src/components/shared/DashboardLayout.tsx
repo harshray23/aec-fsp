@@ -53,6 +53,7 @@ export function DashboardLayout({
   const pathname = usePathname();
 
   const handleLogout = () => {
+    localStorage.removeItem("currentUser"); // Clear user session
     console.log("User logged out");
     router.push("/"); 
   };
@@ -87,7 +88,7 @@ export function DashboardLayout({
           <div className="flex items-center gap-2">
             <AppLogo className="h-8 w-8" />
             <div className="flex flex-col">
-              <h2 className="text-lg font-semibold text-sidebar-foreground">AEC FSP Portal</h2>
+              <h2 className="text-lg font-semibold text-sidebar-foreground">AEC FSP</h2>
               <span className="text-xs text-sidebar-foreground/80">{userRole} Panel</span>
             </div>
           </div>
@@ -157,7 +158,6 @@ export function DashboardLayout({
           {/* Left section of the header */}
           <div className="flex items-center gap-2">
             <SidebarTrigger className="md:hidden" /> {/* Mobile sidebar toggle */}
-            {/* The UserRound icon previously here has been removed as per request */}
           </div>
 
           {/* Right section of the header */}
@@ -210,3 +210,4 @@ export function DashboardLayout({
     </SidebarProvider>
   );
 }
+

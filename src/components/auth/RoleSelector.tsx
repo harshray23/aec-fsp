@@ -74,10 +74,10 @@ export default function RoleSelector() {
           <AppLogo width="80" height="80" />
         </div>
         <h1 className="text-4xl font-bold tracking-tight text-foreground">
-          AEC FSP Portal
+          AEC FSP
         </h1>
         <p className="text-muted-foreground mt-2 text-lg">
-          Welcome to the Finishing School Program Portal
+          Welcome to the Finishing School Program
         </p>
         <p className="text-foreground mt-6 text-xl font-medium">Please select your role to continue</p>
       </div>
@@ -133,3 +133,4 @@ export default function RoleSelector() {
     </div>
   );
 }
+

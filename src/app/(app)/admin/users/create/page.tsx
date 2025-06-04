@@ -1,3 +1,4 @@
+
 import UserRegistrationForm from "@/components/admin/UserRegistrationForm";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -25,5 +26,6 @@ export default function CreateUserPage() {
 }
 
 export const metadata = {
-  title: "Register New User - AEC FSP Portal",
+  title: "Register New User - AEC FSP",
 };
+

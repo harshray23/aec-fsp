@@ -1,3 +1,4 @@
+
 import StudentRegistrationForm from "@/components/auth/StudentRegistrationForm";
 import { Suspense } from "react";
 
@@ -10,5 +11,6 @@ export default function StudentRegistrationPage() {
 }
 
 export const metadata = {
-  title: "Student Registration - AEC FSP Portal",
+  title: "Student Registration - AEC FSP",
 };
+

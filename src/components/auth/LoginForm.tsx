@@ -20,11 +20,11 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { USER_ROLES, type UserRole } from "@/lib/constants";
-import { admins as mockAdmins, teachers as mockTeachers } from "@/lib/mockData"; // Assuming students are elsewhere or not status-checked here
+import { loginUser } from "@/lib/auth"; // Assuming an auth service for login
 
 const getLoginFormSchema = (role: UserRole | null) => {
   const baseSchema = {
-    password: z.string().min(6, "Password must be at least 6 characters"),
+    password: z.string().min(1, "Password is required"), // Keep min(1) or adjust as needed
   };
 
   if (role === USER_ROLES.STUDENT) {
@@ -56,88 +56,62 @@ export default function LoginForm() {
   });
 
   const onSubmit = async (values: LoginFormValues) => {
-    console.log("Login form submitted with values:", values, "and role:", role);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    let userStatus: string | undefined = "active"; // Default to active for students or if no status check needed
-    let userToLogin;
-
-    if (role === USER_ROLES.ADMIN) {
-      userToLogin = mockAdmins.find(a => a.email === (values as any).email);
-      userStatus = userToLogin?.status;
-    } else if (role === USER_ROLES.TEACHER) {
-      userToLogin = mockTeachers.find(t => t.email === (values as any).email);
-      userStatus = userToLogin?.status;
-    }
-    // For USER_ROLES.STUDENT and USER_ROLES.HOST, we assume they are always active for now.
-
-    if (!userToLogin && (role === USER_ROLES.ADMIN || role === USER_ROLES.TEACHER)) {
-        toast({
-            title: "Login Failed",
-            description: "Invalid email or password.",
-            variant: "destructive",
-        });
-        return;
-    }
-
-
-    if (userStatus === "pending_approval") {
-      toast({
-        title: "Account Pending Approval",
-        description: "Your account is awaiting approval from the host. Please check back later.",
-        variant: "default",
-        duration: 5000,
-      });
-      return; // Don't redirect
-    } else if (userStatus === "rejected") {
-      toast({
-        title: "Account Rejected",
-        description: "Your registration was not approved. Please contact support for more information.",
-        variant: "destructive",
-        duration: 5000,
-      });
-      return; // Don't redirect
-    } else if (userStatus !== "active" && (role === USER_ROLES.ADMIN || role === USER_ROLES.TEACHER)) {
-      // Catch any other non-active status for Admin/Teacher if defined later
-       toast({
-        title: "Login Failed",
-        description: "Your account is not active. Please contact support.",
-        variant: "destructive",
-      });
+    if (!role) {
+      toast({ title: "Error", description: "Role is missing.", variant: "destructive" });
       return;
     }
+    
+    // Use form.formState.isSubmitting to disable button, no need to set manually
+    // form.formState.isSubmitting = true; // REMOVE THIS LINE
 
-
-    // If active, proceed with login simulation and redirect
-    toast({
-      title: "Login Successful!",
-      description: `Simulating login for ${role}. Redirecting...`,
-    });
-
-
-    switch (role) {
-      case USER_ROLES.STUDENT:
-        router.push("/student/dashboard");
-        break;
-      case USER_ROLES.TEACHER:
-        router.push("/teacher/dashboard");
-        break;
-      case USER_ROLES.ADMIN:
-        router.push("/admin/dashboard");
-        break;
-      case USER_ROLES.HOST:
-        router.push("/host/dashboard");
-        break;
-      default:
-        toast({
-          title: "Error",
-          description: "Invalid role specified for login.",
-          variant: "destructive",
-        });
-        router.push("/"); 
+    let loginApiEndpoint = "/api/users/login"; // Default for Admin/Teacher/Host
+    if (role === USER_ROLES.STUDENT) {
+      loginApiEndpoint = "/api/students/login";
     }
+    
+    let successRedirectPath = "/";
+    switch (role) {
+      case USER_ROLES.STUDENT: successRedirectPath = "/student/dashboard"; break;
+      case USER_ROLES.TEACHER: successRedirectPath = "/teacher/dashboard"; break;
+      case USER_ROLES.ADMIN: successRedirectPath = "/admin/dashboard"; break;
+      case USER_ROLES.HOST: successRedirectPath = "/host/dashboard"; break;
+      default: break;
+    }
+
+    try {
+      const response = await fetch(loginApiEndpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...values, role }), // Send role for clarity, though API might infer
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || "Login failed. Please check your credentials.");
+      }
+      
+      // Store user info (like name, email, role, actual studentId if student) in localStorage
+      // This is important for other parts of the app to identify the current user
+      if (data.user) {
+        localStorage.setItem("currentUser", JSON.stringify(data.user));
+      }
+
+
+      toast({
+        title: "Login Successful!",
+        description: `Welcome back! Redirecting...`,
+      });
+      router.push(successRedirectPath);
+
+    } catch (error: any) {
+      toast({
+        title: "Login Failed",
+        description: error.message || "An unexpected error occurred.",
+        variant: "destructive",
+      });
+    } 
+    // form.formState.isSubmitting = false; // REMOVE THIS LINE
   };
 
   if (!role || !Object.values(USER_ROLES).includes(role)) {
@@ -154,7 +128,7 @@ export default function LoginForm() {
           {roleTitle} Login
         </CardTitle>
         <CardDescription className="text-center">
-          Enter your credentials to access your portal.
+          Enter your credentials to access your account.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -177,7 +151,7 @@ export default function LoginForm() {
             ) : (
               <FormField
                 control={form.control}
-                name="email" // This field is specific to non-student roles in this schema
+                name="email" 
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Email</FormLabel>
@@ -224,3 +198,4 @@ export default function LoginForm() {
     </Card>
   );
 }
+

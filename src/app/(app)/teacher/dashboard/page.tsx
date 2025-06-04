@@ -80,5 +80,6 @@ export default function TeacherDashboardPage() {
 }
 
 export const metadata = {
-    title: "Teacher Dashboard - AEC FSP Portal",
+    title: "Teacher Dashboard - AEC FSP",
 };
+

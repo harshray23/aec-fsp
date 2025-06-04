@@ -21,7 +21,7 @@ export default function ManageAdminsPage() {
     <div className="space-y-8">
       <PageHeader
         title="Manage Administrators"
-        description="View, add, or edit administrator accounts for the FSP portal."
+        description="View, add, or edit administrator accounts for the FSP system."
         icon={ShieldAlert}
         actions={
           <Button asChild>

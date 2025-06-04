@@ -17,7 +17,7 @@ export default function TeacherAttendanceMovedPage() {
         <CardHeader>
           <CardTitle>Attendance Management Moved</CardTitle>
           <CardDescription>
-            The feature to mark and manage student attendance has been transitioned to the Administrator portal.
+            The feature to mark and manage student attendance has been transitioned to the Administrator system.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -30,3 +30,4 @@ export default function TeacherAttendanceMovedPage() {
     </div>
   );
 }
+

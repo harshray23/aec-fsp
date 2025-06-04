@@ -1,3 +1,4 @@
+
 import LoginForm from "@/components/auth/LoginForm";
 import { Suspense } from "react";
 
@@ -14,5 +15,6 @@ export default function LoginPage() {
 }
 
 export const metadata = {
-  title: "Login - AEC FSP Portal",
+  title: "Login - AEC FSP",
 };
+

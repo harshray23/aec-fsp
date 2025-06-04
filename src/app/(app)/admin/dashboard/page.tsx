@@ -29,7 +29,7 @@ export default function AdminDashboardPage() {
     { href: "/admin/users/admins", label: "Manage Admins", icon: ShieldAlert, description: "Manage other administrator accounts." },
     { href: "/admin/batches", label: "View Batches & Timetables", icon: BookUser, description: "Oversee all program batches and their schedules." },
     { href: "/admin/attendance", label: "Manage Attendance", icon: CheckSquare, description: "Mark and manage student attendance." }, // Added Attendance action
-    { href: "/admin/settings", label: "System Settings", icon: Settings, description: "Configure overall portal settings." },
+    { href: "/admin/settings", label: "System Settings", icon: Settings, description: "Configure overall system settings." },
   ];
 
   return (
@@ -65,7 +65,7 @@ export default function AdminDashboardPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle>Administrative Actions</CardTitle>
-          <CardDescription>Key management functions for the portal.</CardDescription>
+          <CardDescription>Key management functions for the system.</CardDescription>
         </CardHeader>
         <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {adminActions.map((action) => (
@@ -94,3 +94,4 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
+

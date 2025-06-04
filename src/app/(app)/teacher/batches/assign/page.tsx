@@ -1,5 +1,5 @@
 
-// This page's functionality has been moved to the Admin portal.
+// This page's functionality has been moved to the Admin system.
 // Student assignment to batches is now handled by Admins.
 
 export default function DeprecatedTeacherAssignStudentsPage() {
@@ -12,3 +12,4 @@ export default function DeprecatedTeacherAssignStudentsPage() {
     </div>
   );
 }
+

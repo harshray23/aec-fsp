@@ -27,7 +27,7 @@ export default function ViewStudentsPage() {
     <div className="space-y-8">
       <PageHeader
         title="View Students"
-        description="Browse and search student records in the FSP portal."
+        description="Browse and search student records in the FSP system."
         icon={GraduationCap}
       />
       <Card className="shadow-lg">
@@ -100,3 +100,4 @@ export default function ViewStudentsPage() {
     </div>
   );
 }
+

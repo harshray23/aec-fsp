@@ -78,12 +78,35 @@ export default function StudentRegistrationForm() {
 
   const onSubmitDetails = async (values: StudentRegistrationFormValues) => {
     console.log("Student registration form submitted:", values);
-    setCurrentUserDetails(values);
-    setRegistrationStep("emailVerify");
-    toast({
-      title: "Details Submitted",
-      description: "A (mock) verification code has been sent to your email.",
-    });
+    
+    try {
+      // Simulate pre-check if studentId or email already exists before proceeding to OTP
+      const preCheckResponse = await fetch('/api/students/check-existence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ studentId: values.studentId, email: values.email }),
+      });
+      const preCheckData = await preCheckResponse.json();
+
+      if (!preCheckResponse.ok) {
+        throw new Error(preCheckData.message || 'Pre-registration check failed.');
+      }
+      
+      // If pre-check is okay, proceed to OTP
+      setCurrentUserDetails(values);
+      setRegistrationStep("emailVerify");
+      toast({
+        title: "Details Submitted",
+        description: `A (mock) verification code has been sent to ${values.email}. Hint: ${MOCK_EMAIL_OTP}`,
+      });
+
+    } catch (error: any) {
+       toast({
+        title: "Registration Error",
+        description: error.message || "Could not submit details.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleEmailVerify = () => {
@@ -110,34 +133,39 @@ export default function StudentRegistrationForm() {
     });
   }
 
-  const handlePhoneVerifyAndRegister = () => {
-    if (phoneOtp === MOCK_PHONE_OTP && currentUserDetails) {
-      const newStudent: Student = {
-        id: currentUserDetails.studentId,
-        studentId: currentUserDetails.studentId,
-        name: currentUserDetails.name,
-        email: currentUserDetails.email,
-        rollNumber: currentUserDetails.rollNumber,
-        registrationNumber: currentUserDetails.registrationNumber,
-        department: currentUserDetails.department,
-        section: currentUserDetails.section,
-        phoneNumber: currentUserDetails.phoneNumber,
-        whatsappNumber: currentUserDetails.whatsappNumber || undefined,
-        role: USER_ROLES.STUDENT,
-        isEmailVerified: true, 
-        isPhoneVerified: true,
-        // batchId is optional and not set during registration
-      };
-      mockStudents.push(newStudent);
+  const handlePhoneVerifyAndRegister = async () => {
+    if (phoneOtp !== MOCK_PHONE_OTP || !currentUserDetails) {
+       toast({
+        title: "Invalid Phone Code",
+        description: "The phone verification code is incorrect. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/students/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(currentUserDetails),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Registration failed.');
+      }
+      
       toast({
         title: "Registration Complete!",
         description: "Your phone has been verified and your account is created. You can now log in.",
       });
       router.push("/auth/login?role=student");
-    } else {
+
+    } catch (error: any) {
       toast({
-        title: "Invalid Phone Code",
-        description: "The phone verification code is incorrect. Please try again.",
+        title: "Registration Failed",
+        description: error.message || "An unexpected error occurred during final registration.",
         variant: "destructive",
       });
     }
@@ -154,8 +182,8 @@ export default function StudentRegistrationForm() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="space-y-2"> {/* Replaces FormItem */}
-            <Label htmlFor="emailOtp">Email Verification Code</Label> {/* Uses basic Label */}
+          <div className="space-y-2"> 
+            <Label htmlFor="emailOtp">Email Verification Code</Label> 
             <Input 
               id="emailOtp" 
               placeholder="Enter 6-digit code" 
@@ -185,8 +213,8 @@ export default function StudentRegistrationForm() {
         </CardHeader>
         <CardContent className="space-y-4">
            <Button onClick={handleSendPhoneOtp} className="w-full" variant="outline">Send Verification Code (SMS)</Button>
-          <div className="space-y-2"> {/* Replaces FormItem */}
-            <Label htmlFor="phoneOtp">SMS Verification Code</Label> {/* Uses basic Label */}
+          <div className="space-y-2"> 
+            <Label htmlFor="phoneOtp">SMS Verification Code</Label> 
             <Input 
               id="phoneOtp" 
               placeholder="Enter 6-digit code" 
@@ -207,11 +235,11 @@ export default function StudentRegistrationForm() {
       <CardHeader>
         <CardTitle className="text-3xl font-bold text-center">Student Registration</CardTitle>
         <CardDescription className="text-center">
-          Create your account to access the FSP Portal.
+          Create your account to access the FSP system.
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <Form {...form}> {/* This Form (FormProvider) is for the main registration form */}
+        <Form {...form}> 
           <form onSubmit={form.handleSubmit(onSubmitDetails)} className="space-y-4">
             <ScrollArea className="h-[50vh] pr-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -399,4 +427,3 @@ export default function StudentRegistrationForm() {
   );
 }
 
-    
