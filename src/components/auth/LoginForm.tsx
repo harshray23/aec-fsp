@@ -61,10 +61,7 @@ export default function LoginForm() {
       return;
     }
     
-    // Use form.formState.isSubmitting to disable button, no need to set manually
-    // form.formState.isSubmitting = true; // REMOVE THIS LINE
-
-    let loginApiEndpoint = "/api/users/login"; // Default for Admin/Teacher/Host
+    let loginApiEndpoint = "/api/users/login"; 
     if (role === USER_ROLES.STUDENT) {
       loginApiEndpoint = "/api/students/login";
     }
@@ -82,17 +79,16 @@ export default function LoginForm() {
       const response = await fetch(loginApiEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...values, role }), // Send role for clarity, though API might infer
+        body: JSON.stringify({ ...values, role }), 
       });
 
       const data = await response.json();
 
       if (!response.ok) {
+        console.error("Login API error response:", data);
         throw new Error(data.message || "Login failed. Please check your credentials.");
       }
       
-      // Store user info (like name, email, role, actual studentId if student) in localStorage
-      // This is important for other parts of the app to identify the current user
       if (data.user) {
         localStorage.setItem("currentUser", JSON.stringify(data.user));
       }
@@ -105,13 +101,13 @@ export default function LoginForm() {
       router.push(successRedirectPath);
 
     } catch (error: any) {
+      console.error("Login submit error:", error);
       toast({
         title: "Login Failed",
-        description: error.message || "An unexpected error occurred.",
+        description: error.message || "An unexpected error occurred. Check server logs for more details.",
         variant: "destructive",
       });
     } 
-    // form.formState.isSubmitting = false; // REMOVE THIS LINE
   };
 
   if (!role || !Object.values(USER_ROLES).includes(role)) {
@@ -119,7 +115,10 @@ export default function LoginForm() {
      return <p>Invalid role. Redirecting...</p>;
   }
 
-  const roleTitle = role.charAt(0).toUpperCase() + role.slice(1);
+  let roleTitle = role.charAt(0).toUpperCase() + role.slice(1);
+  if (role === USER_ROLES.HOST) {
+    roleTitle = "Management";
+  }
 
   return (
     <Card className="w-full max-w-md shadow-2xl">
