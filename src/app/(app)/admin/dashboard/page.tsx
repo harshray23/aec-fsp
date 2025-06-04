@@ -1,21 +1,48 @@
 
 "use client"; 
 
+import React, { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ShieldAlert, Users, UserPlus, BookUser, CalendarDays, Settings, Briefcase, GraduationCap, CheckSquare } from "lucide-react"; // Added CheckSquare for attendance
+import { ShieldAlert, Users, UserPlus, BookUser, Settings, Briefcase, GraduationCap, CheckSquare } from "lucide-react"; 
 import Link from "next/link";
 import { students, teachers, batches, admins } from "@/lib/mockData"; 
-import React from "react"; 
+import type { Announcement } from "@/lib/types";
+import { AnnouncementDialog } from "@/components/shared/AnnouncementDialog";
+
+const LOCAL_STORAGE_ANNOUNCEMENT_KEY = "aecFspAnnouncements";
 
 export default function AdminDashboardPage() {
   const [dataVersion, setDataVersion] = React.useState(0);
+  const [latestAnnouncement, setLatestAnnouncement] = useState<Announcement | null>(null);
+  const [isAnnouncementDialogOpen, setIsAnnouncementDialogOpen] = useState(false);
 
   React.useEffect(() => {
     // Placeholder for potential future live data updates
+
+    // Check for announcements
+    const announcementsRaw = localStorage.getItem(LOCAL_STORAGE_ANNOUNCEMENT_KEY);
+    if (announcementsRaw) {
+      const announcements: Announcement[] = JSON.parse(announcementsRaw);
+      if (announcements.length > 0) {
+        const latest = announcements.sort((a, b) => b.timestamp - a.timestamp)[0];
+        const dismissedKey = `dismissed_announcement_${latest.id}`;
+        if (!sessionStorage.getItem(dismissedKey)) {
+          setLatestAnnouncement(latest);
+          setIsAnnouncementDialogOpen(true);
+        }
+      }
+    }
   }, []);
 
+  const handleCloseAnnouncementDialog = () => {
+    if (latestAnnouncement) {
+      sessionStorage.setItem(`dismissed_announcement_${latestAnnouncement.id}`, "true");
+    }
+    setIsAnnouncementDialogOpen(false);
+    setLatestAnnouncement(null);
+  };
 
   const adminStats = [
     { title: "Total Students", value: students.length.toString(), icon: GraduationCap, color: "text-blue-500" },
@@ -28,12 +55,17 @@ export default function AdminDashboardPage() {
     { href: "/admin/users/teachers", label: "Manage Teachers", icon: Briefcase, description: "Add, view, or edit teacher accounts." },
     { href: "/admin/users/admins", label: "Manage Admins", icon: ShieldAlert, description: "Manage other administrator accounts." },
     { href: "/admin/batches", label: "View Batches & Timetables", icon: BookUser, description: "Oversee all program batches and their schedules." },
-    { href: "/admin/attendance", label: "Manage Attendance", icon: CheckSquare, description: "Mark and manage student attendance." }, // Added Attendance action
+    { href: "/admin/attendance", label: "Manage Attendance", icon: CheckSquare, description: "Mark and manage student attendance." },
     { href: "/admin/settings", label: "System Settings", icon: Settings, description: "Configure overall system settings." },
   ];
 
   return (
     <div className="space-y-8">
+      <AnnouncementDialog
+        announcement={latestAnnouncement}
+        isOpen={isAnnouncementDialogOpen}
+        onClose={handleCloseAnnouncementDialog}
+      />
       <PageHeader
         title="Admin Dashboard"
         description="Oversee and manage the Finishing School Program."
@@ -94,4 +126,3 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
-

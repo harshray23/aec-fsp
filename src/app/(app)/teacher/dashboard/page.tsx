@@ -1,29 +1,63 @@
 
+"use client";
+
+import React, { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { LayoutDashboard, Users, ClipboardList, CalendarDays, BarChart3, GraduationCap, BookUser } from "lucide-react"; // Removed ClipboardList as it's for attendance
+import { LayoutDashboard, Users, CalendarDays, BarChart3, GraduationCap, BookUser } from "lucide-react"; 
 import Link from "next/link";
+import type { Announcement } from "@/lib/types";
+import { AnnouncementDialog } from "@/components/shared/AnnouncementDialog";
 
 const quickStats = [
   { title: "Active Batches", value: "0", icon: Users, color: "text-primary" },
   { title: "Students Enrolled", value: "0", icon: GraduationCap, color: "text-green-500" },
   { title: "Today's Classes", value: "0", icon: CalendarDays, color: "text-purple-500" },
-  // Overall attendance might be complex to calculate here without backend, keeping as placeholder or removing
-  // { title: "Overall Attendance", value: "0%", icon: ClipboardList, color: "text-orange-500" }, 
 ];
 
 const actions = [
-  // "Assign Students to Batch" was already deprecated for teachers.
-  // "Mark Attendance" removed.
   { href: "/teacher/my-assigned-batches", label: "View My Assigned Batches", icon: BookUser },
   { href: "/teacher/timetables", label: "Manage Timetables", icon: CalendarDays }, 
   { href: "/teacher/reports", label: "View Performance Reports", icon: BarChart3 },
 ];
 
+const LOCAL_STORAGE_ANNOUNCEMENT_KEY = "aecFspAnnouncements";
+
 export default function TeacherDashboardPage() {
+  const [latestAnnouncement, setLatestAnnouncement] = useState<Announcement | null>(null);
+  const [isAnnouncementDialogOpen, setIsAnnouncementDialogOpen] = useState(false);
+
+  useEffect(() => {
+    const announcementsRaw = localStorage.getItem(LOCAL_STORAGE_ANNOUNCEMENT_KEY);
+    if (announcementsRaw) {
+      const announcements: Announcement[] = JSON.parse(announcementsRaw);
+      if (announcements.length > 0) {
+        const latest = announcements.sort((a, b) => b.timestamp - a.timestamp)[0];
+        const dismissedKey = `dismissed_announcement_${latest.id}`;
+        if (!sessionStorage.getItem(dismissedKey)) {
+          setLatestAnnouncement(latest);
+          setIsAnnouncementDialogOpen(true);
+        }
+      }
+    }
+  }, []);
+
+  const handleCloseAnnouncementDialog = () => {
+    if (latestAnnouncement) {
+      sessionStorage.setItem(`dismissed_announcement_${latestAnnouncement.id}`, "true");
+    }
+    setIsAnnouncementDialogOpen(false);
+    setLatestAnnouncement(null);
+  };
+
   return (
     <div className="space-y-8">
+      <AnnouncementDialog
+        announcement={latestAnnouncement}
+        isOpen={isAnnouncementDialogOpen}
+        onClose={handleCloseAnnouncementDialog}
+      />
       <PageHeader
         title="Teacher Dashboard"
         description="Manage your FSP activities and student progress."
@@ -72,7 +106,6 @@ export default function TeacherDashboardPage() {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">No recent activity to display.</p>
-          {/* Placeholder for recent activity feed */}
         </CardContent>
       </Card>
     </div>
@@ -82,4 +115,3 @@ export default function TeacherDashboardPage() {
 export const metadata = {
     title: "Teacher Dashboard - AEC FSP",
 };
-

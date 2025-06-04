@@ -81,3 +81,10 @@ export interface NavItem {
   children?: NavItem[];
   tooltip?: string;
 }
+
+export interface Announcement {
+  id: string;
+  message: string;
+  timestamp: number;
+  sender: string; // e.g., "Management"
+}

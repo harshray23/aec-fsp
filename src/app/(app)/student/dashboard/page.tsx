@@ -1,13 +1,14 @@
 
 "use client";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { GraduationCap, CheckCircle, XCircle, AlertTriangle, Info, Loader2 } from "lucide-react";
-import type { Student, Batch, Teacher, AttendanceRecord } from "@/lib/types";
+import type { Student, Batch, Teacher, AttendanceRecord, Announcement } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { AnnouncementDialog } from "@/components/shared/AnnouncementDialog";
 
 interface StudentDashboardData {
   student?: Student;
@@ -28,10 +29,14 @@ const getStatusIcon = (status: "present" | "absent" | "late") => {
   }
 };
 
+const LOCAL_STORAGE_ANNOUNCEMENT_KEY = "aecFspAnnouncements";
+
 export default function StudentDashboardPage() {
   const [dashboardData, setDashboardData] = useState<StudentDashboardData>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [latestAnnouncement, setLatestAnnouncement] = useState<Announcement | null>(null);
+  const [isAnnouncementDialogOpen, setIsAnnouncementDialogOpen] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -42,7 +47,6 @@ export default function StudentDashboardPage() {
         const storedUser = localStorage.getItem("currentUser");
         if (storedUser) {
             const user = JSON.parse(storedUser);
-            // Use studentId if available (from student registration), else use id (generic user id)
             studentIdFromStorage = user?.studentId || user?.id;
         }
 
@@ -74,7 +78,6 @@ export default function StudentDashboardPage() {
             }
             batchData = { ...batch, teacherName };
 
-            // Fetch attendance for this student and batch
             const attendanceRes = await fetch(`/api/attendance?studentId=${student.id}&batchId=${student.batchId}`);
             if (attendanceRes.ok) {
               attendanceData = await attendanceRes.json();
@@ -97,7 +100,29 @@ export default function StudentDashboardPage() {
       }
     }
     fetchData();
+
+    // Check for announcements
+    const announcementsRaw = localStorage.getItem(LOCAL_STORAGE_ANNOUNCEMENT_KEY);
+    if (announcementsRaw) {
+      const announcements: Announcement[] = JSON.parse(announcementsRaw);
+      if (announcements.length > 0) {
+        const latest = announcements.sort((a, b) => b.timestamp - a.timestamp)[0];
+        const dismissedKey = `dismissed_announcement_${latest.id}`;
+        if (!sessionStorage.getItem(dismissedKey)) {
+          setLatestAnnouncement(latest);
+          setIsAnnouncementDialogOpen(true);
+        }
+      }
+    }
   }, []);
+
+  const handleCloseAnnouncementDialog = () => {
+    if (latestAnnouncement) {
+      sessionStorage.setItem(`dismissed_announcement_${latestAnnouncement.id}`, "true");
+    }
+    setIsAnnouncementDialogOpen(false);
+    setLatestAnnouncement(null);
+  };
 
   const studentName = dashboardData.student?.name || "Student";
   
@@ -132,6 +157,11 @@ export default function StudentDashboardPage() {
   
   return (
     <div className="space-y-8">
+      <AnnouncementDialog
+        announcement={latestAnnouncement}
+        isOpen={isAnnouncementDialogOpen}
+        onClose={handleCloseAnnouncementDialog}
+      />
       <PageHeader
         title={`Welcome, ${studentName}!`}
         description="Here's an overview of your FSP engagement."
@@ -226,5 +256,3 @@ export default function StudentDashboardPage() {
     </div>
   );
 }
-// Metadata removed as this is a client component using localStorage
-

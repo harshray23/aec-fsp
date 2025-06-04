@@ -4,9 +4,10 @@
 import { DashboardLayout } from "@/components/shared/DashboardLayout";
 import type { NavItem } from "@/lib/types";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, UserPlus, BookUser, CalendarDays, BarChart3, Settings, GraduationCap, ShieldAlert, Briefcase, UserCog, UserCircle, CheckSquare, MonitorPlay, ServerCog, FileCog, UserCheck, CalendarCheck2 } from "lucide-react"; 
+import { LayoutDashboard, Users, UserPlus, BookUser, CalendarDays, BarChart3, Settings, GraduationCap, ShieldAlert, Briefcase, UserCog, UserCircle, CheckSquare, MonitorPlay, ServerCog, FileCog, UserCheck, CalendarCheck2, Megaphone } from "lucide-react"; 
 import React from "react";
 import { getMockCurrentUser } from "@/lib/mockData"; 
+import { USER_ROLES } from "@/lib/constants";
 
 const getNavItems = (role: "student" | "teacher" | "admin" | "host" | "guest"): NavItem[] => {
   switch (role) {
@@ -58,6 +59,7 @@ const getNavItems = (role: "student" | "teacher" | "admin" | "host" | "guest"): 
       return [
         { href: "/host/dashboard", label: "Management Dashboard", icon: ServerCog, tooltip: "Management overview" },
         { href: "/host/user-approval", label: "User Approval", icon: UserCheck, tooltip: "Approve or reject new user registrations" },
+        { href: "/host/announcements", label: "Send Announcements", icon: Megaphone, tooltip: "Broadcast messages to users" },
         {
           href: "/host/monitoring",
           label: "Monitoring",
