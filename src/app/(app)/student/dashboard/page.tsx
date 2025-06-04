@@ -55,11 +55,42 @@ export default function StudentDashboardPage() {
         }
         
         const studentRes = await fetch(`/api/students/profile?studentId=${studentIdFromStorage}`);
-        if (!studentRes.ok) {
-          const errorData = await studentRes.json();
-          throw new Error(errorData.message || `Failed to fetch student profile (status: ${studentRes.status})`);
+
+        if (!studentRes) {
+          console.error("Fetch student profile: No response received from server.");
+          throw new Error("Failed to fetch student profile: Server did not respond.");
         }
-        const student: Student = await studentRes.json();
+        
+        if (!studentRes.ok) {
+          let errorMessage = `Failed to fetch student profile (status: ${studentRes.status} ${studentRes.statusText || ''})`.trim();
+          try {
+            const errorBody = await studentRes.json(); // Try to get a JSON error message
+            if (errorBody && errorBody.message) {
+              errorMessage = errorBody.message;
+            }
+          } catch (e) {
+            // If error response is not JSON, the initial errorMessage is fine.
+             console.warn("Could not parse error response as JSON from student profile API.", e);
+          }
+          console.error("Error response from /api/students/profile:", errorMessage);
+          throw new Error(errorMessage);
+        }
+        
+        let student: Student;
+        try {
+          const studentData = await studentRes.json();
+          student = studentData;
+        } catch (jsonError: any) {
+          console.error("Failed to parse JSON from successful student profile response:", jsonError);
+          let responseText = "Could not read response text.";
+          try {
+            responseText = await studentRes.text();
+          } catch (textError) {
+            console.error("Error reading response text after JSON parse failure:", textError);
+          }
+          console.error("Response Text from /api/students/profile:", responseText);
+          throw new Error("Received malformed data from the server for student profile.");
+        }
         
         let batchData: (Batch & { teacherName?: string }) | undefined = undefined;
         let attendanceData: AttendanceRecord[] = [];
@@ -74,6 +105,8 @@ export default function StudentDashboardPage() {
               if (teacherRes.ok) {
                 const teacher: Teacher = await teacherRes.json();
                 teacherName = teacher.name;
+              } else {
+                console.warn(`Failed to fetch teacher details for ID ${batch.teacherId}: ${teacherRes.status}`);
               }
             }
             batchData = { ...batch, teacherName };
@@ -82,18 +115,18 @@ export default function StudentDashboardPage() {
             if (attendanceRes.ok) {
               attendanceData = await attendanceRes.json();
             } else {
-              console.warn(`Failed to fetch attendance: ${attendanceRes.status}`);
+              console.warn(`Failed to fetch attendance for student ${student.id}, batch ${student.batchId}: ${attendanceRes.status}`);
             }
 
           } else {
-             console.warn(`Failed to fetch batch details: ${batchRes.status}`);
+             console.warn(`Failed to fetch batch details for ID ${student.batchId}: ${batchRes.status}`);
           }
         }
         
         setDashboardData({ student, batch: batchData, attendance: attendanceData });
 
       } catch (err: any) {
-        console.error("Error fetching student dashboard data:", err);
+        console.error("Full error fetching student dashboard data:", err);
         setError(err.message || "An unexpected error occurred while loading your dashboard.");
       } finally {
         setIsLoading(false);
@@ -256,3 +289,4 @@ export default function StudentDashboardPage() {
     </div>
   );
 }
+
