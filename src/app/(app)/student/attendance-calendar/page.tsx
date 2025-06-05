@@ -34,7 +34,7 @@ export default function StudentAttendanceCalendarPage() {
         const storedUser = localStorage.getItem("currentUser");
         if (storedUser) {
           const user = JSON.parse(storedUser);
-          studentId = user?.studentId || user?.id; // Use studentId if available, else id
+          studentId = user?.studentId || user?.id; 
         }
 
         if (!studentId) {
@@ -43,16 +43,31 @@ export default function StudentAttendanceCalendarPage() {
           return;
         }
 
-        // Assuming your API is set up to handle studentId as a query param
         const response = await fetch(`/api/attendance?studentId=${studentId}`);
+        
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to fetch attendance records");
+          let errorMessage = `API Error: ${response.status} ${response.statusText || ''}`.trim();
+          try {
+            const errorBodyText = await response.text();
+            // Check if it's JSON error from our API or an HTML page (like 404)
+            if (response.headers.get("content-type")?.includes("application/json")) {
+                const errorData = JSON.parse(errorBodyText);
+                errorMessage = errorData.message || errorMessage;
+            } else if (errorBodyText.trim().toLowerCase().startsWith("<!doctype html")) {
+                errorMessage = `Failed to fetch attendance records. The requested resource might not be available (${response.status}).`;
+            } else {
+                errorMessage = errorBodyText.substring(0, 150) || errorMessage;
+            }
+          } catch (e) {
+            // Ignore if parsing errorBodyText fails, use the initial errorMessage
+          }
+          throw new Error(errorMessage);
         }
+
         const data: AttendanceRecord[] = await response.json();
         setAttendanceRecords(data);
       } catch (err: any) {
-        setError(err.message || "An unexpected error occurred.");
+        setError(err.message || "An unexpected error occurred while fetching attendance data.");
       } finally {
         setIsLoading(false);
       }
@@ -65,7 +80,6 @@ export default function StudentAttendanceCalendarPage() {
     const modifiers: ModifierDates = { present: [], absent: [], late: [] };
     attendanceRecords.forEach(record => {
       const recordDate = new Date(record.date);
-      // Normalize to UTC midnight to avoid timezone issues with date comparisons
       const utcDate = new Date(Date.UTC(recordDate.getUTCFullYear(), recordDate.getUTCMonth(), recordDate.getUTCDate()));
       if (modifiers[record.status]) {
         modifiers[record.status].push(utcDate);
@@ -100,7 +114,7 @@ export default function StudentAttendanceCalendarPage() {
       {error && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
+          <AlertTitle>Error Fetching Data</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
@@ -124,11 +138,11 @@ export default function StudentAttendanceCalendarPage() {
                     <AlertTitle>No Records</AlertTitle>
                     <AlertDescription>No attendance records found for you yet.</AlertDescription>
                 </Alert>
-            ) : (
+            ) : !error ? ( // Only render calendar if no error
               <Calendar
                 mode="single"
-                selected={undefined} // No specific day selected by default
-                onSelect={() => {}} // Disable selection or handle if needed
+                selected={undefined} 
+                onSelect={() => {}} 
                 month={currentMonth}
                 onMonthChange={setCurrentMonth}
                 modifiers={modifierDates}
@@ -144,10 +158,10 @@ export default function StudentAttendanceCalendarPage() {
                     row: "flex w-full mt-2 justify-around",
                     cell: "h-9 w-9 text-center text-sm p-0 relative focus-within:relative focus-within:z-20",
                     day: "h-9 w-9 p-0 font-normal",
-                    day_selected: "!bg-primary/20 !text-primary-foreground", // Example to make selected less prominent
+                    day_selected: "!bg-primary/20 !text-primary-foreground",
                 }}
               />
-            )}
+            ) : null}
           </div>
           <Card className="p-4 md:w-64 w-full bg-muted/30 shadow-inner">
             <h3 className="text-lg font-semibold mb-3">Legend</h3>
@@ -165,3 +179,4 @@ export default function StudentAttendanceCalendarPage() {
     </div>
   );
 }
+
