@@ -89,22 +89,24 @@ export default function StudentRegistrationForm() {
       if (!preCheckResponse.ok) {
         let errorMessage = `Pre-registration check failed (${preCheckResponse.status} ${preCheckResponse.statusText || ''})`.trim();
         try {
-          const errorData = await preCheckResponse.json(); 
-          errorMessage = errorData.message || errorMessage;
-        } catch (e) {
-          const errorText = await preCheckResponse.text(); 
-          console.error("Non-JSON error from /api/students/check-existence:", errorText);
-          if (errorText.trim().toLowerCase().startsWith("<!doctype html")) {
-             errorMessage = `Pre-registration check failed: Server returned an unexpected response. (${preCheckResponse.status})`;
-          } else {
-             errorMessage = errorText.substring(0,150) || errorMessage; 
+          const errorBodyText = await preCheckResponse.text();
+          try {
+            const errorData = JSON.parse(errorBodyText);
+            errorMessage = errorData.message || errorBodyText.substring(0,150) || errorMessage;
+          } catch (jsonParseError) {
+            if (errorBodyText.trim().toLowerCase().startsWith("<!doctype html")) {
+               errorMessage = `Pre-registration check failed: Server returned an unexpected HTML response. (${preCheckResponse.status})`;
+            } else {
+               errorMessage = errorBodyText.substring(0,150) || errorMessage; 
+            }
           }
+        } catch (readError) {
+            console.error("Failed to read error response body for pre-check:", readError);
         }
         throw new Error(errorMessage);
       }
       
-      // If preCheckResponse.ok, we expect JSON
-      await preCheckResponse.json(); // Consume JSON to check for parsing errors, though data isn't directly used here.
+      await preCheckResponse.json(); 
 
       setCurrentUserDetails(values);
       setRegistrationStep("emailVerify");
@@ -166,21 +168,24 @@ export default function StudentRegistrationForm() {
       if (!response.ok) {
         let errorMessage = `Registration failed (${response.status} ${response.statusText || ''})`.trim();
         try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
-        } catch (e) {
-          const errorText = await response.text();
-          console.error("Non-JSON error from /api/students/register:", errorText);
-           if (errorText.trim().toLowerCase().startsWith("<!doctype html")) {
-             errorMessage = `Registration failed: Server returned an unexpected response. (${response.status})`;
-          } else {
-             errorMessage = errorText.substring(0,150) || errorMessage;
+          const errorBodyText = await response.text();
+          try {
+            const errorData = JSON.parse(errorBodyText);
+            errorMessage = errorData.message || errorBodyText.substring(0,150) || errorMessage;
+          } catch (jsonParseError) {
+             if (errorBodyText.trim().toLowerCase().startsWith("<!doctype html")) {
+               errorMessage = `Registration failed: Server returned an unexpected HTML response. (${response.status})`;
+            } else {
+               errorMessage = errorBodyText.substring(0,150) || errorMessage;
+            }
           }
+        } catch (readError) {
+          console.error("Failed to read error response body for registration:", readError);
         }
         throw new Error(errorMessage);
       }
       
-      await response.json(); // Consume JSON to check for parsing errors
+      await response.json(); 
       
       toast({
         title: "Registration Complete!",
