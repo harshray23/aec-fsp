@@ -9,6 +9,9 @@ import { GraduationCap, CheckCircle, XCircle, AlertTriangle, Info, Loader2 } fro
 import type { Student, Batch, Teacher, AttendanceRecord, Announcement } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AnnouncementDialog } from "@/components/shared/AnnouncementDialog";
+import { USER_ROLES } from "@/lib/constants";
+import { useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
 
 interface StudentDashboardData {
   student?: Student;
@@ -37,6 +40,8 @@ export default function StudentDashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [latestAnnouncement, setLatestAnnouncement] = useState<Announcement | null>(null);
   const [isAnnouncementDialogOpen, setIsAnnouncementDialogOpen] = useState(false);
+  const router = useRouter();
+  const { toast } = useToast();
 
   useEffect(() => {
     async function fetchData() {
@@ -44,14 +49,26 @@ export default function StudentDashboardPage() {
       setError(null);
       try {
         let studentIdFromStorage: string | null = null;
-        const storedUser = localStorage.getItem("currentUser");
-        if (storedUser) {
-            const user = JSON.parse(storedUser);
-            studentIdFromStorage = user?.studentId || user?.id;
+        const storedUserJSON = localStorage.getItem("currentUser");
+        
+        if (storedUserJSON) {
+            const user = JSON.parse(storedUserJSON);
+            if (user && user.role === USER_ROLES.STUDENT && (user.studentId || user.id)) {
+                studentIdFromStorage = user.studentId || user.id;
+            } else {
+                console.warn("Stored user in localStorage is not a valid student or is missing ID fields:", user);
+                localStorage.removeItem("currentUser"); // Clear invalid/corrupted item
+            }
         }
 
         if (!studentIdFromStorage) {
-            throw new Error("Student ID not found. Please log in again.");
+            toast({
+                title: "Authentication Issue",
+                description: "Your session seems to be invalid or has expired. Please log in again.",
+                variant: "destructive",
+            });
+            router.push("/auth/login?role=student");
+            return; 
         }
         
         const studentRes = await fetch(`/api/students/profile?studentId=${studentIdFromStorage}`);
@@ -64,12 +81,11 @@ export default function StudentDashboardPage() {
         if (!studentRes.ok) {
           let errorMessage = `Failed to fetch student profile (status: ${studentRes.status} ${studentRes.statusText || ''})`.trim();
           try {
-            const errorBody = await studentRes.json(); // Try to get a JSON error message
+            const errorBody = await studentRes.json(); 
             if (errorBody && errorBody.message) {
               errorMessage = errorBody.message;
             }
           } catch (e) {
-            // If error response is not JSON, the initial errorMessage is fine.
              console.warn("Could not parse error response as JSON from student profile API.", e);
           }
           console.error("Error response from /api/students/profile:", errorMessage);
@@ -147,7 +163,8 @@ export default function StudentDashboardPage() {
         }
       }
     }
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // router and toast are stable, no need to add to deps for this effect
 
   const handleCloseAnnouncementDialog = () => {
     if (latestAnnouncement) {
