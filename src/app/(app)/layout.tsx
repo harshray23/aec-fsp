@@ -6,7 +6,7 @@ import type { NavItem, User } from "@/lib/types";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Users, UserPlus, BookUser, CalendarDays, BarChart3, Settings, GraduationCap, ShieldAlert, Briefcase, UserCog, UserCircle, CheckSquare, MonitorPlay, ServerCog, FileCog, UserCheck, CalendarCheck2, Megaphone } from "lucide-react"; 
 import React from "react";
-import { getMockCurrentUser as getMockUserFromStorageOrPath, admins, teachers, students, hosts } from "@/lib/mockData"; 
+import { admins, teachers, students, hosts } from "@/lib/mockData"; 
 import { USER_ROLES, SECTIONS } from "@/lib/constants";
 
 const getNavItems = (role: "student" | "teacher" | "admin" | "host" | "guest"): NavItem[] => {
@@ -87,31 +87,33 @@ const getMockCurrentUser = (pathname: string): User & { department?: string; use
     if (storedUserString) {
       try {
         const storedUser = JSON.parse(storedUserString) as User & { department?: string; username?: string; status?: string; studentId?: string; rollNumber?: string; registrationNumber?: string; section?: string; phoneNumber?: string; isEmailVerified?: boolean; isPhoneVerified?: boolean; avatarUrl?: string;};
+        
         if (storedUser && storedUser.id && storedUser.role) {
-          // Consolidate with mock data to ensure all fields are present, prioritizing mockData as source of truth for fixed fields.
+          let baseUserFromMockData = null;
           switch (storedUser.role) {
             case USER_ROLES.ADMIN:
-              const adminDetails = admins.find(a => a.id === storedUser.id);
-              if (adminDetails) return { ...adminDetails, ...storedUser }; // Spread storedUser last to keep any dynamic fields from localStorage
+              baseUserFromMockData = admins.find(a => a.id === storedUser.id);
               break;
             case USER_ROLES.TEACHER:
-              const teacherDetails = teachers.find(t => t.id === storedUser.id);
-              if (teacherDetails) return { ...teacherDetails, ...storedUser };
+              baseUserFromMockData = teachers.find(t => t.id === storedUser.id);
               break;
             case USER_ROLES.STUDENT:
-              const studentDetails = students.find(s => s.id === storedUser.id);
-              if (studentDetails) return { ...studentDetails, ...storedUser };
+              baseUserFromMockData = students.find(s => s.id === storedUser.id);
               break;
             case USER_ROLES.HOST:
-              const hostDetails = hosts.find(h => h.id === storedUser.id);
-              if (hostDetails) return { ...hostDetails, ...storedUser };
+              baseUserFromMockData = hosts.find(h => h.id === storedUser.id);
               break;
-            default: // If role is unknown or doesn't need merging, but is valid
-              return storedUser;
           }
-          // If details not found in mockData (e.g. ID mismatch), indicates inconsistency
-          console.warn(`User with ID ${storedUser.id} and role ${storedUser.role} found in localStorage but not in mockData. Clearing localStorage.`);
-          localStorage.removeItem("currentUser");
+
+          if (baseUserFromMockData) {
+            // Merge: static fields from mockData, dynamic/latest from storedUser
+            return { ...baseUserFromMockData, ...storedUser };
+          } else {
+            // User from localStorage not found in current static mockData arrays.
+            // This can happen for newly registered users. Trust localStorage user.
+            console.warn(`User with ID ${storedUser.id} (role: ${storedUser.role}) from localStorage not found in static mockData. Using localStorage version directly.`);
+            return storedUser; 
+          }
         }
       } catch (e) {
         console.error("Error parsing currentUser from localStorage:", e);
@@ -133,7 +135,7 @@ const getMockCurrentUser = (pathname: string): User & { department?: string; use
         phoneNumber: "N/AF", isEmailVerified: true, isPhoneVerified: true
     };
   } else if (pathname.startsWith("/host")) {
-    return hosts[0] || { id: "default-host-fallback", name: "Management User", email: "host@example.com", role: USER_ROLES.HOST };
+    return hosts.find(h => h.email === "management@aec.edu.in") || { id: "default-host-fallback", name: "Management User", email: "management@aec.edu.in", role: USER_ROLES.HOST };
   }
   return { id: "guest-user-fallback", name: "User", email: "user@example.com", role: "guest" as any };
 };
