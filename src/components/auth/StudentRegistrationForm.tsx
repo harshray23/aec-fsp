@@ -80,19 +80,32 @@ export default function StudentRegistrationForm() {
     console.log("Student registration form submitted:", values);
     
     try {
-      // Simulate pre-check if studentId or email already exists before proceeding to OTP
       const preCheckResponse = await fetch('/api/students/check-existence', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ studentId: values.studentId, email: values.email }),
       });
-      const preCheckData = await preCheckResponse.json();
 
       if (!preCheckResponse.ok) {
-        throw new Error(preCheckData.message || 'Pre-registration check failed.');
+        let errorMessage = `Pre-registration check failed (${preCheckResponse.status} ${preCheckResponse.statusText || ''})`.trim();
+        try {
+          const errorData = await preCheckResponse.json(); 
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          const errorText = await preCheckResponse.text(); 
+          console.error("Non-JSON error from /api/students/check-existence:", errorText);
+          if (errorText.trim().toLowerCase().startsWith("<!doctype html")) {
+             errorMessage = `Pre-registration check failed: Server returned an unexpected response. (${preCheckResponse.status})`;
+          } else {
+             errorMessage = errorText.substring(0,150) || errorMessage; 
+          }
+        }
+        throw new Error(errorMessage);
       }
       
-      // If pre-check is okay, proceed to OTP
+      // If preCheckResponse.ok, we expect JSON
+      await preCheckResponse.json(); // Consume JSON to check for parsing errors, though data isn't directly used here.
+
       setCurrentUserDetails(values);
       setRegistrationStep("emailVerify");
       toast({
@@ -150,11 +163,24 @@ export default function StudentRegistrationForm() {
         body: JSON.stringify(currentUserDetails),
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.message || 'Registration failed.');
+        let errorMessage = `Registration failed (${response.status} ${response.statusText || ''})`.trim();
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          const errorText = await response.text();
+          console.error("Non-JSON error from /api/students/register:", errorText);
+           if (errorText.trim().toLowerCase().startsWith("<!doctype html")) {
+             errorMessage = `Registration failed: Server returned an unexpected response. (${response.status})`;
+          } else {
+             errorMessage = errorText.substring(0,150) || errorMessage;
+          }
+        }
+        throw new Error(errorMessage);
       }
+      
+      await response.json(); // Consume JSON to check for parsing errors
       
       toast({
         title: "Registration Complete!",
