@@ -44,7 +44,6 @@
     "firebase": "^11.8.1",
     "genkit": "^1.8.0",
     "lucide-react": "^0.475.0",
-    "mongodb": "^6.16.0",
     "mysql2": "^3.10.1",
     "next": "15.2.3",
     "patch-package": "^8.0.0",
