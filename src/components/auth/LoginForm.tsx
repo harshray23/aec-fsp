@@ -83,40 +83,53 @@ export default function LoginForm() {
 
       if (!response) {
         console.error("Login API error: No response received from server.");
-        // This will be caught by the outer try-catch
-        throw new Error("Login failed: Server did not respond.");
+        toast({
+          title: "Login Failed",
+          description: "Server did not respond. Please try again or check server status.",
+          variant: "destructive",
+        });
+        return;
       }
 
       let data;
-      try {
-        data = await response.json();
-      } catch (jsonError) {
-        // Handle cases where response is not JSON (e.g., HTML error page for 500 from server)
-        console.error("Login API error: Failed to parse response as JSON.", jsonError);
-        let responseText = "Could not read response text.";
-        try {
-            responseText = await response.text(); // Attempt to read as text for debugging
-        } catch (textReadError) {
-            console.error("Login API error: Failed to read response body as text after JSON parse failure.", textReadError);
-        }
-        console.error("Login API raw response text (first 500 chars):", responseText.substring(0, 500));
-        toast({
-          title: "Login Failed",
-          description: `Received an invalid response from the server (status: ${response.status}). Please try again or check server logs.`,
-          variant: "destructive",
-        });
-        return; // Stop further execution
-      }
+      const responseBodyText = await response.text(); // Read body once as text
 
       if (!response.ok) {
-        console.error("Login API error response (status not OK):", data);
+        let errorMessage = `Login attempt failed. (Status: ${response.status})`;
+        try {
+          data = JSON.parse(responseBodyText); // Try to parse the text as JSON
+          if (data && data.message) {
+            errorMessage = data.message;
+          }
+        } catch (jsonError) {
+          console.warn("Could not parse error response as JSON from login API.", jsonError);
+          // If not JSON, it might be HTML or plain text
+          if (responseBodyText.trim().toLowerCase().startsWith("<!doctype html")) {
+            errorMessage = `Login failed: Server returned an unexpected HTML response. (${response.status})`;
+          } else if (responseBodyText.length > 0 && responseBodyText.length < 200) { // Arbitrary length check for short error messages
+            errorMessage = responseBodyText.substring(0, 150);
+          }
+        }
+        console.error("Login API error response (status not OK):", { status: response.status, body: responseBodyText });
         toast({
           title: "Login Failed",
-          // Use message from API (parsed as data) if available, otherwise a generic one
-          description: data?.message || `Login attempt failed. (Status: ${response.status})`,
+          description: errorMessage,
           variant: "destructive",
         });
-        return; // Important: stop further processing
+        return;
+      }
+      
+      // If response.ok is true, try to parse the bodyText as JSON
+      try {
+        data = JSON.parse(responseBodyText);
+      } catch (jsonError) {
+        console.error("Login API success, but failed to parse response as JSON.", {status: response.status, body: responseBodyText, error: jsonError});
+        toast({
+          title: "Login Error",
+          description: "Login was successful, but server response was malformed. Please contact support.",
+          variant: "destructive",
+        });
+        return;
       }
       
       if (data && data.user) {
@@ -133,10 +146,10 @@ export default function LoginForm() {
             description: "Login was successful, but user data was not returned correctly. Please contact support.",
             variant: "destructive",
         });
-        return; // Important: stop further processing
+        return;
       }
 
-    } catch (error: any) { // This catch handles !response, and any other unexpected errors from within the try.
+    } catch (error: any) { 
       console.error("Login submit error (outer catch):", error);
       toast({
         title: "Login Failed",
@@ -211,6 +224,14 @@ export default function LoginForm() {
                 </FormItem>
               )}
             />
+             <div className="flex items-center justify-end text-sm">
+              <Link
+                href={`/auth/forgot-password?role=${role}`}
+                className="font-medium text-primary hover:underline"
+              >
+                Forgot Password?
+              </Link>
+            </div>
             <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
               {form.formState.isSubmitting ? "Logging in..." : "Login"}
             </Button>
