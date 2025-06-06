@@ -23,7 +23,7 @@ import { admins as mockAdmins, teachers as mockTeachers } from "@/lib/mockData";
 import type { Admin, Teacher } from "@/lib/types";
 
 const userRegistrationSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters"),
+  name: z.string().min(2, "Name must be at least 5 characters"),
   email: z.string().email("Invalid email address"),
   role: z.enum([USER_ROLES.TEACHER, USER_ROLES.ADMIN], {
     required_error: "Role is required.",

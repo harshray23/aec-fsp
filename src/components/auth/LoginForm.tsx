@@ -20,7 +20,6 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { USER_ROLES, type UserRole } from "@/lib/constants";
-// import { loginUser } from "@/lib/auth"; // Assuming an auth service for login
 
 const getLoginFormSchema = (role: UserRole | null) => {
   const baseSchema = {
@@ -84,14 +83,40 @@ export default function LoginForm() {
 
       if (!response) {
         console.error("Login API error: No response received from server.");
+        // This will be caught by the outer try-catch
         throw new Error("Login failed: Server did not respond.");
       }
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        // Handle cases where response is not JSON (e.g., HTML error page for 500 from server)
+        console.error("Login API error: Failed to parse response as JSON.", jsonError);
+        let responseText = "Could not read response text.";
+        try {
+            responseText = await response.text(); // Attempt to read as text for debugging
+        } catch (textReadError) {
+            console.error("Login API error: Failed to read response body as text after JSON parse failure.", textReadError);
+        }
+        console.error("Login API raw response text (first 500 chars):", responseText.substring(0, 500));
+        toast({
+          title: "Login Failed",
+          description: `Received an invalid response from the server (status: ${response.status}). Please try again or check server logs.`,
+          variant: "destructive",
+        });
+        return; // Stop further execution
+      }
 
       if (!response.ok) {
         console.error("Login API error response (status not OK):", data);
-        throw new Error(data?.message || `Login failed with status: ${response.status}`);
+        toast({
+          title: "Login Failed",
+          // Use message from API (parsed as data) if available, otherwise a generic one
+          description: data?.message || `Login attempt failed. (Status: ${response.status})`,
+          variant: "destructive",
+        });
+        return; // Important: stop further processing
       }
       
       if (data && data.user) {
@@ -103,14 +128,19 @@ export default function LoginForm() {
         router.push(successRedirectPath);
       } else {
         console.error("Login API success, but no user data in response:", data);
-        throw new Error("Login successful, but user data was not returned correctly from the server.");
+        toast({
+            title: "Login Error",
+            description: "Login was successful, but user data was not returned correctly. Please contact support.",
+            variant: "destructive",
+        });
+        return; // Important: stop further processing
       }
 
-    } catch (error: any) {
-      console.error("Login submit error:", error);
+    } catch (error: any) { // This catch handles !response, and any other unexpected errors from within the try.
+      console.error("Login submit error (outer catch):", error);
       toast({
         title: "Login Failed",
-        description: error.message || "An unexpected error occurred. Please try again or check server logs.",
+        description: error.message || "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } 
