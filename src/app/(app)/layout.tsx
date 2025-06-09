@@ -4,7 +4,7 @@
 import { DashboardLayout } from "@/components/shared/DashboardLayout";
 import type { NavItem, User } from "@/lib/types";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, UserPlus, BookUser, CalendarDays, BarChart3, Settings, GraduationCap, ShieldAlert, Briefcase, UserCog, UserCircle, CheckSquare, MonitorPlay, ServerCog, FileCog, UserCheck, CalendarCheck2, Megaphone } from "lucide-react"; 
+import { LayoutDashboard, Users, UserPlus, BookUser, CalendarDays, BarChart3, Settings, GraduationCap, ShieldAlert, Briefcase, UserCog, UserCircle, CheckSquare, MonitorPlay, ServerCog, FileCog, UserCheck, CalendarCheck2, Megaphone, PlusCircle } from "lucide-react"; 
 import React from "react";
 import { admins, teachers, students, hosts } from "@/lib/mockData"; 
 import { USER_ROLES, SECTIONS } from "@/lib/constants";
@@ -47,7 +47,7 @@ const getNavItems = (role: "student" | "teacher" | "admin" | "host" | "guest"): 
           tooltip: "Oversee and manage program batches",
           children: [
             { href: "/admin/batches", label: "Batch Overview", icon: BookUser, tooltip: "View all batches and create new ones" },
-            { href: "/admin/batches/assign", label: "Assign Students", icon: UserPlus, tooltip: "Assign students to batches" },
+            { href: "/admin/batches/create", label: "Create Batch", icon: PlusCircle, tooltip: "Set up a new batch" },
           ]
         },
         { href: "/admin/attendance", label: "Attendance Management", icon: CheckSquare, tooltip: "Mark and manage student attendance" },
@@ -131,7 +131,7 @@ const getMockCurrentUser = (pathname: string): User & { department?: string; use
   } else if (pathname.startsWith("/student")) {
     return students[0] || { 
         id: "default-student-fallback", name: "Student User", email: "student@example.com", role: USER_ROLES.STUDENT, 
-        studentId: "S000F", rollNumber: "N/AF", registrationNumber: "N/AF", department: "N/AF", section: SECTIONS[0], 
+        studentId: "S000F", rollNumber: "N/AF", registrationNumber: "N/AF", department: "N/AF", section: undefined, 
         phoneNumber: "N/AF", isEmailVerified: true, isPhoneVerified: true
     };
   } else if (pathname.startsWith("/host")) {
