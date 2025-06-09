@@ -4,11 +4,11 @@ import React from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BookUser, Eye, PlusCircle, MoreHorizontal, Trash2, Edit } from "lucide-react";
+import { BookUser, Eye, MoreHorizontal, Trash2, Edit } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { batches as mockBatchesData, teachers as mockTeachers, students as mockStudents } from "@/lib/mockData"; // Import from central store
+import { batches as mockBatchesData, teachers as mockTeachers } from "@/lib/mockData"; // Import from central store
 import { DEPARTMENTS } from "@/lib/constants";
 import {
   DropdownMenu,
@@ -105,13 +105,7 @@ export default function AdminBatchOverviewPage() {
         title="Batch Overview"
         description="View and manage all Finishing School Program batches."
         icon={BookUser}
-        actions={
-          <Button asChild>
-            <Link href="/admin/batches/create">
-              <PlusCircle className="mr-2 h-4 w-4" /> Create New Batch
-            </Link>
-          </Button>
-        }
+        // "Create New Batch" button removed from here
       />
       <Card className="shadow-lg">
         <CardHeader>
