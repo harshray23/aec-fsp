@@ -76,7 +76,7 @@ export default function ViewStudentsPage() {
                   <TableCell className="font-medium">{student.name}</TableCell>
                   <TableCell>{student.email}</TableCell>
                   <TableCell>{DEPARTMENTS.find(d => d.value === student.department)?.label || student.department}</TableCell>
-                  <TableCell>{student.section}</TableCell>
+                  <TableCell>{student.section || "N/A"}</TableCell>
                   <TableCell>{student.rollNumber}</TableCell>
                   <TableCell>{student.batchId || "N/A"}</TableCell> 
                   <TableCell>
@@ -100,4 +100,3 @@ export default function ViewStudentsPage() {
     </div>
   );
 }
-

@@ -22,7 +22,7 @@ import { Label } from "@/components/ui/label"; // Use basic Label for verificati
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { DEPARTMENTS, USER_ROLES, SECTIONS, SECTION_OPTIONS, type Section } from "@/lib/constants";
+import { DEPARTMENTS, USER_ROLES } from "@/lib/constants";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { students as mockStudents } from "@/lib/mockData";
 import type { Student } from "@/lib/types";
@@ -36,7 +36,7 @@ const studentRegistrationSchema = z.object({
   rollNumber: z.string().min(1, "Roll Number is required"),
   registrationNumber: z.string().min(1, "Registration Number is required"),
   department: z.string().min(1, "Department is required"),
-  section: z.enum(SECTIONS, { required_error: "Section is required" }),
+  // section: z.enum(SECTIONS, { required_error: "Section is required" }), // Section removed
   phoneNumber: z.string().regex(/^\d{10}$/, "Phone number must be 10 digits"),
   whatsappNumber: z.string().regex(/^\d{10}$/, "WhatsApp number must be 10 digits").optional().or(z.literal('')),
   password: z.string().min(6, "Password must be at least 6 characters"),
@@ -68,7 +68,7 @@ export default function StudentRegistrationForm() {
       rollNumber: "",
       registrationNumber: "",
       department: "",
-      section: undefined,
+      // section: undefined, // Section removed
       phoneNumber: "",
       whatsappNumber: "",
       password: "",
@@ -88,20 +88,17 @@ export default function StudentRegistrationForm() {
 
       if (!preCheckResponse.ok) {
         let errorMessage = `Pre-registration check failed (${preCheckResponse.status} ${preCheckResponse.statusText || ''})`.trim();
+        let responseBodyText = "";
         try {
-          const errorBodyText = await preCheckResponse.text();
-          try {
-            const errorData = JSON.parse(errorBodyText);
-            errorMessage = errorData.message || errorBodyText.substring(0,150) || errorMessage;
-          } catch (jsonParseError) {
-            if (errorBodyText.trim().toLowerCase().startsWith("<!doctype html")) {
-               errorMessage = `Pre-registration check failed: Server returned an unexpected HTML response. (${preCheckResponse.status})`;
-            } else {
-               errorMessage = errorBodyText.substring(0,150) || errorMessage; 
-            }
+          responseBodyText = await preCheckResponse.text();
+          const errorData = JSON.parse(responseBodyText);
+          errorMessage = errorData.message || responseBodyText.substring(0,150) || errorMessage;
+        } catch (jsonParseError) {
+          if (responseBodyText.trim().toLowerCase().startsWith("<!doctype html")) {
+             errorMessage = `Pre-registration check failed: Server returned an unexpected HTML response. (${preCheckResponse.status})`;
+          } else {
+             errorMessage = responseBodyText.substring(0,150) || errorMessage; 
           }
-        } catch (readError) {
-            console.error("Failed to read error response body for pre-check:", readError);
         }
         throw new Error(errorMessage);
       }
@@ -167,20 +164,17 @@ export default function StudentRegistrationForm() {
 
       if (!response.ok) {
         let errorMessage = `Registration failed (${response.status} ${response.statusText || ''})`.trim();
+        let responseBodyText = "";
         try {
-          const errorBodyText = await response.text();
-          try {
-            const errorData = JSON.parse(errorBodyText);
-            errorMessage = errorData.message || errorBodyText.substring(0,150) || errorMessage;
-          } catch (jsonParseError) {
-             if (errorBodyText.trim().toLowerCase().startsWith("<!doctype html")) {
-               errorMessage = `Registration failed: Server returned an unexpected HTML response. (${response.status})`;
-            } else {
-               errorMessage = errorBodyText.substring(0,150) || errorMessage;
-            }
+          responseBodyText = await response.text();
+          const errorData = JSON.parse(responseBodyText);
+          errorMessage = errorData.message || responseBodyText.substring(0,150) || errorMessage;
+        } catch (jsonParseError) {
+           if (responseBodyText.trim().toLowerCase().startsWith("<!doctype html")) {
+             errorMessage = `Registration failed: Server returned an unexpected HTML response. (${response.status})`;
+          } else {
+             errorMessage = responseBodyText.substring(0,150) || errorMessage;
           }
-        } catch (readError) {
-          console.error("Failed to read error response body for registration:", readError);
         }
         throw new Error(errorMessage);
       }
@@ -361,28 +355,7 @@ export default function StudentRegistrationForm() {
                   </FormItem>
                 )}
               />
-              <FormField
-                control={form.control}
-                name="section"
-                render={({ field }) => (
-                  <FormItem>
-                    <RHFFormLabel>Section</RHFFormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select your section" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {SECTION_OPTIONS.map(secOpt => (
-                          <SelectItem key={secOpt.value} value={secOpt.value}>{secOpt.label}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              {/* Section Field Removed */}
               <FormField
                 control={form.control}
                 name="phoneNumber"
@@ -457,4 +430,3 @@ export default function StudentRegistrationForm() {
     </Card>
   );
 }
-

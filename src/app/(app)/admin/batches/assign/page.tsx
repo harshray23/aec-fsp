@@ -253,7 +253,7 @@ export default function AdminAssignStudentsPage() {
                     <TableCell>{student.studentId}</TableCell>
                     <TableCell id={`student-name-${student.id}`} className="font-medium">{student.name}</TableCell>
                     <TableCell>{DEPARTMENTS.find(d => d.value === student.department)?.label || student.department}</TableCell>
-                    <TableCell>{student.section}</TableCell>
+                    <TableCell>{student.section || "N/A"}</TableCell>
                     <TableCell>
                         {student.batchId 
                             ? (student.batchId === selectedBatchId 
@@ -298,6 +298,3 @@ export default function AdminAssignStudentsPage() {
     </div>
   );
 }
-
-
-    

@@ -17,14 +17,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     rollNumber,
     registrationNumber,
     department,
-    section,
+    // section, // Section removed
     phoneNumber,
     whatsappNumber,
     // password is intentionally not used for storage in mock data
   } = req.body as Partial<Student & { password?: string }>; // Cast to include password for receiving
 
   // Basic validation
-  if (!studentId || !name || !email || !rollNumber || !registrationNumber || !department || !section || !phoneNumber) {
+  if (!studentId || !name || !email || !rollNumber || !registrationNumber || !department || !phoneNumber) {
     return res.status(400).json({ message: 'Missing required student registration fields.' });
   }
 
@@ -47,7 +47,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     rollNumber,
     registrationNumber,
     department,
-    section,
+    // section, // Section removed
     phoneNumber,
     whatsappNumber: whatsappNumber || undefined, // Handle optional field
     isEmailVerified: true, // Assumed verified after client-side steps

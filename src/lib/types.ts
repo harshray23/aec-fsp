@@ -14,7 +14,7 @@ export interface Student extends User {
   rollNumber: string;
   registrationNumber: string;
   department: string;
-  section: Section;
+  section?: Section; // Made section optional
   phoneNumber: string;
   whatsappNumber?: string;
   batchId?: string; // ID of the batch the student is assigned to
