@@ -81,47 +81,57 @@ export default function LoginForm() {
         body: JSON.stringify({ ...values, role }), 
       });
 
-      if (!response) {
-        console.error("Login API error: No response received from server.");
-        toast({
-          title: "Login Failed",
-          description: "Server did not respond. Please try again or check server status.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      let data;
-      const responseBodyText = await response.text(); // Read body once as text
+      const responseBodyText = await response.text();
 
       if (!response.ok) {
-        let errorMessage = `Login attempt failed. (Status: ${response.status})`;
+        let errorMessage = `Login attempt failed. (Status: ${response.status} ${response.statusText || ''})`.trim();
+        let parsedDataForErrorLog: any = null;
+
         try {
-          data = JSON.parse(responseBodyText); // Try to parse the text as JSON
-          if (data && data.message) {
-            errorMessage = data.message;
+          if (responseBodyText && responseBodyText.trim()) {
+            parsedDataForErrorLog = JSON.parse(responseBodyText);
+            if (parsedDataForErrorLog && typeof parsedDataForErrorLog === 'object' && parsedDataForErrorLog.message) {
+              errorMessage = parsedDataForErrorLog.message;
+            } else if (response.status === 401) { 
+                errorMessage = "Invalid credentials. Please check your email and password.";
+            } else if (parsedDataForErrorLog && typeof parsedDataForErrorLog === 'object' && Object.keys(parsedDataForErrorLog).length === 0) {
+                errorMessage = `Login failed (Status: ${response.status}). The server returned an empty error object.`;
+            }
+          } else if (response.status === 401) {
+             errorMessage = "Invalid credentials. Please check your email and password.";
+          } else {
+            errorMessage = `Login failed (Status: ${response.status} ${response.statusText || ''}). Server returned an empty error response.`.trim();
           }
         } catch (jsonError) {
-          console.warn("Could not parse error response as JSON from login API.", jsonError);
-          // If not JSON, it might be HTML or plain text
+          console.warn("Could not parse error response as JSON from login API.", { status: response.status, body: responseBodyText, error: jsonError });
           if (responseBodyText.trim().toLowerCase().startsWith("<!doctype html")) {
-            errorMessage = `Login failed: Server returned an unexpected HTML response. (${response.status})`;
-          } else if (responseBodyText.length > 0 && responseBodyText.length < 200) { // Arbitrary length check for short error messages
+            errorMessage = `Login failed: Server returned an unexpected HTML response. (${response.status}). Please check server logs.`;
+          } else if (responseBodyText.length > 0 && responseBodyText.length < 200) {
             errorMessage = responseBodyText.substring(0, 150);
           }
         }
-        console.error("Login API error response (status not OK):", { status: response.status, body: responseBodyText });
+        console.error("Login API error details:", { status: response.status, parsedErrorBody: parsedDataForErrorLog, rawErrorBody: responseBodyText });
         toast({
           title: "Login Failed",
           description: errorMessage,
           variant: "destructive",
         });
-        return;
+        return; // Explicitly return after handling the error
       }
       
       // If response.ok is true, try to parse the bodyText as JSON
+      let userLoginData;
       try {
-        data = JSON.parse(responseBodyText);
+        if (!responseBodyText.trim()) {
+           console.error("Login API success, but empty response body.");
+           toast({
+             title: "Login Error",
+             description: "Login successful, but received an empty response from the server.",
+             variant: "destructive",
+           });
+           return;
+        }
+        userLoginData = JSON.parse(responseBodyText);
       } catch (jsonError) {
         console.error("Login API success, but failed to parse response as JSON.", {status: response.status, body: responseBodyText, error: jsonError});
         toast({
@@ -132,15 +142,15 @@ export default function LoginForm() {
         return;
       }
       
-      if (data && data.user) {
-        localStorage.setItem("currentUser", JSON.stringify(data.user));
+      if (userLoginData && userLoginData.user) {
+        localStorage.setItem("currentUser", JSON.stringify(userLoginData.user));
         toast({
           title: "Login Successful!",
           description: `Welcome back! Redirecting...`,
         });
         router.push(successRedirectPath);
       } else {
-        console.error("Login API success, but no user data in response:", data);
+        console.error("Login API success, but no user data in response:", userLoginData);
         toast({
             title: "Login Error",
             description: "Login was successful, but user data was not returned correctly. Please contact support.",
