@@ -1,24 +1,50 @@
 
 "use client";
+import React from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BookUser, Eye, PlusCircle } from "lucide-react";
+import { BookUser, Eye, PlusCircle, MoreHorizontal, Trash2, Edit } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { batches as mockBatches, teachers as mockTeachersData } from "@/lib/mockData"; // Import from central store
+import { batches as mockBatchesData, teachers as mockTeachers, students as mockStudents } from "@/lib/mockData"; // Import from central store
 import { DEPARTMENTS } from "@/lib/constants";
-
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AdminBatchOverviewPage() {
+  const { toast } = useToast();
+  // Use state for batches to allow re-rendering on delete
+  const [batches, setBatches] = React.useState(mockBatchesData);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
+  const [batchToDeleteId, setBatchToDeleteId] = React.useState<string | null>(null);
+
+  // Effect to update local state if mockBatchesData changes externally (e.g., after creation)
+  React.useEffect(() => {
+    setBatches(mockBatchesData);
+  }, [mockBatchesData]);
+
 
   const getTeacherName = (teacherId: string) => {
-    const teacher = mockTeachersData.find(t => t.id === teacherId);
+    const teacher = mockTeachers.find(t => t.id === teacherId);
     if (teacher) return teacher.name;
-    // If teacherId matches an admin's ID (because admin created it)
-    // For now, we can show "Admin Created" or similar.
-    // A more robust solution would involve checking admin list or having a dedicated field.
     if (teacherId.startsWith("ADMIN_")) return "Admin (Self-Assigned)";
     return "N/A";
   };
@@ -27,6 +53,51 @@ export default function AdminBatchOverviewPage() {
     const dept = DEPARTMENTS.find(d => d.value === deptValue);
     return dept ? dept.label : deptValue;
   }
+
+  const openDeleteDialog = (batchId: string) => {
+    setBatchToDeleteId(batchId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteBatch = async () => {
+    if (!batchToDeleteId) return;
+
+    try {
+      const response = await fetch(`/api/batches/${batchToDeleteId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to delete batch' }));
+        throw new Error(errorData.message || 'Failed to delete batch');
+      }
+
+      // Update local state to reflect deletion
+      setBatches(prevBatches => prevBatches.filter(b => b.id !== batchToDeleteId));
+      
+      // Also ensure the global mockBatchesData is updated if other components might rely on it directly
+      // This is more for mock data consistency; real apps would rely on server state.
+      const globalBatchIndex = mockBatchesData.findIndex(b => b.id === batchToDeleteId);
+      if (globalBatchIndex > -1) {
+          mockBatchesData.splice(globalBatchIndex, 1);
+          // The API handles unassigning students from mockStudents array
+      }
+
+      toast({
+        title: "Batch Deleted",
+        description: `Batch ${batchToDeleteId} has been successfully deleted.`,
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error Deleting Batch",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setBatchToDeleteId(null);
+    }
+  };
   
   return (
     <div className="space-y-8">
@@ -58,11 +129,11 @@ export default function AdminBatchOverviewPage() {
                 <TableHead>Lead Teacher/Creator</TableHead>
                 <TableHead>Students</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Details</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockBatches.map((batch) => (
+              {batches.map((batch) => (
                 <TableRow key={batch.id}>
                   <TableCell>{batch.id}</TableCell>
                   <TableCell className="font-medium">{batch.name}</TableCell>
@@ -76,15 +147,36 @@ export default function AdminBatchOverviewPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" asChild>
-                      <Link href={`/admin/batches/${batch.id}`}> {/* Placeholder link */}
-                        <Eye className="h-4 w-4" />
-                      </Link>
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem asChild>
+                          <Link href={`/admin/batches/edit/${batch.id}`} className="flex items-center cursor-pointer">
+                            <Edit className="mr-2 h-4 w-4" /> Edit
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                           <Link href={`/admin/batches/${batch.id}`} className="flex items-center cursor-pointer"> {/* Placeholder link */}
+                                <Eye className="mr-2 h-4 w-4" /> View Details
+                            </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => openDeleteDialog(batch.id)}
+                          className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" /> Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))}
-              {mockBatches.length === 0 && (
+              {batches.length === 0 && (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center text-muted-foreground">
                     No batches found.
@@ -95,6 +187,25 @@ export default function AdminBatchOverviewPage() {
           </Table>
         </CardContent>
       </Card>
+
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the batch
+              and unassign all students currently in it.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setBatchToDeleteId(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteBatch} className="bg-destructive hover:bg-destructive/90">
+              Confirm Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
+
