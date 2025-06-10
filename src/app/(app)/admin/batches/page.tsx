@@ -4,11 +4,11 @@ import React from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BookUser, Users, MoreHorizontal, Trash2, Edit } from "lucide-react"; // Changed Eye to Users
+import { BookUser, Users, MoreHorizontal, Trash2, Edit, Home } from "lucide-react"; 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { batches as mockBatchesData, teachers as mockTeachers } from "@/lib/mockData"; // Import from central store
+import { batches as mockBatchesData, teachers as mockTeachers } from "@/lib/mockData"; 
 import { DEPARTMENTS } from "@/lib/constants";
 import {
   DropdownMenu,
@@ -31,15 +31,13 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function AdminBatchOverviewPage() {
   const { toast } = useToast();
-  // Use state for batches to allow re-rendering on delete
   const [batches, setBatches] = React.useState(mockBatchesData);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [batchToDeleteId, setBatchToDeleteId] = React.useState<string | null>(null);
 
-  // Effect to update local state if mockBatchesData changes externally (e.g., after creation)
   React.useEffect(() => {
     setBatches(mockBatchesData);
-  }, [mockBatchesData]);
+  }, []); // Removed mockBatchesData from dependency array as it's mutable
 
 
   const getTeacherName = (teacherId: string) => {
@@ -72,15 +70,11 @@ export default function AdminBatchOverviewPage() {
         throw new Error(errorData.message || 'Failed to delete batch');
       }
 
-      // Update local state to reflect deletion
       setBatches(prevBatches => prevBatches.filter(b => b.id !== batchToDeleteId));
       
-      // Also ensure the global mockBatchesData is updated if other components might rely on it directly
-      // This is more for mock data consistency; real apps would rely on server state.
       const globalBatchIndex = mockBatchesData.findIndex(b => b.id === batchToDeleteId);
       if (globalBatchIndex > -1) {
           mockBatchesData.splice(globalBatchIndex, 1);
-          // The API handles unassigning students from mockStudents array
       }
 
       toast({
@@ -119,7 +113,8 @@ export default function AdminBatchOverviewPage() {
                 <TableHead>Batch Name</TableHead>
                 <TableHead>Department</TableHead>
                 <TableHead>Topic</TableHead>
-                <TableHead>Lead Teacher/Creator</TableHead>
+                <TableHead>Teacher</TableHead>
+                <TableHead>Room</TableHead>
                 <TableHead>Students</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -133,6 +128,7 @@ export default function AdminBatchOverviewPage() {
                   <TableCell>{getDepartmentLabel(batch.department)}</TableCell>
                   <TableCell>{batch.topic}</TableCell>
                   <TableCell>{getTeacherName(batch.teacherId)}</TableCell>
+                  <TableCell>{batch.roomNumber || "N/A"}</TableCell>
                   <TableCell>{batch.studentIds.length}</TableCell>
                   <TableCell>
                     <Badge variant={batch.status === "Ongoing" ? "default" : batch.status === "Scheduled" ? "outline" : "secondary"}>
@@ -171,7 +167,7 @@ export default function AdminBatchOverviewPage() {
               ))}
               {batches.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center text-muted-foreground">
                     No batches found.
                   </TableCell>
                 </TableRow>
@@ -201,4 +197,3 @@ export default function AdminBatchOverviewPage() {
     </div>
   );
 }
-

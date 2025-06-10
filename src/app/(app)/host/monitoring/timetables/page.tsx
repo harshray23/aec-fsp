@@ -4,7 +4,7 @@
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { CalendarDays, Clock, UserCheck2, Building } from "lucide-react"; 
+import { CalendarDays, Clock, UserCheck2, Building, HomeIcon } from "lucide-react"; 
 import { Badge } from "@/components/ui/badge";
 import {
   batches as allBatches,
@@ -18,6 +18,7 @@ interface ProcessedScheduleEntry {
   day: string;
   time: string;
   subject: string;
+  roomNumber?: string;
 }
 
 interface ProcessedTimetable {
@@ -25,6 +26,7 @@ interface ProcessedTimetable {
   batchName: string;
   departmentName: string;
   teacherName: string;
+  roomNumber?: string;
   schedule: ProcessedScheduleEntry[];
 }
 
@@ -53,10 +55,12 @@ export default function HostMonitorTimetablesPage() {
       batchName: batch.name,
       departmentName: departmentInfo ? departmentInfo.label : batch.department,
       teacherName: teacher ? teacher.name : "N/A",
+      roomNumber: batch.roomNumber,
       schedule: group.entries.map(entry => ({
         day: entry.dayOfWeek,
         time: `${entry.startTime} - ${entry.endTime}`,
         subject: entry.subject,
+        roomNumber: entry.roomNumber || batch.roomNumber, // Prefer entry specific room, fallback to batch room
       })).sort((a, b) => { 
         const daysOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
         const dayIndexA = daysOrder.indexOf(a.day);
@@ -94,6 +98,7 @@ export default function HostMonitorTimetablesPage() {
                         <div className="text-xs text-muted-foreground flex flex-col sm:flex-row sm:flex-wrap sm:gap-x-3 gap-y-0.5 mt-1">
                           <span className="flex items-center"><Building className="h-3.5 w-3.5 mr-1 flex-shrink-0" /> {timetable.departmentName}</span>
                           <span className="flex items-center"><UserCheck2 className="h-3.5 w-3.5 mr-1 flex-shrink-0" /> Teacher: {timetable.teacherName}</span>
+                          {timetable.roomNumber && <span className="flex items-center"><HomeIcon className="h-3.5 w-3.5 mr-1 flex-shrink-0" /> Room: {timetable.roomNumber}</span>}
                         </div>
                       </div>
                       <Badge variant="outline" className="mt-1 md:mt-0 self-start md:self-center">{timetable.schedule.length} sessions</Badge>
@@ -108,9 +113,9 @@ export default function HostMonitorTimetablesPage() {
                             <p className="font-medium">{session.subject}</p>
                             <Badge>{session.day}</Badge>
                           </div>
-                          <div className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
-                            <Clock className="h-4 w-4" />
-                            <span>{session.time}</span>
+                          <div className="text-sm text-muted-foreground flex items-center gap-x-4 mt-1">
+                             <span className="flex items-center gap-1"><Clock className="h-4 w-4" />{session.time}</span>
+                            {session.roomNumber && <span className="flex items-center gap-1"><HomeIcon className="h-4 w-4" />{session.roomNumber}</span>}
                           </div>
                         </li>
                       ))}
@@ -130,9 +135,3 @@ export default function HostMonitorTimetablesPage() {
     </div>
   );
 }
-
-// Removed metadata export
-// export const metadata = {
-//   title: "Monitor Timetables - Host Panel - AEC FSP Portal",
-// };
-

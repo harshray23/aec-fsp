@@ -3,7 +3,7 @@
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BookUser, Eye } from "lucide-react";
+import { BookUser, Eye, Home } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -43,8 +43,9 @@ export default function HostMonitorBatchesPage() {
                 <TableHead>Batch Name</TableHead>
                 <TableHead>Department</TableHead>
                 <TableHead>Topic</TableHead>
-                <TableHead>Assigned Teacher</TableHead>
-                <TableHead>Students Enrolled</TableHead>
+                <TableHead>Teacher</TableHead>
+                <TableHead>Room</TableHead>
+                <TableHead>Students</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -57,6 +58,7 @@ export default function HostMonitorBatchesPage() {
                   <TableCell>{getDepartmentLabel(batch.department)}</TableCell>
                   <TableCell>{batch.topic}</TableCell>
                   <TableCell>{getTeacherName(batch.teacherId)}</TableCell>
+                  <TableCell>{batch.roomNumber || "N/A"}</TableCell>
                   <TableCell>{batch.studentIds.length}</TableCell>
                   <TableCell>
                     <Badge variant={batch.status === "Ongoing" ? "default" : batch.status === "Scheduled" ? "outline" : "secondary"}>
@@ -65,7 +67,6 @@ export default function HostMonitorBatchesPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="ghost" size="icon" asChild disabled> 
-                      {/* Link to a detailed batch view if available, disabled for now */}
                       <Link href={`/host/monitoring/batches/${batch.id}`}> 
                         <Eye className="h-4 w-4" />
                       </Link>
@@ -75,7 +76,7 @@ export default function HostMonitorBatchesPage() {
               ))}
               {mockBatches.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center text-muted-foreground">
                     No batches found in the system.
                   </TableCell>
                 </TableRow>
@@ -87,9 +88,3 @@ export default function HostMonitorBatchesPage() {
     </div>
   );
 }
-
-// Removed metadata export
-// export const metadata = {
-//   title: "Monitor Batches - Host Panel - AEC FSP Portal",
-// };
-

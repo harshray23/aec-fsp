@@ -53,6 +53,7 @@ export interface Batch {
   teacherId: string;
   studentIds: string[];
   status: "Scheduled" | "Ongoing" | "Completed";
+  roomNumber?: string; // Added roomNumber
 }
 
 export interface AttendanceRecord {
@@ -71,6 +72,7 @@ export interface TimetableEntry {
   endTime: string; // e.g., "10:00"
   subject: string;
   batchId: string;
+  roomNumber?: string; // Added roomNumber to timetable entry as well for consistency if needed
 }
 
 // Props for navigation items in DashboardLayout

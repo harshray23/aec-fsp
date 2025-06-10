@@ -28,7 +28,7 @@ import { useToast } from "@/hooks/use-toast";
 import { DEPARTMENTS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { batches as mockBatches, teachers as mockTeachers, students as mockStudents } from "@/lib/mockData";
-import type { Batch, Student } from "@/lib/types";
+import type { Batch } from "@/lib/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const daysOfWeekOptions = [
@@ -51,6 +51,7 @@ const batchCreationSchema = z.object({
   }),
   startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid start time (HH:MM)."),
   endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid end time (HH:MM)."),
+  roomNumber: z.string().max(20, "Room number too long").optional(),
   selectedStudentIds: z.array(z.string()).optional(),
 }).refine(data => data.startTime < data.endTime, {
   message: "End time must be after start time.",
@@ -78,6 +79,7 @@ export default function BatchCreationForm({ redirectPathAfterSuccess }: BatchCre
       daysOfWeek: [],
       startTime: "",
       endTime: "",
+      roomNumber: "",
       selectedStudentIds: [],
     },
   });
@@ -104,6 +106,7 @@ export default function BatchCreationForm({ redirectPathAfterSuccess }: BatchCre
       daysOfWeek: values.daysOfWeek,
       startTime: values.startTime,
       endTime: values.endTime,
+      roomNumber: values.roomNumber || undefined,
       studentIds: values.selectedStudentIds || [],
       status: "Scheduled",
     };
@@ -322,6 +325,20 @@ export default function BatchCreationForm({ redirectPathAfterSuccess }: BatchCre
             )}
           />
         </div>
+
+        <FormField
+            control={form.control}
+            name="roomNumber"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Room Number (Optional)</FormLabel>
+                <FormControl>
+                    <Input placeholder="E.g., R101, Lab 3B" {...field} />
+                </FormControl>
+                <FormMessage />
+                </FormItem>
+            )}
+        />
 
         {selectedDepartment && (
           <FormField
