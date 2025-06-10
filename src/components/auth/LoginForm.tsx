@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import React, { useEffect } from "react"; // Import useEffect
 
 import { Button } from "@/components/ui/button";
 import {
@@ -29,9 +30,9 @@ const getLoginFormSchema = (role: UserRole | null) => {
   if (role === USER_ROLES.STUDENT) {
     return z.object({
       ...baseSchema,
-      identifier: z.string().min(1, "Student ID or Email is required"), 
+      identifier: z.string().min(1, "Student ID or Email is required"),
     });
-  } else { 
+  } else {
     return z.object({
       ...baseSchema,
       email: z.string().email("Invalid email address"),
@@ -54,17 +55,27 @@ export default function LoginForm() {
     defaultValues: role === USER_ROLES.STUDENT ? { identifier: "", password: "" } : { email: "", password: "" },
   });
 
+  useEffect(() => {
+    // Effect to handle redirection if role is invalid
+    if (typeof window !== 'undefined') { // Ensure window is defined (client-side)
+      if (!role || !Object.values(USER_ROLES).includes(role)) {
+        router.push('/');
+      }
+    }
+  }, [role, router]);
+
+
   const onSubmit = async (values: LoginFormValues) => {
     if (!role) {
       toast({ title: "Error", description: "Role is missing.", variant: "destructive" });
       return;
     }
-    
-    let loginApiEndpoint = "/api/users/login"; 
+
+    let loginApiEndpoint = "/api/users/login";
     if (role === USER_ROLES.STUDENT) {
       loginApiEndpoint = "/api/students/login";
     }
-    
+
     let successRedirectPath = "/";
     switch (role) {
       case USER_ROLES.STUDENT: successRedirectPath = "/student/dashboard"; break;
@@ -78,21 +89,20 @@ export default function LoginForm() {
       const response = await fetch(loginApiEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...values, role }), 
+        body: JSON.stringify({ ...values, role }),
       });
 
       const responseBodyText = await response.text();
+      let parsedDataForErrorLog: any = null;
 
       if (!response.ok) {
         let errorMessage = `Login attempt failed. (Status: ${response.status} ${response.statusText || ''})`.trim();
-        let parsedDataForErrorLog: any = null;
-
         try {
           if (responseBodyText && responseBodyText.trim()) {
             parsedDataForErrorLog = JSON.parse(responseBodyText);
             if (parsedDataForErrorLog && typeof parsedDataForErrorLog === 'object' && parsedDataForErrorLog.message) {
               errorMessage = parsedDataForErrorLog.message;
-            } else if (response.status === 401) { 
+            } else if (response.status === 401) {
                 errorMessage = "Invalid credentials. Please check your email and password.";
             } else if (parsedDataForErrorLog && typeof parsedDataForErrorLog === 'object' && Object.keys(parsedDataForErrorLog).length === 0) {
                 errorMessage = `Login failed (Status: ${response.status}). The server returned an empty error object.`;
@@ -116,10 +126,9 @@ export default function LoginForm() {
           description: errorMessage,
           variant: "destructive",
         });
-        return; // Explicitly return after handling the error
+        return;
       }
-      
-      // If response.ok is true, try to parse the bodyText as JSON
+
       let userLoginData;
       try {
         if (!responseBodyText.trim()) {
@@ -141,7 +150,7 @@ export default function LoginForm() {
         });
         return;
       }
-      
+
       if (userLoginData && userLoginData.user) {
         localStorage.setItem("currentUser", JSON.stringify(userLoginData.user));
         toast({
@@ -159,18 +168,18 @@ export default function LoginForm() {
         return;
       }
 
-    } catch (error: any) { 
+    } catch (error: any) {
       console.error("Login submit error (outer catch):", error);
       toast({
         title: "Login Failed",
         description: error.message || "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
-    } 
+    }
   };
 
+  // Render a loading/message while useEffect handles redirection
   if (!role || !Object.values(USER_ROLES).includes(role)) {
-     if (typeof window !== 'undefined') router.push('/');
      return <p>Invalid role. Redirecting...</p>;
   }
 
@@ -209,7 +218,7 @@ export default function LoginForm() {
             ) : (
               <FormField
                 control={form.control}
-                name="email" 
+                name="email"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Email</FormLabel>
