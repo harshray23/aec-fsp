@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, ChangeEvent, DragEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,12 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { UserPlus, Search, Users, UserMinus } from "lucide-react";
+import { UserPlus, Search, Users, UserMinus, UploadCloud, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DEPARTMENTS, SECTION_OPTIONS } from "@/lib/constants";
 import { batches as mockBatches, students as mockStudents, teachers as mockTeachers } from "@/lib/mockData";
 import type { Student, Batch } from "@/lib/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import * as XLSX from 'xlsx';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function AdminAssignStudentsPage() {
   const { toast } = useToast();
@@ -24,9 +26,15 @@ export default function AdminAssignStudentsPage() {
 
   const [selectedBatchId, setSelectedBatchId] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState<string>("all");
   const [selectedSectionFilter, setSelectedSectionFilter] = useState<string>("all");
   const [selectedStudents, setSelectedStudents] = useState<Record<string, boolean>>({});
+
+  // Excel upload state
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [excelStudentIdentifiers, setExcelStudentIdentifiers] = useState<string[]>([]);
+  const [excelProcessingMessage, setExcelProcessingMessage] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+
 
   useEffect(() => {
     if (batchIdFromQuery && mockBatches.find(b => b.id === batchIdFromQuery)) {
@@ -37,46 +45,69 @@ export default function AdminAssignStudentsPage() {
   const selectedBatch = useMemo(() => mockBatches.find(b => b.id === selectedBatchId), [selectedBatchId]);
 
   useEffect(() => {
-    // Reset filters and selections when batch changes
     setSelectedStudents({});
     setSearchTerm("");
-    // If a batch is selected, its department should dictate the student pool
+    setSelectedFile(null);
+    setExcelStudentIdentifiers([]);
+    setExcelProcessingMessage(null);
     if (selectedBatch) {
-      setSelectedDepartmentFilter(selectedBatch.department);
-      setSelectedSectionFilter("all"); // Reset section filter when batch changes
-    } else if (!batchIdFromQuery) { // Only reset if not coming from a direct link
-      setSelectedDepartmentFilter("all");
+      // setSelectedDepartmentFilter(selectedBatch.department); // Department filter removed earlier for this page
+      setSelectedSectionFilter("all"); 
+    } else if (!batchIdFromQuery) {
+      // setSelectedDepartmentFilter("all"); // Department filter removed earlier
       setSelectedSectionFilter("all");
     }
-  }, [selectedBatch, batchIdFromQuery]); // Added batchIdFromQuery to dependencies
+  }, [selectedBatch, batchIdFromQuery]);
 
   const handleSelectStudent = (studentId: string, checked: boolean) => {
     setSelectedStudents(prev => ({ ...prev, [studentId]: checked }));
   };
 
   const studentsAvailableForAssignment = useMemo(() => {
-    if (!selectedBatch) { // If no batch is selected, show no students for assignment
+    if (!selectedBatch) { 
       return [];
     }
     return mockStudents.filter(student =>
-      student.department === selectedBatch.department && // Filter by selected batch's department
-      (selectedSectionFilter === "all" || student.section === selectedSectionFilter) && // Filter by selected section
+      student.department === selectedBatch.department && 
+      (selectedSectionFilter === "all" || student.section === selectedSectionFilter) && 
       (student.name.toLowerCase().includes(searchTerm.toLowerCase()) || student.studentId.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }, [searchTerm, selectedSectionFilter, selectedBatch]);
 
 
-  const handleAssignStudents = () => {
-    const studentIdsToAssign = Object.entries(selectedStudents)
-      .filter(([, isSelected]) => isSelected)
-      .map(([studentId]) => studentId);
+  const assignStudentLogic = (studentId: string, targetBatchId: string): boolean => {
+    const studentIndex = mockStudents.findIndex(s => s.id === studentId);
+    if (studentIndex === -1) return false; // Student not found
 
+    // Check if student is already in the target batch
+    if (mockStudents[studentIndex].batchId === targetBatchId) {
+      return false; // Already in this batch, no change
+    }
+
+    // If student is in another batch, unassign from old batch
+    if (mockStudents[studentIndex].batchId) {
+        const oldBatchIndex = mockBatches.findIndex(b => b.id === mockStudents[studentIndex].batchId);
+        if (oldBatchIndex !== -1) {
+            mockBatches[oldBatchIndex].studentIds = mockBatches[oldBatchIndex].studentIds.filter(id => id !== studentId);
+        }
+    }
+    
+    // Assign to new batch
+    mockStudents[studentIndex].batchId = targetBatchId;
+    const targetBatchIndex = mockBatches.findIndex(b => b.id === targetBatchId);
+    if (targetBatchIndex !== -1 && !mockBatches[targetBatchIndex].studentIds.includes(studentId)) {
+         mockBatches[targetBatchIndex].studentIds.push(studentId);
+    }
+    return true; // Successfully assigned
+  };
+
+  const handleAssignStudents = (studentIdsToProcess: string[], source: 'manual' | 'excel') => {
     if (!selectedBatchId) {
       toast({ title: "Error", description: "Please select a batch first.", variant: "destructive" });
       return;
     }
-    if (studentIdsToAssign.length === 0) {
-      toast({ title: "No Students Selected", description: "Please select students to assign.", variant: "destructive" });
+    if (studentIdsToProcess.length === 0) {
+      toast({ title: "No Students", description: `No students selected or found in Excel to assign.`, variant: "destructive" });
       return;
     }
 
@@ -87,46 +118,64 @@ export default function AdminAssignStudentsPage() {
     }
 
     let assignedCount = 0;
-    studentIdsToAssign.forEach(studentId => {
-      const studentIndex = mockStudents.findIndex(s => s.id === studentId);
-      if (studentIndex !== -1) {
-        // Check if student is already in the target batch
-        if (mockStudents[studentIndex].batchId === selectedBatchId) {
-          // Already in this batch, skip
-          return;
-        }
+    let alreadyInBatchCount = 0;
+    let notFoundCount = 0;
+    const notFoundIds: string[] = [];
 
-        // If student is in another batch, unassign from old batch
-        if (mockStudents[studentIndex].batchId) {
-            const oldBatchIndex = mockBatches.findIndex(b => b.id === mockStudents[studentIndex].batchId);
-            if (oldBatchIndex !== -1) {
-                mockBatches[oldBatchIndex].studentIds = mockBatches[oldBatchIndex].studentIds.filter(id => id !== studentId);
-            }
-        }
-        
-        // Assign to new batch
-        mockStudents[studentIndex].batchId = selectedBatchId;
-        if (!mockBatches[batchIndex].studentIds.includes(studentId)) {
-             mockBatches[batchIndex].studentIds.push(studentId);
-        }
+    studentIdsToProcess.forEach(studentIdOrIdentifier => {
+      // For excel, studentIdOrIdentifier is the ID from the excel. For manual, it's student.id.
+      // We need to find the student object based on this identifier.
+      const student = mockStudents.find(s => s.id === studentIdOrIdentifier || s.studentId === studentIdOrIdentifier);
+
+      if (!student) {
+        notFoundCount++;
+        notFoundIds.push(studentIdOrIdentifier);
+        return;
+      }
+      
+      if (assignStudentLogic(student.id, selectedBatchId)) {
         assignedCount++;
+      } else if (student.batchId === selectedBatchId) {
+        alreadyInBatchCount++;
       }
     });
+    
+    let summaryMessage = "";
+    if (assignedCount > 0) {
+        summaryMessage += `${assignedCount} students newly assigned to batch ${selectedBatch?.name}. `;
+    }
+    if (alreadyInBatchCount > 0) {
+        summaryMessage += `${alreadyInBatchCount} students were already in this batch. `;
+    }
+    if (notFoundCount > 0) {
+        summaryMessage += `${notFoundCount} student IDs from Excel were not found: ${notFoundIds.slice(0,5).join(', ')}${notFoundIds.length > 5 ? '...' : ''}. `;
+    }
 
     if (assignedCount > 0) {
         toast({
-        title: "Assignment Successful",
-        description: `${assignedCount} students assigned to batch ${selectedBatch?.name}.`,
+            title: "Assignment Complete",
+            description: summaryMessage.trim(),
+        });
+    } else if (summaryMessage) { // Some other info to show
+         toast({
+            title: "Assignment Information",
+            description: summaryMessage.trim(),
         });
     } else {
-        toast({
+         toast({
             title: "No Changes",
-            description: "Selected students may have already been in the batch or no new valid students were selected.",
-            variant: "default"
+            description: "No new assignments were made.",
         });
     }
-    setSelectedStudents({}); // Clear selection after assignment
+
+    if (source === 'manual') setSelectedStudents({});
+    if (source === 'excel') {
+      setExcelStudentIdentifiers([]);
+      setSelectedFile(null);
+      setExcelProcessingMessage(null);
+    }
   };
+
 
   const handleUnassignStudents = () => {
     const studentIdsToUnassign = Object.entries(selectedStudents)
@@ -152,7 +201,7 @@ export default function AdminAssignStudentsPage() {
     studentIdsToUnassign.forEach(studentId => {
         const studentIndex = mockStudents.findIndex(s => s.id === studentId && s.batchId === selectedBatchId);
         if (studentIndex !== -1) {
-            mockStudents[studentIndex].batchId = undefined; // Clear batch assignment for student
+            mockStudents[studentIndex].batchId = undefined; 
             mockBatches[batchIndex].studentIds = mockBatches[batchIndex].studentIds.filter(id => id !== studentId);
             unassignedCount++;
         }
@@ -169,7 +218,104 @@ export default function AdminAssignStudentsPage() {
             description: "Selected students were not in this batch or no valid students were selected.",
         });
     }
-    setSelectedStudents({}); // Clear selection after unassignment
+    setSelectedStudents({});
+  };
+
+  // --- Excel Upload Handlers ---
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    if (event.target.files && event.target.files[0]) {
+      processFile(event.target.files[0]);
+    }
+  };
+
+  const handleDrop = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(false);
+    if (event.dataTransfer.files && event.dataTransfer.files[0]) {
+      processFile(event.dataTransfer.files[0]);
+    }
+  };
+
+  const processFile = (file: File) => {
+    if (!selectedBatchId) {
+      toast({ title: "Select Batch First", description: "Please select a batch before uploading an Excel file.", variant: "destructive" });
+      return;
+    }
+    if (file.type !== "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" && file.type !== "application/vnd.ms-excel") {
+      toast({ title: "Invalid File Type", description: "Please upload a .xlsx or .xls file.", variant: "destructive" });
+      return;
+    }
+    setSelectedFile(file);
+    setExcelProcessingMessage("Processing file...");
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const arrayBuffer = e.target?.result;
+        if (!arrayBuffer) throw new Error("Could not read file data.");
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        
+        // Try to find 'Student ID' header, otherwise assume first column
+        const jsonData: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        
+        let studentIdColumnIndex = 0; // Default to first column
+        if (jsonData.length > 0) {
+            const headerRow = jsonData[0];
+            const foundIndex = headerRow.findIndex(cell => typeof cell === 'string' && cell.trim().toLowerCase() === 'student id');
+            if (foundIndex !== -1) {
+                studentIdColumnIndex = foundIndex;
+            }
+        }
+
+        const idsFromFile = jsonData
+          .slice(1) // Skip header row
+          .map(row => row[studentIdColumnIndex]?.toString().trim())
+          .filter(id => id); // Remove empty or undefined IDs
+
+        if (idsFromFile.length === 0) {
+          setExcelProcessingMessage("No student IDs found in the Excel file or the 'Student ID' column is missing/empty.");
+          setExcelStudentIdentifiers([]);
+          return;
+        }
+
+        const validStudentsInFile = idsFromFile.filter(id => mockStudents.some(s => s.studentId === id && s.department === selectedBatch?.department));
+        const notFoundInSystemOrDept = idsFromFile.filter(id => !mockStudents.some(s => s.studentId === id && s.department === selectedBatch?.department));
+        
+        setExcelStudentIdentifiers(validStudentsInFile);
+
+        let message = `${validStudentsInFile.length} valid student(s) found in Excel from the batch's department. `;
+        if (notFoundInSystemOrDept.length > 0) {
+          message += `${notFoundInSystemOrDept.length} IDs were not found in the system for this department or were invalid.`;
+        }
+        setExcelProcessingMessage(message);
+
+      } catch (error) {
+        console.error("Error processing Excel file:", error);
+        setExcelProcessingMessage("Error processing Excel file. Make sure it's a valid .xlsx or .xls file and the format is correct.");
+        toast({ title: "Excel Processing Error", description: (error as Error).message, variant: "destructive" });
+        setExcelStudentIdentifiers([]);
+      }
+    };
+    reader.onerror = () => {
+        setExcelProcessingMessage("Failed to read the file.");
+        toast({title: "File Read Error", description: "Could not read the selected file.", variant: "destructive"});
+        setExcelStudentIdentifiers([]);
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const handleDragOver = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(true);
+  };
+  const handleDragLeave = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
+    setIsDragging(false);
   };
 
 
@@ -177,12 +323,14 @@ export default function AdminAssignStudentsPage() {
     <div className="space-y-8">
       <PageHeader
         title="Assign Students to Batch (Admin)"
-        description="Manage student enrollments for FSP batches. Select a batch to see eligible students from its department."
+        description="Manage student enrollments. Select a batch, then assign students manually or via Excel upload."
         icon={UserPlus}
       />
+      
+      {/* Batch Selection and Manual Assignment Card */}
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle>Student Assignment</CardTitle>
+          <CardTitle>Manual Student Assignment</CardTitle>
           <CardDescription>
             Select a batch to view students from its department. You can then filter by section and search.
           </CardDescription>
@@ -287,7 +435,7 @@ export default function AdminAssignStudentsPage() {
           </ScrollArea>
           <div className="mt-6 flex flex-wrap gap-2">
             <Button
-                onClick={handleAssignStudents}
+                onClick={() => handleAssignStudents(Object.entries(selectedStudents).filter(([,isSelected])=>isSelected).map(([id])=>id), 'manual')}
                 disabled={Object.values(selectedStudents).filter(Boolean).length === 0 || !selectedBatchId}
             >
                 <UserPlus className="mr-2 h-4 w-4" /> Assign Selected to Batch
@@ -301,10 +449,71 @@ export default function AdminAssignStudentsPage() {
             </Button>
           </div>
            <p className="mt-4 text-xs text-muted-foreground">
-            Students already in the selected batch will not be re-assigned. Assigning a student to this batch will remove them from any other batch they might currently be in.
+            Assigning a student to this batch will remove them from any other batch they might currently be in.
           </p>
         </CardContent>
       </Card>
+
+      {/* Excel Upload Card */}
+      <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle>Bulk Assign via Excel</CardTitle>
+          <CardDescription>Upload an Excel file (.xlsx, .xls) with student IDs to assign them to the selected batch.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div 
+            className={`p-6 border-2 border-dashed rounded-md text-center cursor-pointer
+                        ${isDragging ? "border-primary bg-primary/10" : "border-border hover:border-muted-foreground/50"}
+                        ${!selectedBatchId ? "opacity-50 cursor-not-allowed" : ""}`}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onClick={() => { if (selectedBatchId) document.getElementById('excel-upload-input')?.click()}}
+          >
+            <input
+              type="file"
+              id="excel-upload-input"
+              accept=".xlsx, .xls"
+              onChange={handleFileChange}
+              className="hidden"
+              disabled={!selectedBatchId}
+            />
+            <UploadCloud className={`mx-auto h-12 w-12 ${isDragging ? "text-primary" : "text-muted-foreground"}`} />
+            <p className="mt-2 text-sm text-muted-foreground">
+              {isDragging ? "Drop the file here" : "Drag & drop your Excel file here, or click to select."}
+            </p>
+            {!selectedBatchId && <p className="text-xs text-destructive mt-1">Please select a batch above before uploading.</p>}
+          </div>
+
+          {selectedFile && (
+            <Alert variant="default">
+              <FileText className="h-4 w-4" />
+              <AlertTitle>File Selected: {selectedFile.name}</AlertTitle>
+              <AlertDescription>{excelProcessingMessage || "Ready to process."}</AlertDescription>
+            </Alert>
+          )}
+
+          {excelStudentIdentifiers.length > 0 && excelProcessingMessage && (
+             <Alert variant="default">
+                <Users className="h-4 w-4" />
+                <AlertTitle>Processing Result</AlertTitle>
+                <AlertDescription>{excelProcessingMessage}</AlertDescription>
+             </Alert>
+          )}
+          
+          <Button
+            onClick={() => handleAssignStudents(excelStudentIdentifiers, 'excel')}
+            disabled={excelStudentIdentifiers.length === 0 || !selectedBatchId || !selectedFile}
+            className="w-full md:w-auto"
+          >
+            <UserPlus className="mr-2 h-4 w-4" /> Assign from Excel
+          </Button>
+           <p className="mt-2 text-xs text-muted-foreground">
+            Ensure the Excel file has a column named "Student ID" or that student IDs are in the first column. Only students matching the selected batch's department will be considered.
+          </p>
+        </CardContent>
+      </Card>
+
     </div>
   );
 }
