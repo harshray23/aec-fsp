@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
-import { UserPlus, Search, Users, UserMinus, UploadCloud, FileText } from "lucide-react";
+import { UserPlus, Search, Users, UserMinus, UploadCloud, FileText, Hash } from "lucide-react"; // Added Hash for Roll Number
 import { useToast } from "@/hooks/use-toast";
 import { DEPARTMENTS, SECTION_OPTIONS } from "@/lib/constants";
 import { batches as mockBatches, students as mockStudents, teachers as mockTeachers } from "@/lib/mockData";
@@ -51,10 +51,8 @@ export default function AdminAssignStudentsPage() {
     setExcelStudentIdentifiers([]);
     setExcelProcessingMessage(null);
     if (selectedBatch) {
-      // setSelectedDepartmentFilter(selectedBatch.department); // Department filter removed earlier for this page
       setSelectedSectionFilter("all"); 
     } else if (!batchIdFromQuery) {
-      // setSelectedDepartmentFilter("all"); // Department filter removed earlier
       setSelectedSectionFilter("all");
     }
   }, [selectedBatch, batchIdFromQuery]);
@@ -70,21 +68,21 @@ export default function AdminAssignStudentsPage() {
     return mockStudents.filter(student =>
       student.department === selectedBatch.department && 
       (selectedSectionFilter === "all" || student.section === selectedSectionFilter) && 
-      (student.name.toLowerCase().includes(searchTerm.toLowerCase()) || student.studentId.toLowerCase().includes(searchTerm.toLowerCase()))
+      (student.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+       student.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+       student.rollNumber.toLowerCase().includes(searchTerm.toLowerCase()))
     );
   }, [searchTerm, selectedSectionFilter, selectedBatch]);
 
 
   const assignStudentLogic = (studentId: string, targetBatchId: string): boolean => {
     const studentIndex = mockStudents.findIndex(s => s.id === studentId);
-    if (studentIndex === -1) return false; // Student not found
+    if (studentIndex === -1) return false; 
 
-    // Check if student is already in the target batch
     if (mockStudents[studentIndex].batchId === targetBatchId) {
-      return false; // Already in this batch, no change
+      return false; 
     }
 
-    // If student is in another batch, unassign from old batch
     if (mockStudents[studentIndex].batchId) {
         const oldBatchIndex = mockBatches.findIndex(b => b.id === mockStudents[studentIndex].batchId);
         if (oldBatchIndex !== -1) {
@@ -92,13 +90,12 @@ export default function AdminAssignStudentsPage() {
         }
     }
     
-    // Assign to new batch
     mockStudents[studentIndex].batchId = targetBatchId;
     const targetBatchIndex = mockBatches.findIndex(b => b.id === targetBatchId);
     if (targetBatchIndex !== -1 && !mockBatches[targetBatchIndex].studentIds.includes(studentId)) {
          mockBatches[targetBatchIndex].studentIds.push(studentId);
     }
-    return true; // Successfully assigned
+    return true; 
   };
 
   const handleAssignStudents = (studentIdsToProcess: string[], source: 'manual' | 'excel') => {
@@ -123,8 +120,6 @@ export default function AdminAssignStudentsPage() {
     const notFoundIds: string[] = [];
 
     studentIdsToProcess.forEach(studentIdOrIdentifier => {
-      // For excel, studentIdOrIdentifier is the ID from the excel. For manual, it's student.id.
-      // We need to find the student object based on this identifier.
       const student = mockStudents.find(s => s.id === studentIdOrIdentifier || s.studentId === studentIdOrIdentifier);
 
       if (!student) {
@@ -156,7 +151,7 @@ export default function AdminAssignStudentsPage() {
             title: "Assignment Complete",
             description: summaryMessage.trim(),
         });
-    } else if (summaryMessage) { // Some other info to show
+    } else if (summaryMessage) { 
          toast({
             title: "Assignment Information",
             description: summaryMessage.trim(),
@@ -258,10 +253,9 @@ export default function AdminAssignStudentsPage() {
         const firstSheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[firstSheetName];
         
-        // Try to find 'Student ID' header, otherwise assume first column
         const jsonData: any[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
         
-        let studentIdColumnIndex = 0; // Default to first column
+        let studentIdColumnIndex = 0; 
         if (jsonData.length > 0) {
             const headerRow = jsonData[0];
             const foundIndex = headerRow.findIndex(cell => typeof cell === 'string' && cell.trim().toLowerCase() === 'student id');
@@ -271,9 +265,9 @@ export default function AdminAssignStudentsPage() {
         }
 
         const idsFromFile = jsonData
-          .slice(1) // Skip header row
+          .slice(1) 
           .map(row => row[studentIdColumnIndex]?.toString().trim())
-          .filter(id => id); // Remove empty or undefined IDs
+          .filter(id => id); 
 
         if (idsFromFile.length === 0) {
           setExcelProcessingMessage("No student IDs found in the Excel file or the 'Student ID' column is missing/empty.");
@@ -327,12 +321,11 @@ export default function AdminAssignStudentsPage() {
         icon={UserPlus}
       />
       
-      {/* Batch Selection and Manual Assignment Card */}
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle>Manual Student Assignment</CardTitle>
           <CardDescription>
-            Select a batch to view students from its department. You can then filter by section and search.
+            Select a batch to view students from its department. You can then filter by section and search by Student ID, Name, or Roll Number.
           </CardDescription>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
             <Select onValueChange={setSelectedBatchId} value={selectedBatchId}>
@@ -347,7 +340,7 @@ export default function AdminAssignStudentsPage() {
               </SelectContent>
             </Select>
             <Input
-              placeholder="Search students by name or ID..."
+              placeholder="Search by ID, name, or roll no..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="lg:col-span-1"
@@ -393,6 +386,7 @@ export default function AdminAssignStudentsPage() {
                   </TableHead>
                   <TableHead>Student ID</TableHead>
                   <TableHead>Name</TableHead>
+                  <TableHead>Roll No.</TableHead>
                   <TableHead>Department</TableHead>
                   <TableHead>Section</TableHead>
                   <TableHead>Current Batch</TableHead>
@@ -410,6 +404,7 @@ export default function AdminAssignStudentsPage() {
                     </TableCell>
                     <TableCell>{student.studentId}</TableCell>
                     <TableCell id={`student-name-${student.id}`} className="font-medium">{student.name}</TableCell>
+                    <TableCell>{student.rollNumber}</TableCell>
                     <TableCell>{DEPARTMENTS.find(d => d.value === student.department)?.label || student.department}</TableCell>
                     <TableCell>{student.section || "N/A"}</TableCell>
                     <TableCell>
@@ -425,7 +420,7 @@ export default function AdminAssignStudentsPage() {
                 ))}
                 {studentsAvailableForAssignment.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground h-24">
+                    <TableCell colSpan={7} className="text-center text-muted-foreground h-24">
                       {!selectedBatchId ? "Select a batch to see eligible students." : "No eligible students found for this batch's department/section or matching search/filter."}
                     </TableCell>
                   </TableRow>
@@ -454,7 +449,6 @@ export default function AdminAssignStudentsPage() {
         </CardContent>
       </Card>
 
-      {/* Excel Upload Card */}
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle>Bulk Assign via Excel</CardTitle>
@@ -509,7 +503,8 @@ export default function AdminAssignStudentsPage() {
             <UserPlus className="mr-2 h-4 w-4" /> Assign from Excel
           </Button>
            <p className="mt-2 text-xs text-muted-foreground">
-            Ensure the Excel file has a column named "Student ID" or that student IDs are in the first column. Only students matching the selected batch's department will be considered.
+            The system primarily uses the "Student ID" column for matching. Ensure this column is present and correct in your Excel file.
+            Including "Name" and "Roll Number" columns is good for your reference. Only students matching the selected batch's department will be considered.
           </p>
         </CardContent>
       </Card>
@@ -517,3 +512,4 @@ export default function AdminAssignStudentsPage() {
     </div>
   );
 }
+
