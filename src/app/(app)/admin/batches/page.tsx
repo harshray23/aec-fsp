@@ -4,7 +4,7 @@ import React from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BookUser, Eye, MoreHorizontal, Trash2, Edit } from "lucide-react";
+import { BookUser, Users, MoreHorizontal, Trash2, Edit } from "lucide-react"; // Changed Eye to Users
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -105,7 +105,6 @@ export default function AdminBatchOverviewPage() {
         title="Batch Overview"
         description="View and manage all Finishing School Program batches."
         icon={BookUser}
-        // "Create New Batch" button removed from here
       />
       <Card className="shadow-lg">
         <CardHeader>
@@ -154,8 +153,8 @@ export default function AdminBatchOverviewPage() {
                           </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                           <Link href={`/admin/batches/${batch.id}`} className="flex items-center cursor-pointer"> {/* Placeholder link */}
-                                <Eye className="mr-2 h-4 w-4" /> View Details
+                           <Link href={`/admin/batches/assign?batchId=${batch.id}`} className="flex items-center cursor-pointer">
+                                <Users className="mr-2 h-4 w-4" /> Manage Students
                             </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />

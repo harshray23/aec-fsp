@@ -1,7 +1,8 @@
 
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,15 +19,24 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 export default function AdminAssignStudentsPage() {
   const { toast } = useToast();
+  const searchParams = useSearchParams();
+  const batchIdFromQuery = searchParams.get("batchId");
+
   const [selectedBatchId, setSelectedBatchId] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState<string>("all");
   const [selectedSectionFilter, setSelectedSectionFilter] = useState<string>("all");
   const [selectedStudents, setSelectedStudents] = useState<Record<string, boolean>>({});
 
+  useEffect(() => {
+    if (batchIdFromQuery && mockBatches.find(b => b.id === batchIdFromQuery)) {
+      setSelectedBatchId(batchIdFromQuery);
+    }
+  }, [batchIdFromQuery]);
+
   const selectedBatch = useMemo(() => mockBatches.find(b => b.id === selectedBatchId), [selectedBatchId]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     // Reset filters and selections when batch changes
     setSelectedStudents({});
     setSearchTerm("");
@@ -34,11 +44,11 @@ export default function AdminAssignStudentsPage() {
     if (selectedBatch) {
       setSelectedDepartmentFilter(selectedBatch.department);
       setSelectedSectionFilter("all"); // Reset section filter when batch changes
-    } else {
+    } else if (!batchIdFromQuery) { // Only reset if not coming from a direct link
       setSelectedDepartmentFilter("all");
       setSelectedSectionFilter("all");
     }
-  }, [selectedBatchId, selectedBatch]);
+  }, [selectedBatch, batchIdFromQuery]); // Added batchIdFromQuery to dependencies
 
   const handleSelectStudent = (studentId: string, checked: boolean) => {
     setSelectedStudents(prev => ({ ...prev, [studentId]: checked }));
