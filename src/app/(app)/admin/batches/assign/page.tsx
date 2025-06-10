@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { UserPlus, Search, Users, UserMinus, UploadCloud, FileText, Hash } from "lucide-react"; // Added Hash for Roll Number
 import { useToast } from "@/hooks/use-toast";
-import { DEPARTMENTS, SECTION_OPTIONS } from "@/lib/constants";
+import { DEPARTMENTS } from "@/lib/constants";
 import { batches as mockBatches, students as mockStudents, teachers as mockTeachers } from "@/lib/mockData";
 import type { Student, Batch } from "@/lib/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -26,7 +26,7 @@ export default function AdminAssignStudentsPage() {
 
   const [selectedBatchId, setSelectedBatchId] = useState<string>("");
   const [searchTerm, setSearchTerm] = useState<string>("");
-  const [selectedSectionFilter, setSelectedSectionFilter] = useState<string>("all");
+  // const [selectedSectionFilter, setSelectedSectionFilter] = useState<string>("all"); // Section filter removed
   const [selectedStudents, setSelectedStudents] = useState<Record<string, boolean>>({});
 
   // Excel upload state
@@ -50,11 +50,11 @@ export default function AdminAssignStudentsPage() {
     setSelectedFile(null);
     setExcelStudentIdentifiers([]);
     setExcelProcessingMessage(null);
-    if (selectedBatch) {
-      setSelectedSectionFilter("all"); 
-    } else if (!batchIdFromQuery) {
-      setSelectedSectionFilter("all");
-    }
+    // if (selectedBatch) { // Logic related to section filter removed
+    //   setSelectedSectionFilter("all"); 
+    // } else if (!batchIdFromQuery) {
+    //   setSelectedSectionFilter("all");
+    // }
   }, [selectedBatch, batchIdFromQuery]);
 
   const handleSelectStudent = (studentId: string, checked: boolean) => {
@@ -67,12 +67,12 @@ export default function AdminAssignStudentsPage() {
     }
     return mockStudents.filter(student =>
       student.department === selectedBatch.department && 
-      (selectedSectionFilter === "all" || student.section === selectedSectionFilter) && 
+      // (selectedSectionFilter === "all" || student.section === selectedSectionFilter) && // Section filter logic removed
       (student.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
        student.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
        student.rollNumber.toLowerCase().includes(searchTerm.toLowerCase()))
     );
-  }, [searchTerm, selectedSectionFilter, selectedBatch]);
+  }, [searchTerm, selectedBatch]); // selectedSectionFilter removed from dependencies
 
 
   const assignStudentLogic = (studentId: string, targetBatchId: string): boolean => {
@@ -325,11 +325,11 @@ export default function AdminAssignStudentsPage() {
         <CardHeader>
           <CardTitle>Manual Student Assignment</CardTitle>
           <CardDescription>
-            Select a batch to view students from its department. You can then filter by section and search by Student ID, Name, or Roll Number.
+            Select a batch to view students from its department. You can then search by Student ID, Name, or Roll Number.
           </CardDescription>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
             <Select onValueChange={setSelectedBatchId} value={selectedBatchId}>
-              <SelectTrigger className="lg:col-span-1">
+              <SelectTrigger>
                 <SelectValue placeholder="Select a Batch" />
               </SelectTrigger>
               <SelectContent>
@@ -343,25 +343,13 @@ export default function AdminAssignStudentsPage() {
               placeholder="Search by ID, name, or roll no..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="lg:col-span-1"
               disabled={!selectedBatchId}
             />
-            <Select onValueChange={setSelectedSectionFilter} value={selectedSectionFilter} disabled={!selectedBatchId}>
-                <SelectTrigger className="lg:col-span-1">
-                    <SelectValue placeholder="Filter by Section" />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="all">All Sections</SelectItem>
-                    {SECTION_OPTIONS.map(sec => (
-                        <SelectItem key={sec.value} value={sec.value}>{sec.label}</SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
+            {/* Section filter select component removed */}
           </div>
             {selectedBatch && (
                 <p className="mt-2 text-sm text-muted-foreground">
                     Selected Batch Department: <span className="font-semibold text-primary">{DEPARTMENTS.find(d=>d.value === selectedBatch.department)?.label || selectedBatch.department}</span>.
-                    {selectedSectionFilter !== 'all' && ` Section: <span className="font-semibold text-primary">${selectedSectionFilter}</span>.`}
                 </p>
             )}
         </CardHeader>
@@ -421,7 +409,7 @@ export default function AdminAssignStudentsPage() {
                 {studentsAvailableForAssignment.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center text-muted-foreground h-24">
-                      {!selectedBatchId ? "Select a batch to see eligible students." : "No eligible students found for this batch's department/section or matching search/filter."}
+                      {!selectedBatchId ? "Select a batch to see eligible students." : "No eligible students found for this batch's department or matching search."}
                     </TableCell>
                   </TableRow>
                 )}
