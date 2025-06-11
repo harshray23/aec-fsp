@@ -1,6 +1,6 @@
 
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { db } from '@/lib/firebaseAdmin';
+import { db } from '@/lib/firebaseAdmin'; // Updated import
 import { USER_ROLES } from '@/lib/constants';
 import type { User, Admin, Teacher } from '@/lib/types';
 
@@ -11,6 +11,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method !== 'POST') {
     res.setHeader('Allow', ['POST']);
     return res.status(405).end(`Method ${req.method} Not Allowed`);
+  }
+
+  if (!db) {
+    console.error("Login API Error: Firestore is not available. Firebase Admin SDK might not have initialized properly.");
+    return res.status(500).json({ message: 'Internal Server Error: Database service not available. Please check server logs for Firebase Admin SDK initialization issues.' });
   }
 
   const { email, password, role } = req.body;
@@ -58,11 +63,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(403).json({ message: 'Your account is not active or pending approval. Please contact support or management.' });
     }
     
+    // Ensure no sensitive data like a password field (if it existed on the user object) is sent back.
+    // For this example, we assume the user object is already clean.
     const { ...userDataToSend } = user;
     return res.status(200).json({ message: `${role.charAt(0).toUpperCase() + role.slice(1)} login successful`, user: userDataToSend });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Error during ${role} login:`, error);
-    return res.status(500).json({ message: `Internal server error during ${role} login.` });
+    return res.status(500).json({ message: `Internal server error during ${role} login. Details: ${error.message}` });
   }
 }
