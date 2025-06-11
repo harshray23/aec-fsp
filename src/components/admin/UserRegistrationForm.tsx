@@ -19,17 +19,18 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { USER_ROLES, DEPARTMENTS, type UserRole } from "@/lib/constants";
-import { admins as mockAdmins, teachers as mockTeachers } from "@/lib/mockData"; // Import mutable arrays
-import type { Admin, Teacher } from "@/lib/types";
+// mockData imports removed as we will use API
+// import { admins as mockAdmins, teachers as mockTeachers } from "@/lib/mockData"; 
+// import type { Admin, Teacher } from "@/lib/types";
 
 const userRegistrationSchema = z.object({
-  name: z.string().min(2, "Name must be at least 5 characters"),
+  name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   role: z.enum([USER_ROLES.TEACHER, USER_ROLES.ADMIN], {
     required_error: "Role is required.",
   }),
   department: z.string().optional(), // Required only if role is teacher
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters"), // Password is for form validation, not stored directly in Firestore by this API
   confirmPassword: z.string(),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords do not match",
@@ -64,47 +65,43 @@ export default function UserRegistrationForm({ onSuccess }: UserRegistrationForm
   const selectedRole = form.watch("role");
 
   const onSubmit = async (values: UserRegistrationFormValues) => {
-    console.log("User registration form submitted:", values);
-    
-    const userId = `${values.role.toUpperCase()}_${Date.now()}`; // Simple unique ID for mock
+    form.formState.isSubmitting = true;
+    try {
+      const response = await fetch('/api/admin/register-user', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values), // Send all form values, API will pick what it needs
+      });
 
-    if (values.role === USER_ROLES.TEACHER) {
-      const newTeacher: Teacher = {
-        id: userId,
-        name: values.name,
-        email: values.email,
-        role: USER_ROLES.TEACHER,
-        department: values.department!,
-        status: "pending_approval", // New users start as pending
-        username: undefined, // Username assigned by host
-      };
-      mockTeachers.push(newTeacher);
-    } else if (values.role === USER_ROLES.ADMIN) {
-      const newAdmin: Admin = {
-        id: userId,
-        name: values.name,
-        email: values.email,
-        role: USER_ROLES.ADMIN,
-        status: "pending_approval", // New users start as pending
-        username: undefined, // Username assigned by host
-      };
-      mockAdmins.push(newAdmin);
-    }
-    
-    toast({
-        title: "User Registration Submitted",
-        description: `${values.name} has been registered as a ${values.role} and is awaiting host approval.`,
-    });
-    form.reset();
-    if (onSuccess) {
-      onSuccess(values.role as 'teacher' | 'admin');
-    } else {
-      // Default redirect logic if no onSuccess provided
-      if (values.role === USER_ROLES.TEACHER) {
-        router.push("/admin/users/teachers");
-      } else if (values.role === USER_ROLES.ADMIN) {
-        router.push("/admin/users/admins");
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || `Failed to register user (${response.status})`);
       }
+      
+      toast({
+          title: "User Registration Submitted",
+          description: `${values.name} has been registered as a ${values.role} and is awaiting host approval.`,
+      });
+      form.reset();
+      if (onSuccess) {
+        onSuccess(values.role as 'teacher' | 'admin');
+      } else {
+        // Default redirect logic if no onSuccess provided
+        if (values.role === USER_ROLES.TEACHER) {
+          router.push("/admin/users/teachers");
+        } else if (values.role === USER_ROLES.ADMIN) {
+          router.push("/admin/users/admins");
+        }
+      }
+    } catch (error: any) {
+      toast({
+        title: "Registration Error",
+        description: error.message || "Could not submit user registration.",
+        variant: "destructive",
+      });
+    } finally {
+      form.formState.isSubmitting = false;
     }
   };
 
