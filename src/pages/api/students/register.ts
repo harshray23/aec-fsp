@@ -1,6 +1,6 @@
 
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { students as mockStudents } from '@/lib/mockData';
+import { db } from '@/lib/firebaseAdmin';
 import type { Student } from '@/lib/types';
 import { USER_ROLES } from '@/lib/constants';
 
@@ -17,48 +17,50 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     rollNumber,
     registrationNumber,
     department,
-    // section, // Section removed
     phoneNumber,
     whatsappNumber,
-    // password is intentionally not used for storage in mock data
-  } = req.body as Partial<Student & { password?: string }>; // Cast to include password for receiving
+    // password is intentionally not captured here for Firestore storage
+  } = req.body as Partial<Student & { password?: string }>;
 
-  // Basic validation
   if (!studentId || !name || !email || !rollNumber || !registrationNumber || !department || !phoneNumber) {
     return res.status(400).json({ message: 'Missing required student registration fields.' });
   }
 
-  // Server-side check for duplicates, even if client-side check was done
-  const existingStudentById = mockStudents.find((s) => s.studentId === studentId);
-  if (existingStudentById) {
-    return res.status(409).json({ message: `Student ID ${studentId} already exists.` });
+  try {
+    const studentsRef = db.collection('students');
+
+    // Server-side check for duplicates
+    const existingByIdQuery = await studentsRef.where('studentId', '==', studentId).limit(1).get();
+    if (!existingByIdQuery.empty) {
+      return res.status(409).json({ message: `Student ID ${studentId} already exists.` });
+    }
+    const existingByEmailQuery = await studentsRef.where('email', '==', email).limit(1).get();
+    if (!existingByEmailQuery.empty) {
+      return res.status(409).json({ message: `Email ${email} already registered.` });
+    }
+
+    const newStudentData: Omit<Student, 'id'> = { // Firestore will generate the document ID
+      studentId,
+      name,
+      email,
+      role: USER_ROLES.STUDENT,
+      rollNumber,
+      registrationNumber,
+      department,
+      phoneNumber,
+      whatsappNumber: whatsappNumber || undefined,
+      isEmailVerified: true, // Assumed verified after client-side steps
+      isPhoneVerified: true, // Assumed verified after client-side steps
+      // batchId will be assigned later
+    };
+
+    const docRef = await studentsRef.add(newStudentData);
+    const createdStudent = { id: docRef.id, ...newStudentData };
+
+    return res.status(201).json({ message: 'Student registered successfully', student: createdStudent });
+
+  } catch (error) {
+    console.error('Error during student registration:', error);
+    return res.status(500).json({ message: 'Internal server error during registration.' });
   }
-  const existingStudentByEmail = mockStudents.find((s) => s.email === email);
-  if (existingStudentByEmail) {
-    return res.status(409).json({ message: `Email ${email} already registered.` });
-  }
-
-  const newStudent: Student = {
-    id: `STUD_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`, // More unique ID
-    studentId,
-    name,
-    email,
-    role: USER_ROLES.STUDENT, // Default role for this registration
-    rollNumber,
-    registrationNumber,
-    department,
-    // section, // Section removed
-    phoneNumber,
-    whatsappNumber: whatsappNumber || undefined, // Handle optional field
-    isEmailVerified: true, // Assumed verified after client-side steps
-    isPhoneVerified: true, // Assumed verified after client-side steps
-    // batchId will be assigned later
-  };
-
-  mockStudents.push(newStudent);
-
-  // Exclude password from the response
-  const { ...studentDataToSend } = newStudent;
-
-  return res.status(201).json({ message: 'Student registered successfully', student: studentDataToSend });
 }
