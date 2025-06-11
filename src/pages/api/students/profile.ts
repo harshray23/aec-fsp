@@ -1,8 +1,8 @@
 
 import type { NextApiRequest, NextApiResponse } from 'next';
-import pool from '@/lib/mysql'; // Import the new MySQL connection pool
-import type { Student } from '@/lib/types'; // Assuming Student type matches your table structure
-import type { RowDataPacket } from 'mysql2';
+import { db } from '@/lib/firebaseAdmin'; // Import the initialized Firestore instance
+import type { Student } from '@/lib/types';
+import type { FirebaseError } from 'firebase-admin';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
@@ -17,35 +17,48 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const connection = await pool.getConnection();
-    // Adjust the query based on your actual 'students' table structure and primary key or unique identifier.
-    // This example assumes you might search by 'id' (primary key) or 'studentId' (a business key).
-    const query = 'SELECT * FROM students WHERE id = ? OR studentId = ? LIMIT 1';
-    const [rows] = await connection.execute<RowDataPacket[]>(query, [studentIdentifier, studentIdentifier]);
-    connection.release();
+    const studentsRef = db.collection('students');
+    let studentDocSnapshot: admin.firestore.DocumentSnapshot | null = null;
 
-    if (rows.length === 0) {
+    // Attempt to find by studentId field first (common business key)
+    const querySnapshot = await studentsRef.where('studentId', '==', studentIdentifier).limit(1).get();
+
+    if (!querySnapshot.empty) {
+      studentDocSnapshot = querySnapshot.docs[0];
+    } else {
+      // If not found by studentId field, try to get by document ID (assuming studentIdentifier could also be this)
+      // This is useful if your Firestore document IDs are the same as `student.id` from mockData
+      try {
+        const doc = await studentsRef.doc(studentIdentifier).get();
+        if (doc.exists) {
+          studentDocSnapshot = doc;
+        }
+      } catch (docIdError) {
+         // If studentIdentifier is not a valid document ID format, .doc() might throw.
+         // We can ignore this error if the previous query by field also yielded no results.
+         console.warn(`Attempt to fetch by document ID '${studentIdentifier}' failed or was not valid, continuing. Error: ${ (docIdError as FirebaseError).message }`);
+      }
+    }
+
+    if (!studentDocSnapshot || !studentDocSnapshot.exists) {
       return res.status(404).json({ message: `Student with identifier '${studentIdentifier}' not found.` });
     }
 
-    // Directly cast the first row to Student. Ensure your DB columns align with the Student type.
-    // You might need to map column names if they differ (e.g., student_id to studentId).
-    const student = rows[0] as Student; 
+    const studentData = studentDocSnapshot.data() as Student;
 
-    // Convert boolean fields if they are stored as 0/1 in MySQL
-    if (typeof student.isEmailVerified === 'number') {
-        student.isEmailVerified = Boolean(student.isEmailVerified);
-    }
-    if (typeof student.isPhoneVerified === 'number') {
-        student.isPhoneVerified = Boolean(student.isPhoneVerified);
-    }
+    // Firestore Timestamps are automatically handled by the SDK when converting to JSON for HTTP response.
+    // Boolean fields from Firestore are typically already booleans.
 
-
-    return res.status(200).json(student);
+    return res.status(200).json(studentData);
 
   } catch (error: any) {
-    console.error('Database error fetching student profile:', error);
-    // Provide a more generic error message to the client
-    return res.status(500).json({ message: 'Internal server error while fetching student profile. Please check server logs for details.' });
+    console.error('Firestore error fetching student profile:', error);
+    let errorMessage = 'Internal server error while fetching student profile.';
+    if (error.code) { // Firebase errors often have a code
+        errorMessage = `Firestore error (${error.code}): ${error.message}`;
+    } else if (error.message) {
+        errorMessage = error.message;
+    }
+    return res.status(500).json({ message: errorMessage });
   }
 }
