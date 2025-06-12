@@ -32,12 +32,14 @@ const getLoginFormSchema = (role: UserRole | null) => {
       ...baseSchema,
       identifier: z.string().min(1, "Student ID or Email is required"),
     });
-  } else {
+  } else if (role === USER_ROLES.TEACHER || role === USER_ROLES.ADMIN || role === USER_ROLES.HOST) {
     return z.object({
       ...baseSchema,
-      email: z.string().email("Invalid email address"),
+      identifier: z.string().min(1, "Email or Username is required"),
     });
   }
+  // Fallback for invalid role, though redirection should handle this
+  return z.object({ ...baseSchema, identifier: z.string() });
 };
 
 
@@ -52,12 +54,12 @@ export default function LoginForm() {
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: role === USER_ROLES.STUDENT ? { identifier: "", password: "" } : { email: "", password: "" },
+    // Set default values based on the schema structure (always identifier + password)
+    defaultValues: { identifier: "", password: "" },
   });
 
   useEffect(() => {
-    // Effect to handle redirection if role is invalid
-    if (typeof window !== 'undefined') { // Ensure window is defined (client-side)
+    if (typeof window !== 'undefined') { 
       if (!role || !Object.values(USER_ROLES).includes(role)) {
         router.push('/');
       }
@@ -71,7 +73,7 @@ export default function LoginForm() {
       return;
     }
 
-    let loginApiEndpoint = "/api/users/login";
+    let loginApiEndpoint = "/api/users/login"; // For Admin, Teacher, Host
     if (role === USER_ROLES.STUDENT) {
       loginApiEndpoint = "/api/students/login";
     }
@@ -89,7 +91,8 @@ export default function LoginForm() {
       const response = await fetch(loginApiEndpoint, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...values, role }),
+        // Backend now expects 'identifier' for Teacher/Admin/Host as well
+        body: JSON.stringify({ ...values, role }), 
       });
 
       const responseBodyText = await response.text();
@@ -103,12 +106,12 @@ export default function LoginForm() {
             if (parsedDataForErrorLog && typeof parsedDataForErrorLog === 'object' && parsedDataForErrorLog.message) {
               errorMessage = parsedDataForErrorLog.message;
             } else if (response.status === 401) {
-                errorMessage = "Invalid credentials. Please check your email and password.";
+                errorMessage = "Invalid credentials. Please check your identifier and password.";
             } else if (parsedDataForErrorLog && typeof parsedDataForErrorLog === 'object' && Object.keys(parsedDataForErrorLog).length === 0) {
                 errorMessage = `Login failed (Status: ${response.status}). The server returned an empty error object.`;
             }
           } else if (response.status === 401) {
-             errorMessage = "Invalid credentials. Please check your email and password.";
+             errorMessage = "Invalid credentials. Please check your identifier and password.";
           } else {
             errorMessage = `Login failed (Status: ${response.status} ${response.statusText || ''}). Server returned an empty error response.`.trim();
           }
@@ -178,7 +181,6 @@ export default function LoginForm() {
     }
   };
 
-  // Render a loading/message while useEffect handles redirection
   if (!role || !Object.values(USER_ROLES).includes(role)) {
      return <p>Invalid role. Redirecting...</p>;
   }
@@ -187,6 +189,18 @@ export default function LoginForm() {
   if (role === USER_ROLES.HOST) {
     roleTitle = "Management";
   }
+
+  let identifierLabel = "Email";
+  let identifierPlaceholder = "Enter your email";
+
+  if (role === USER_ROLES.STUDENT) {
+    identifierLabel = "Student ID / Email";
+    identifierPlaceholder = "Enter your Student ID or Email";
+  } else if (role === USER_ROLES.TEACHER || role === USER_ROLES.ADMIN || role === USER_ROLES.HOST) {
+    identifierLabel = "Email / Username";
+    identifierPlaceholder = "Enter your Email or Username";
+  }
+
 
   return (
     <Card className="w-full max-w-md shadow-2xl">
@@ -201,35 +215,19 @@ export default function LoginForm() {
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {role === USER_ROLES.STUDENT ? (
-              <FormField
-                control={form.control}
-                name="identifier"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Student ID / Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter your Student ID or Email" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            ) : (
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input type="email" placeholder="Enter your email" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            )}
+            <FormField
+              control={form.control}
+              name="identifier" // Always use 'identifier' for the form field name
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{identifierLabel}</FormLabel>
+                  <FormControl>
+                    <Input placeholder={identifierPlaceholder} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="password"
