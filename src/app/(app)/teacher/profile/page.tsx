@@ -16,6 +16,7 @@ import type { Teacher } from "@/lib/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import TeacherEditProfileForm, { type EditTeacherProfileFormValues } from "@/components/teacher/TeacherEditProfileForm";
+import { ChangePasswordDialog } from "@/components/shared/ChangePasswordDialog"; // Added import
 
 export default function TeacherProfilePage() {
   const [teacherProfile, setTeacherProfile] = useState<Teacher | null>(null);
@@ -23,6 +24,7 @@ export default function TeacherProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = useState(false); // Added state
   const { toast } = useToast();
   const router = useRouter();
 
@@ -72,7 +74,7 @@ export default function TeacherProfilePage() {
 
   useEffect(() => {
     fetchProfile();
-  }, [router, toast]); // Initial fetch
+  }, [router, toast]); 
 
   const handleSaveProfile = async (values: EditTeacherProfileFormValues) => {
     if (!teacherProfile) return;
@@ -119,7 +121,7 @@ export default function TeacherProfilePage() {
           </CardHeader>
           <CardContent className="p-6 space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {[...Array(6)].map((_, i) => ( // Increased to 6 for more skeleton fields
+              {[...Array(6)].map((_, i) => ( 
                 <div key={i}><Skeleton className="h-4 w-24 mb-1" /><Skeleton className="h-10 w-full" /></div>
               ))}
             </div>
@@ -181,7 +183,7 @@ export default function TeacherProfilePage() {
           <>
             <CardHeader className="items-center text-center border-b pb-6">
               <Avatar className="h-24 w-24 mb-4 ring-2 ring-primary ring-offset-2">
-                <AvatarImage src={(teacherProfile as any).avatarUrl || `https://placehold.co/150x150.png?text=${avatarText}`} alt={teacherProfile.name} data-ai-hint="teacher avatar" />
+                <AvatarImage src={(teacherProfile as any).avatarUrl || `https://placehold.co/150x150.png?text=${avatarText}`} alt={teacherProfile.name} data-ai-hint="teacher avatar"/>
                 <AvatarFallback>{avatarText}</AvatarFallback>
               </Avatar>
               <CardTitle className="text-2xl">{teacherProfile.name || "N/A"}</CardTitle>
@@ -226,13 +228,18 @@ export default function TeacherProfilePage() {
                   <CardTitle className="text-base">Account Security</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <Button variant="outline" disabled>Change Password (Not Implemented)</Button>
+                    <Button variant="outline" onClick={() => setIsChangePasswordDialogOpen(true)}>Change Password</Button>
                 </CardContent>
               </Card>
             </CardContent>
           </>
         )}
       </Card>
+      <ChangePasswordDialog 
+        isOpen={isChangePasswordDialogOpen}
+        onClose={() => setIsChangePasswordDialogOpen(false)}
+        userEmail={teacherProfile?.email || ""}
+      />
     </div>
   );
 }
