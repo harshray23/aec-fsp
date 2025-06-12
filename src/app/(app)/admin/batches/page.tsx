@@ -1,15 +1,16 @@
 
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BookUser, Users, MoreHorizontal, Trash2, Edit, Home } from "lucide-react"; 
+import { BookUser, Users, MoreHorizontal, Trash2, Edit, Home, Loader2 } from "lucide-react"; 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { batches as mockBatchesData, teachers as mockTeachers } from "@/lib/mockData"; 
+// mockBatchesData and mockTeachers removed, will fetch from API
 import { DEPARTMENTS } from "@/lib/constants";
+import type { Batch, Teacher } from "@/lib/types";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,19 +32,44 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function AdminBatchOverviewPage() {
   const { toast } = useToast();
-  const [batches, setBatches] = React.useState(mockBatchesData);
+  const [batches, setBatches] = useState<Batch[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = React.useState(false);
   const [batchToDeleteId, setBatchToDeleteId] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
-    setBatches(mockBatchesData);
-  }, []); // Removed mockBatchesData from dependency array as it's mutable
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const batchesRes = await fetch('/api/batches');
+        if (!batchesRes.ok) throw new Error('Failed to fetch batches');
+        const batchesData: Batch[] = await batchesRes.json();
+        setBatches(batchesData);
+
+        const teachersRes = await fetch('/api/teachers'); // Assuming API exists
+        if (!teachersRes.ok) throw new Error('Failed to fetch teachers');
+        const teachersData: Teacher[] = await teachersRes.json();
+        setTeachers(teachersData);
+
+      } catch (error: any) {
+        toast({
+          title: "Error fetching data",
+          description: error.message,
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [toast]);
 
 
   const getTeacherName = (teacherId: string) => {
-    const teacher = mockTeachers.find(t => t.id === teacherId);
+    const teacher = teachers.find(t => t.id === teacherId);
     if (teacher) return teacher.name;
-    if (teacherId.startsWith("ADMIN_")) return "Admin (Self-Assigned)";
+    if (teacherId?.startsWith("ADMIN_")) return "Admin (Self-Assigned)"; // Kept for legacy if any
     return "N/A";
   };
 
@@ -72,14 +98,9 @@ export default function AdminBatchOverviewPage() {
 
       setBatches(prevBatches => prevBatches.filter(b => b.id !== batchToDeleteId));
       
-      const globalBatchIndex = mockBatchesData.findIndex(b => b.id === batchToDeleteId);
-      if (globalBatchIndex > -1) {
-          mockBatchesData.splice(globalBatchIndex, 1);
-      }
-
       toast({
         title: "Batch Deleted",
-        description: `Batch ${batchToDeleteId} has been successfully deleted.`,
+        description: `Batch with ID ${batchToDeleteId} has been successfully deleted.`,
       });
     } catch (error: any) {
       toast({
@@ -93,6 +114,20 @@ export default function AdminBatchOverviewPage() {
     }
   };
   
+  if (isLoading) {
+    return (
+      <div className="space-y-8">
+        <PageHeader title="Batch Overview" icon={BookUser} />
+        <Card className="shadow-lg">
+          <CardHeader><CardTitle>All Batches</CardTitle></CardHeader>
+          <CardContent className="flex justify-center items-center h-64">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <PageHeader
@@ -123,7 +158,7 @@ export default function AdminBatchOverviewPage() {
             <TableBody>
               {batches.map((batch) => (
                 <TableRow key={batch.id}>
-                  <TableCell>{batch.id}</TableCell>
+                  <TableCell className="truncate max-w-[100px]">{batch.id}</TableCell>
                   <TableCell className="font-medium">{batch.name}</TableCell>
                   <TableCell>{getDepartmentLabel(batch.department)}</TableCell>
                   <TableCell>{batch.topic}</TableCell>
@@ -167,7 +202,7 @@ export default function AdminBatchOverviewPage() {
               ))}
               {batches.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center text-muted-foreground h-24">
                     No batches found.
                   </TableCell>
                 </TableRow>
@@ -183,7 +218,7 @@ export default function AdminBatchOverviewPage() {
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the batch
-              and unassign all students currently in it.
+              and unassign all students currently in it from this batch.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

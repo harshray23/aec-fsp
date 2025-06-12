@@ -1,7 +1,7 @@
 
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -27,8 +27,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { DEPARTMENTS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import { batches as mockBatches, teachers as mockTeachers, students as mockStudents } from "@/lib/mockData";
-import type { Batch } from "@/lib/types";
+import type { Teacher, Student } from "@/lib/types"; // Batch type removed, will come from API
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 const daysOfWeekOptions = [
@@ -52,7 +51,8 @@ const batchCreationSchema = z.object({
   startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid start time (HH:MM)."),
   endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid end time (HH:MM)."),
   roomNumber: z.string().max(20, "Room number too long").optional(),
-  selectedStudentIds: z.array(z.string()).optional(),
+  // selectedStudentIds now refers to student *document* IDs from Firestore
+  selectedStudentIds: z.array(z.string()).optional(), 
 }).refine(data => data.startTime < data.endTime, {
   message: "End time must be after start time.",
   path: ["endTime"],
@@ -67,6 +67,11 @@ interface BatchCreationFormProps {
 export default function BatchCreationForm({ redirectPathAfterSuccess }: BatchCreationFormProps) {
   const router = useRouter();
   const { toast } = useToast();
+  const [teachers, setTeachers] = React.useState<Teacher[]>([]);
+  const [allStudents, setAllStudents] = React.useState<Student[]>([]);
+  const [isLoadingTeachers, setIsLoadingTeachers] = React.useState(true);
+  const [isLoadingStudents, setIsLoadingStudents] = React.useState(true);
+
 
   const form = useForm<BatchCreationFormValues>({
     resolver: zodResolver(batchCreationSchema),
@@ -84,51 +89,89 @@ export default function BatchCreationForm({ redirectPathAfterSuccess }: BatchCre
     },
   });
 
+  useEffect(() => {
+    // Fetch teachers
+    const fetchTeachers = async () => {
+      setIsLoadingTeachers(true);
+      try {
+        const response = await fetch("/api/teachers"); // Assuming you'll create this API
+        if (!response.ok) throw new Error("Failed to fetch teachers");
+        const data = await response.json();
+        setTeachers(data);
+      } catch (error) {
+        toast({ title: "Error", description: "Could not load teachers.", variant: "destructive" });
+        console.error(error);
+      } finally {
+        setIsLoadingTeachers(false);
+      }
+    };
+    
+    // Fetch all students
+    const fetchStudents = async () => {
+        setIsLoadingStudents(true);
+        try {
+            const response = await fetch("/api/students"); // Assuming you'll create this API
+            if (!response.ok) throw new Error("Failed to fetch students");
+            const data = await response.json();
+            setAllStudents(data);
+        } catch (error) {
+            toast({ title: "Error", description: "Could not load students for assignment.", variant: "destructive"});
+            console.error(error);
+        } finally {
+            setIsLoadingStudents(false);
+        }
+    };
+
+    fetchTeachers();
+    fetchStudents();
+  }, [toast]);
+
   const selectedDepartment = form.watch("department");
 
   const availableStudents = React.useMemo(() => {
-    if (!selectedDepartment) return [];
-    return mockStudents.filter(
-      (student) => student.department === selectedDepartment && !student.batchId
+    if (!selectedDepartment || isLoadingStudents) return [];
+    return allStudents.filter(
+      (student) => student.department === selectedDepartment && !student.batchId // only unassigned students
     );
-  }, [selectedDepartment]);
+  }, [selectedDepartment, allStudents, isLoadingStudents]);
 
   const onSubmit = async (values: BatchCreationFormValues) => {
-    console.log("Batch creation form submitted by admin:", values);
+    form.control.disabled = true; // Disable form while submitting
+    try {
+      const payload = {
+        ...values,
+        startDate: values.startDate.toISOString(), // Convert date to ISO string
+      };
 
-    const newBatch: Batch = {
-      id: `BATCH_${Date.now()}`,
-      name: values.name,
-      department: values.department,
-      topic: values.topic,
-      teacherId: values.teacherId,
-      startDate: values.startDate.toISOString(),
-      daysOfWeek: values.daysOfWeek,
-      startTime: values.startTime,
-      endTime: values.endTime,
-      roomNumber: values.roomNumber || undefined,
-      studentIds: values.selectedStudentIds || [],
-      status: "Scheduled",
-    };
-
-    mockBatches.push(newBatch);
-
-    // Update batchId for selected students
-    if (values.selectedStudentIds) {
-      values.selectedStudentIds.forEach(studentId => {
-        const studentIndex = mockStudents.findIndex(s => s.id === studentId);
-        if (studentIndex !== -1) {
-          mockStudents[studentIndex].batchId = newBatch.id;
-        }
+      const response = await fetch('/api/batches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to create batch. Unknown error.' }));
+        throw new Error(errorData.message || 'Failed to create batch.');
+      }
+      
+      await response.json(); // Contains the created batch
+      
+      toast({
+          title: "Batch Creation Successful!",
+          description: `Batch "${values.name}" for topic "${values.topic}" has been created.`,
+      });
+      form.reset();
+      router.push(redirectPathAfterSuccess || "/admin/batches");
+      router.refresh(); // To refetch batches on the overview page
+    } catch (error: any) {
+      toast({
+        title: "Batch Creation Error",
+        description: error.message || "Could not create batch.",
+        variant: "destructive",
+      });
+    } finally {
+       form.control.disabled = false;
     }
-    
-    toast({
-        title: "Batch Creation Successful!",
-        description: `Batch "${values.name}" for topic "${values.topic}" has been created.`,
-    });
-    form.reset(); // Reset form to default values
-    router.push(redirectPathAfterSuccess || "/admin/batches");
   };
 
   return (
@@ -189,19 +232,19 @@ export default function BatchCreationForm({ redirectPathAfterSuccess }: BatchCre
             render={({ field }) => (
                 <FormItem>
                 <FormLabel>Assign Teacher</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={mockTeachers.length === 0}>
+                <Select onValueChange={field.onChange} defaultValue={field.value} disabled={isLoadingTeachers || teachers.length === 0}>
                     <FormControl>
                     <SelectTrigger>
-                        <SelectValue placeholder={mockTeachers.length === 0 ? "No teachers available" : "Select teacher"} />
+                        <SelectValue placeholder={isLoadingTeachers ? "Loading teachers..." : teachers.length === 0 ? "No teachers available" : "Select teacher"} />
                     </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                    {mockTeachers.map(teacher => (
-                        <SelectItem key={teacher.id} value={teacher.id}>{teacher.name} ({teacher.department})</SelectItem>
+                    {teachers.map(teacher => (
+                        <SelectItem key={teacher.id} value={teacher.id}>{teacher.name} ({DEPARTMENTS.find(d=>d.value === teacher.department)?.label || teacher.department})</SelectItem>
                     ))}
                     </SelectContent>
                 </Select>
-                 {mockTeachers.length === 0 && <FormDescription className="text-destructive">Please add teachers to the system first.</FormDescription>}
+                 {teachers.length === 0 && !isLoadingTeachers && <FormDescription className="text-destructive">Please add teachers to the system first.</FormDescription>}
                 <FormMessage />
                 </FormItem>
             )}
@@ -349,13 +392,15 @@ export default function BatchCreationForm({ redirectPathAfterSuccess }: BatchCre
                 <FormLabel>Assign Students from {DEPARTMENTS.find(d=>d.value === selectedDepartment)?.label || 'Selected Department'}</FormLabel>
                 <FormDescription>
                   Select students to assign to this batch. Only students from the selected department not already in a batch are shown.
+                  Student IDs here are their Firestore document IDs.
                 </FormDescription>
-                {availableStudents.length > 0 ? (
+                {isLoadingStudents ? <p>Loading students...</p> : 
+                availableStudents.length > 0 ? (
                   <ScrollArea className="h-40 w-full rounded-md border p-4 mt-2">
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
                       {availableStudents.map((student) => (
                         <FormField
-                          key={student.id}
+                          key={student.id} // Use student.id (Firestore document ID)
                           control={form.control}
                           name="selectedStudentIds"
                           render={({ field }) => {
@@ -399,7 +444,7 @@ export default function BatchCreationForm({ redirectPathAfterSuccess }: BatchCre
           />
         )}
 
-        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || (mockTeachers.length === 0 && !form.getValues("teacherId"))}>
+        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || isLoadingTeachers || (teachers.length === 0 && !form.getValues("teacherId"))}>
           {form.formState.isSubmitting ? "Creating Batch..." : "Create Batch"}
         </Button>
       </form>
