@@ -29,7 +29,8 @@ export interface Teacher extends User {
   department: string;
   status: UserApprovalStatus;
   username?: string; // Assigned by Host
-  // Add other Teacher-specific fields if any
+  phoneNumber?: string; // Added
+  whatsappNumber?: string; // Added
 }
 
 export interface Admin extends User {
@@ -53,7 +54,7 @@ export interface Batch {
   teacherId: string;
   studentIds: string[];
   status: "Scheduled" | "Ongoing" | "Completed";
-  roomNumber?: string; // Added roomNumber
+  roomNumber?: string;
 }
 
 export interface AttendanceRecord {
