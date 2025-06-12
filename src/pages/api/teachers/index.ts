@@ -1,8 +1,8 @@
 
-// API route to get all teachers (e.g., for selection in forms)
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { db } from '@/lib/firebaseAdmin';
 import type { Teacher } from '@/lib/types';
+import type { UserApprovalStatus } from '@/lib/types';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (!db) {
@@ -11,7 +11,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (req.method === 'GET') {
     try {
-      const teachersSnapshot = await db.collection('teachers').where('status', '==', 'active').get(); // Only active teachers
+      const { status } = req.query;
+      let query: admin.firestore.Query = db.collection('teachers');
+
+      if (status && typeof status === 'string') {
+        if (!["active", "pending_approval", "rejected"].includes(status)) {
+          return res.status(400).json({ message: 'Invalid status filter value.' });
+        }
+        query = query.where('status', '==', status as UserApprovalStatus);
+      }
+      // If no status query param, it fetches all teachers.
+
+      const teachersSnapshot = await query.get();
       const teachers: Teacher[] = teachersSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
