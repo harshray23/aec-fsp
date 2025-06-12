@@ -3,31 +3,33 @@
 
 import React, { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import * as z from "zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { getAuth, createUserWithEmailAndPassword, type User as FirebaseUser } from "firebase/auth"; // Firebase Auth
+import { app as firebaseApp } from "@/firebase"; // Firebase app instance
 
 import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
   FormField,
-  FormItem, // Keep for the main form
-  FormLabel as RHFFormLabel, // Alias original FormLabel to avoid conflict
+  FormItem, 
+  FormLabel as RHFFormLabel, 
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label"; // Use basic Label for verification steps
+import { Label } from "@/components/ui/label"; 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { DEPARTMENTS, USER_ROLES } from "@/lib/constants";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { students as mockStudents } from "@/lib/mockData";
+// mockStudents removed, student existence check is via API
 import type { Student } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { MailCheck, SmartphoneNfc } from "lucide-react";
+import { MailCheck, SmartphoneNfc, Loader2 } from "lucide-react"; // Added Loader2
 
 const studentRegistrationSchema = z.object({
   studentId: z.string().min(1, "Student ID is required"),
@@ -36,7 +38,6 @@ const studentRegistrationSchema = z.object({
   rollNumber: z.string().min(1, "Roll Number is required"),
   registrationNumber: z.string().min(1, "Registration Number is required"),
   department: z.string().min(1, "Department is required"),
-  // section: z.enum(SECTIONS, { required_error: "Section is required" }), // Section removed
   phoneNumber: z.string().regex(/^\d{10}$/, "Phone number must be 10 digits"),
   whatsappNumber: z.string().regex(/^\d{10}$/, "WhatsApp number must be 10 digits").optional().or(z.literal('')),
   password: z.string().min(6, "Password must be at least 6 characters"),
@@ -48,16 +49,16 @@ const studentRegistrationSchema = z.object({
 
 type StudentRegistrationFormValues = z.infer<typeof studentRegistrationSchema>;
 
-const MOCK_EMAIL_OTP = "123456";
-const MOCK_PHONE_OTP = "654321";
+const MOCK_EMAIL_OTP = "123456"; // Kept for simulated email step if desired, but Firebase Auth handles email verification
+const MOCK_PHONE_OTP = "654321"; // Kept for simulated phone step if desired
 
 export default function StudentRegistrationForm() {
   const router = useRouter();
   const { toast } = useToast();
-  const [registrationStep, setRegistrationStep] = useState<"form" | "emailVerify" | "phoneVerify">("form");
+  const [registrationStep, setRegistrationStep] = useState<"form" | "finalizing">("form"); // Simplified steps
   const [currentUserDetails, setCurrentUserDetails] = useState<StudentRegistrationFormValues | null>(null);
-  const [emailOtp, setEmailOtp] = useState("");
-  const [phoneOtp, setPhoneOtp] = useState("");
+  const [isSubmittingFinal, setIsSubmittingFinal] = useState(false);
+  const auth = getAuth(firebaseApp);
 
   const form = useForm<StudentRegistrationFormValues>({
     resolver: zodResolver(studentRegistrationSchema),
@@ -68,7 +69,6 @@ export default function StudentRegistrationForm() {
       rollNumber: "",
       registrationNumber: "",
       department: "",
-      // section: undefined, // Section removed
       phoneNumber: "",
       whatsappNumber: "",
       password: "",
@@ -77,9 +77,11 @@ export default function StudentRegistrationForm() {
   });
 
   const onSubmitDetails = async (values: StudentRegistrationFormValues) => {
-    console.log("Student registration form submitted:", values);
-    
+    setIsSubmittingFinal(true); // Use a single submission state
+    setCurrentUserDetails(values); // Store details for Firebase Auth creation
+
     try {
+      // 1. Pre-check existence in Firestore via API
       const preCheckResponse = await fetch('/api/students/check-existence', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -87,173 +89,76 @@ export default function StudentRegistrationForm() {
       });
 
       if (!preCheckResponse.ok) {
-        let errorMessage = `Pre-registration check failed (${preCheckResponse.status} ${preCheckResponse.statusText || ''})`.trim();
-        let responseBodyText = "";
-        try {
-          responseBodyText = await preCheckResponse.text();
-          const errorData = JSON.parse(responseBodyText);
-          errorMessage = errorData.message || responseBodyText.substring(0,150) || errorMessage;
-        } catch (jsonParseError) {
-          if (responseBodyText.trim().toLowerCase().startsWith("<!doctype html")) {
-             errorMessage = `Pre-registration check failed: Server returned an unexpected HTML response. (${preCheckResponse.status})`;
-          } else {
-             errorMessage = responseBodyText.substring(0,150) || errorMessage; 
-          }
-        }
-        throw new Error(errorMessage);
+        const errorData = await preCheckResponse.json().catch(() => ({ message: "Pre-registration check failed."}));
+        throw new Error(errorData.message);
       }
-      
       await preCheckResponse.json(); 
 
-      setCurrentUserDetails(values);
-      setRegistrationStep("emailVerify");
-      toast({
-        title: "Details Submitted",
-        description: `A (mock) verification code has been sent to ${values.email}. Hint: ${MOCK_EMAIL_OTP}`,
-      });
-
-    } catch (error: any) {
-       toast({
-        title: "Registration Error",
-        description: error.message || "Could not submit details.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleEmailVerify = () => {
-    if (emailOtp === MOCK_EMAIL_OTP) {
-      toast({
-        title: "Email Verified!",
-        description: "Your email has been successfully verified.",
-      });
-      setRegistrationStep("phoneVerify");
-    } else {
-      toast({
-        title: "Invalid Code",
-        description: "The email verification code is incorrect. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  const handleSendPhoneOtp = () => {
-    // Simulate sending OTP
-    toast({
-        title: "Phone OTP Sent (Simulated)",
-        description: `A (mock) OTP has been sent to ${currentUserDetails?.phoneNumber}. It is ${MOCK_PHONE_OTP}`,
-    });
-  }
-
-  const handlePhoneVerifyAndRegister = async () => {
-    if (phoneOtp !== MOCK_PHONE_OTP || !currentUserDetails) {
-       toast({
-        title: "Invalid Phone Code",
-        description: "The phone verification code is incorrect. Please try again.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/students/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(currentUserDetails),
-      });
-
-      if (!response.ok) {
-        let errorMessage = `Registration failed (${response.status} ${response.statusText || ''})`.trim();
-        let responseBodyText = "";
-        try {
-          responseBodyText = await response.text();
-          const errorData = JSON.parse(responseBodyText);
-          errorMessage = errorData.message || responseBodyText.substring(0,150) || errorMessage;
-        } catch (jsonParseError) {
-           if (responseBodyText.trim().toLowerCase().startsWith("<!doctype html")) {
-             errorMessage = `Registration failed: Server returned an unexpected HTML response. (${response.status})`;
-          } else {
-             errorMessage = responseBodyText.substring(0,150) || errorMessage;
-          }
+      // 2. Create user in Firebase Authentication
+      let firebaseUser: FirebaseUser;
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, values.email, values.password);
+        firebaseUser = userCredential.user;
+        // Optionally, send email verification here if not automatically handled or if you want custom flow
+        // await sendEmailVerification(firebaseUser);
+        // toast({ title: "Verification Email Sent", description: "Please check your email to verify your account." });
+      } catch (authError: any) {
+        let errorMessage = "Firebase Authentication failed: ";
+        if (authError.code === 'auth/email-already-in-use') {
+          errorMessage += "This email is already registered in Firebase Authentication.";
+        } else {
+          errorMessage += authError.message;
         }
         throw new Error(errorMessage);
       }
+
+      // 3. If Firebase Auth creation is successful, register student details in Firestore via API
+      const studentApiPayload = {
+        ...values,
+        uid: firebaseUser.uid, // Pass Firebase UID
+        isEmailVerified: firebaseUser.emailVerified, // Pass Firebase email verification status
+        isPhoneVerified: false, // Phone verification is still mock/manual for now
+      };
+      delete (studentApiPayload as any).password; // Don't send password to Firestore registration API
+      delete (studentApiPayload as any).confirmPassword;
+
+
+      const registerResponse = await fetch('/api/students/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(studentApiPayload),
+      });
+
+      if (!registerResponse.ok) {
+        const errorData = await registerResponse.json().catch(() => ({ message: "Failed to save student profile to database."}));
+        // Potentially delete the Firebase Auth user if Firestore save fails to avoid orphaned auth account
+        // await firebaseUser.delete(); 
+        throw new Error(errorData.message);
+      }
       
-      await response.json(); 
+      await registerResponse.json(); 
       
       toast({
-        title: "Registration Complete!",
-        description: "Your phone has been verified and your account is created. You can now log in.",
+        title: "Registration Successful!",
+        description: "Your account has been created. You can now log in.",
       });
       router.push("/auth/login?role=student");
 
     } catch (error: any) {
-      toast({
-        title: "Registration Failed",
-        description: error.message || "An unexpected error occurred during final registration.",
+       toast({
+        title: "Registration Error",
+        description: error.message || "Could not complete registration.",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmittingFinal(false);
     }
   };
 
 
-  if (registrationStep === "emailVerify" && currentUserDetails) {
-    return (
-      <Card className="w-full max-w-md shadow-2xl">
-        <CardHeader>
-          <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2"><MailCheck /> Email Verification</CardTitle>
-          <CardDescription className="text-center">
-            A verification code was (simulated to be) sent to {currentUserDetails.email}. Please enter it below. (Hint: {MOCK_EMAIL_OTP})
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-2"> 
-            <Label htmlFor="emailOtp">Email Verification Code</Label> 
-            <Input 
-              id="emailOtp" 
-              placeholder="Enter 6-digit code" 
-              value={emailOtp}
-              onChange={(e) => setEmailOtp(e.target.value)}
-              maxLength={6}
-            />
-          </div>
-          <Button onClick={handleEmailVerify} className="w-full">Verify Email</Button>
-          <Button variant="outline" onClick={() => {
-             toast({ title: "Code Resent (Simulated)", description: "Another verification code has been (simulated) sent."});
-          }} className="w-full">Resend Code</Button>
-          <Button variant="link" onClick={() => setRegistrationStep("form")} className="w-full text-muted-foreground">Back to Form</Button>
-        </CardContent>
-      </Card>
-    );
-  }
-  
-  if (registrationStep === "phoneVerify" && currentUserDetails) {
-    return (
-      <Card className="w-full max-w-md shadow-2xl">
-        <CardHeader>
-          <CardTitle className="text-3xl font-bold text-center flex items-center justify-center gap-2"><SmartphoneNfc /> Phone Verification</CardTitle>
-          <CardDescription className="text-center">
-            Verify your phone number: {currentUserDetails.phoneNumber}. (Mock OTP is {MOCK_PHONE_OTP})
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-           <Button onClick={handleSendPhoneOtp} className="w-full" variant="outline">Send Verification Code (SMS)</Button>
-          <div className="space-y-2"> 
-            <Label htmlFor="phoneOtp">SMS Verification Code</Label> 
-            <Input 
-              id="phoneOtp" 
-              placeholder="Enter 6-digit code" 
-              value={phoneOtp}
-              onChange={(e) => setPhoneOtp(e.target.value)}
-              maxLength={6}
-            />
-          </div>
-          <Button onClick={handlePhoneVerifyAndRegister} className="w-full">Verify Phone & Register</Button>
-           <Button variant="link" onClick={() => setRegistrationStep("emailVerify")} className="w-full text-muted-foreground">Back to Email Verification</Button>
-        </CardContent>
-      </Card>
-    );
-  }
+  // Email & Phone verification steps are removed as Firebase Auth handles email verification,
+  // and phone verification would require a real SMS service for Firebase Phone Auth.
+  // The flow is now: Fill Form -> Submit (creates Firebase Auth user & Firestore profile).
 
   return (
     <Card className="w-full max-w-2xl shadow-2xl">
@@ -355,7 +260,6 @@ export default function StudentRegistrationForm() {
                   </FormItem>
                 )}
               />
-              {/* Section Field Removed */}
               <FormField
                 control={form.control}
                 name="phoneNumber"
@@ -389,7 +293,7 @@ export default function StudentRegistrationForm() {
                   <FormItem>
                     <RHFFormLabel>Password</RHFFormLabel>
                     <FormControl>
-                      <Input type="password" placeholder="Create a password" {...field} />
+                      <Input type="password" placeholder="Create a password (min. 6 characters)" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -410,8 +314,13 @@ export default function StudentRegistrationForm() {
               />
             </div>
             </ScrollArea>
-            <Button type="submit" className="w-full mt-6" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? "Submitting..." : "Proceed to Verification"}
+            <Button type="submit" className="w-full mt-6" disabled={isSubmittingFinal || form.formState.isSubmitting}>
+              {isSubmittingFinal || form.formState.isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Registering...
+                </>
+              ) : "Register Account"}
             </Button>
           </form>
         </Form>

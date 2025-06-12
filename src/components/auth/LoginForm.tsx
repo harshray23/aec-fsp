@@ -6,7 +6,10 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import React, { useEffect } from "react"; // Import useEffect
+import React, { useEffect } from "react"; 
+import { getAuth, signInWithEmailAndPassword, type User as FirebaseUser } from "firebase/auth"; // Firebase Auth
+import { app as firebaseApp } from "@/firebase"; // Firebase app instance
+
 
 import { Button } from "@/components/ui/button";
 import {
@@ -21,25 +24,14 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { USER_ROLES, type UserRole } from "@/lib/constants";
+import type { Student } from "@/lib/types"; // For fetching student profile
 
-const getLoginFormSchema = (role: UserRole | null) => {
-  const baseSchema = {
+// Schema now always expects email for Firebase Auth with client SDK
+const getLoginFormSchema = () => {
+  return z.object({
+    email: z.string().email("Valid email is required for login."),
     password: z.string().min(1, "Password is required"),
-  };
-
-  if (role === USER_ROLES.STUDENT) {
-    return z.object({
-      ...baseSchema,
-      identifier: z.string().min(1, "Student ID or Email is required"),
-    });
-  } else if (role === USER_ROLES.TEACHER || role === USER_ROLES.ADMIN || role === USER_ROLES.HOST) {
-    return z.object({
-      ...baseSchema,
-      identifier: z.string().min(1, "Email or Username is required"),
-    });
-  }
-  // Fallback for invalid role, though redirection should handle this
-  return z.object({ ...baseSchema, identifier: z.string() });
+  });
 };
 
 
@@ -48,14 +40,14 @@ export default function LoginForm() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const role = searchParams.get("role") as UserRole | null;
+  const auth = getAuth(firebaseApp);
 
-  const formSchema = getLoginFormSchema(role);
+  const formSchema = getLoginFormSchema(); // Simplified schema
   type LoginFormValues = z.infer<typeof formSchema>;
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(formSchema),
-    // Set default values based on the schema structure (always identifier + password)
-    defaultValues: { identifier: "", password: "" },
+    defaultValues: { email: "", password: "" },
   });
 
   useEffect(() => {
@@ -73,11 +65,6 @@ export default function LoginForm() {
       return;
     }
 
-    let loginApiEndpoint = "/api/users/login"; // For Admin, Teacher, Host
-    if (role === USER_ROLES.STUDENT) {
-      loginApiEndpoint = "/api/students/login";
-    }
-
     let successRedirectPath = "/";
     switch (role) {
       case USER_ROLES.STUDENT: successRedirectPath = "/student/dashboard"; break;
@@ -88,94 +75,83 @@ export default function LoginForm() {
     }
 
     try {
-      const response = await fetch(loginApiEndpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        // Backend now expects 'identifier' for Teacher/Admin/Host as well
-        body: JSON.stringify({ ...values, role }), 
-      });
+      // --- Firebase Client-Side Authentication ---
+      const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
+      const firebaseUser = userCredential.user;
 
-      const responseBodyText = await response.text();
-      let parsedDataForErrorLog: any = null;
-
-      if (!response.ok) {
-        let errorMessage = `Login attempt failed. (Status: ${response.status} ${response.statusText || ''})`.trim();
-        try {
-          if (responseBodyText && responseBodyText.trim()) {
-            parsedDataForErrorLog = JSON.parse(responseBodyText);
-            if (parsedDataForErrorLog && typeof parsedDataForErrorLog === 'object' && parsedDataForErrorLog.message) {
-              errorMessage = parsedDataForErrorLog.message;
-            } else if (response.status === 401) {
-                errorMessage = "Invalid credentials. Please check your identifier and password.";
-            } else if (parsedDataForErrorLog && typeof parsedDataForErrorLog === 'object' && Object.keys(parsedDataForErrorLog).length === 0) {
-                errorMessage = `Login failed (Status: ${response.status}). The server returned an empty error object.`;
-            }
-          } else if (response.status === 401) {
-             errorMessage = "Invalid credentials. Please check your identifier and password.";
-          } else {
-            errorMessage = `Login failed (Status: ${response.status} ${response.statusText || ''}). Server returned an empty error response.`.trim();
-          }
-        } catch (jsonError) {
-          console.warn("Could not parse error response as JSON from login API.", { status: response.status, body: responseBodyText, error: jsonError });
-          if (responseBodyText.trim().toLowerCase().startsWith("<!doctype html")) {
-            errorMessage = `Login failed: Server returned an unexpected HTML response. (${response.status}). Please check server logs.`;
-          } else if (responseBodyText.length > 0 && responseBodyText.length < 200) {
-            errorMessage = responseBodyText.substring(0, 150);
-          }
-        }
-        console.error("Login API error details:", { status: response.status, parsedErrorBody: parsedDataForErrorLog, rawErrorBody: responseBodyText });
-        toast({
-          title: "Login Failed",
-          description: errorMessage,
-          variant: "destructive",
-        });
-        return;
+      if (!firebaseUser) {
+        throw new Error("Firebase authentication succeeded but user object is null.");
       }
 
-      let userLoginData;
-      try {
-        if (!responseBodyText.trim()) {
-           console.error("Login API success, but empty response body.");
-           toast({
-             title: "Login Error",
-             description: "Login successful, but received an empty response from the server.",
-             variant: "destructive",
-           });
-           return;
-        }
-        userLoginData = JSON.parse(responseBodyText);
-      } catch (jsonError) {
-        console.error("Login API success, but failed to parse response as JSON.", {status: response.status, body: responseBodyText, error: jsonError});
-        toast({
-          title: "Login Error",
-          description: "Login was successful, but server response was malformed. Please contact support.",
-          variant: "destructive",
-        });
-        return;
-      }
+      // --- Fetch additional profile data from Firestore ---
+      let userProfile: any = { // `any` for now, will be typed based on role
+        id: firebaseUser.uid, // Use Firebase UID as the primary ID for lookup
+        uid: firebaseUser.uid,
+        email: firebaseUser.email,
+        name: firebaseUser.displayName || values.email.split('@')[0], // Fallback name
+        role: role,
+        // Add other common fields from Firebase user if needed
+      };
 
-      if (userLoginData && userLoginData.user) {
-        localStorage.setItem("currentUser", JSON.stringify(userLoginData.user));
-        toast({
-          title: "Login Successful!",
-          description: `Welcome back! Redirecting...`,
-        });
-        router.push(successRedirectPath);
+      if (role === USER_ROLES.STUDENT) {
+        const profileRes = await fetch(`/api/students/profile?studentId=${firebaseUser.uid}`); // Fetch by UID
+        if (profileRes.ok) {
+          const studentData: Student = await profileRes.json();
+          userProfile = { ...userProfile, ...studentData, id: studentData.id || firebaseUser.uid }; // Prefer Firestore ID if available
+        } else {
+          console.warn(`Could not fetch student profile for UID ${firebaseUser.uid} after Firebase login. Status: ${profileRes.status}`);
+          // Proceed with basic Firebase user data, or handle as error
+        }
       } else {
-        console.error("Login API success, but no user data in response:", userLoginData);
-        toast({
-            title: "Login Error",
-            description: "Login was successful, but user data was not returned correctly. Please contact support.",
-            variant: "destructive",
-        });
-        return;
+        // For Teacher, Admin, Host - Fetch profile from their respective Firestore collections using UID
+        // Example for Teacher (similar for Admin, Host if they have Firestore profiles beyond basic auth)
+        // For now, let's assume non-student roles will primarily use the info from their server-side session/token if we mix auth strategies
+        // Or, more simply for now, we store basic info from Firebase Auth and expect profile to be updated.
+        // For simplicity, we'll use a generic mock API for non-student profile fetching for now.
+        // In a real app, you'd fetch from /api/teachers/profile (using UID), /api/admins/profile etc.
+
+        // This part is simplified. Ideally, you'd have specific profile fetching for each role.
+        // Let's assume the backend `/api/users/login` was previously also fetching this profile,
+        // but now we're doing client-side Firebase Auth.
+        // We'll just use the Firebase user data for now for non-students for simplicity of this step.
+         if (role === USER_ROLES.TEACHER || role === USER_ROLES.ADMIN || role === USER_ROLES.HOST) {
+             // In a full system, you'd fetch teacher/admin/host specific profile data here using firebaseUser.uid
+             // and merge it into userProfile.
+             // For now, basic data from Firebase Auth is stored.
+             console.log(`${role} logged in. Profile details would be fetched from Firestore using UID: ${firebaseUser.uid}`);
+         }
       }
+      
+      localStorage.setItem("currentUser", JSON.stringify(userProfile));
+      
+      toast({
+        title: "Login Successful!",
+        description: `Welcome back, ${userProfile.name || 'User'}! Redirecting...`,
+      });
+      router.push(successRedirectPath);
 
     } catch (error: any) {
-      console.error("Login submit error (outer catch):", error);
+      console.error("Firebase Login/Profile Fetch error:", error);
+      let errorMessage = "Login failed. Please check your credentials.";
+      if (error.code) { // Firebase Auth error codes
+        switch (error.code) {
+          case 'auth/user-not-found':
+          case 'auth/wrong-password':
+          case 'auth/invalid-credential':
+            errorMessage = "Invalid email or password.";
+            break;
+          case 'auth/invalid-email':
+            errorMessage = "The email address is not valid.";
+            break;
+          default:
+            errorMessage = error.message || "An unexpected error occurred.";
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
       toast({
         title: "Login Failed",
-        description: error.message || "An unexpected error occurred. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -190,16 +166,9 @@ export default function LoginForm() {
     roleTitle = "Management";
   }
 
-  let identifierLabel = "Email";
+  // Label changed to "Email" as Firebase Client SDK signInWithEmailAndPassword requires email
+  let identifierLabel = "Email"; 
   let identifierPlaceholder = "Enter your email";
-
-  if (role === USER_ROLES.STUDENT) {
-    identifierLabel = "Student ID / Email";
-    identifierPlaceholder = "Enter your Student ID or Email";
-  } else if (role === USER_ROLES.TEACHER || role === USER_ROLES.ADMIN || role === USER_ROLES.HOST) {
-    identifierLabel = "Email / Username";
-    identifierPlaceholder = "Enter your Email or Username";
-  }
 
 
   return (
@@ -209,7 +178,7 @@ export default function LoginForm() {
           {roleTitle} Login
         </CardTitle>
         <CardDescription className="text-center">
-          Enter your credentials to access your account.
+          Enter your email and password to access your account.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -217,12 +186,12 @@ export default function LoginForm() {
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
-              name="identifier" // Always use 'identifier' for the form field name
+              name="email" 
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>{identifierLabel}</FormLabel>
                   <FormControl>
-                    <Input placeholder={identifierPlaceholder} {...field} />
+                    <Input type="email" placeholder={identifierPlaceholder} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -243,7 +212,7 @@ export default function LoginForm() {
             />
              <div className="flex items-center justify-end text-sm">
               <Link
-                href={`/auth/forgot-password?role=${role}`}
+                href={`/auth/forgot-password?role=${role}&email=${form.getValues('email')||''}`}
                 className="font-medium text-primary hover:underline"
               >
                 Forgot Password?

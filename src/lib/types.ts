@@ -10,6 +10,7 @@ export interface User {
 
 export interface Student extends User {
   role: "student";
+  uid?: string; // Firebase Authentication User ID
   studentId: string;
   rollNumber: string;
   registrationNumber: string;
@@ -26,15 +27,17 @@ export type UserApprovalStatus = "pending_approval" | "active" | "rejected";
 
 export interface Teacher extends User {
   role: "teacher";
+  uid?: string; // Firebase Authentication User ID
   department: string;
   status: UserApprovalStatus;
   username?: string; // Assigned by Host
-  phoneNumber?: string; // Added
-  whatsappNumber?: string; // Added
+  phoneNumber?: string; 
+  whatsappNumber?: string; 
 }
 
 export interface Admin extends User {
   role: "admin";
+  uid?: string; // Firebase Authentication User ID
   phoneNumber?: string;
   whatsappNumber?: string;
   status: UserApprovalStatus;
@@ -58,7 +61,7 @@ export interface Batch {
 }
 
 export interface AttendanceRecord {
-  id: string;
+  id:string;
   studentId: string;
   date: string; // ISO Date string
   status: "present" | "absent" | "late";
@@ -73,7 +76,7 @@ export interface TimetableEntry {
   endTime: string; // e.g., "10:00"
   subject: string;
   batchId: string;
-  roomNumber?: string; // Added roomNumber to timetable entry as well for consistency if needed
+  roomNumber?: string; 
 }
 
 // Props for navigation items in DashboardLayout
