@@ -8,6 +8,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
+  if (!db) {
+    return res.status(500).json({ message: 'Database service not available.' });
+  }
+
   const { studentId, email } = req.body;
 
   if (!studentId && !email) {
@@ -16,20 +20,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   try {
     const studentsRef = db.collection('students');
-    let query;
-
+    
     if (studentId) {
-      query = studentsRef.where('studentId', '==', studentId).limit(1).get();
-      const snapshot = await query;
-      if (!snapshot.empty) {
+      const idSnapshot = await studentsRef.where('studentId', '==', studentId).limit(1).get();
+      if (!idSnapshot.empty) {
         return res.status(409).json({ message: `Student ID ${studentId} already exists.` });
       }
     }
 
     if (email) {
-      query = studentsRef.where('email', '==', email).limit(1).get();
-      const snapshot = await query;
-      if (!snapshot.empty) {
+      const emailSnapshot = await studentsRef.where('email', '==', email).limit(1).get();
+      if (!emailSnapshot.empty) {
         return res.status(409).json({ message: `Email ${email} already registered.` });
       }
     }
@@ -41,3 +42,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ message: 'Internal server error while checking student existence.' });
   }
 }
+
+    

@@ -6,9 +6,8 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { UserCheck, UserX, ShieldQuestion, Briefcase, CircleUserRound } from "lucide-react";
+import { UserCheck, UserX, ShieldQuestion, Briefcase, CircleUserRound, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { admins as mockAdmins, teachers as mockTeachers } from "@/lib/mockData";
 import type { Admin, Teacher, UserApprovalStatus } from "@/lib/types";
 import { USER_ROLES, DEPARTMENTS } from "@/lib/constants";
 import {
@@ -32,82 +31,148 @@ import {
   AlertDialogFooter, 
   AlertDialogHeader, 
   AlertDialogTitle, 
-  AlertDialogTrigger 
 } from "@/components/ui/alert-dialog";
+// Import mock data only for client-side username uniqueness check (temporary)
+import { admins as mockAdminsData, teachers as mockTeachersData } from "@/lib/mockData";
 
-type PendingUser = (Admin | Teacher) & { type: 'admin' | 'teacher' };
+
+type PendingUser = (Omit<Admin, 'role'> | Omit<Teacher, 'role'>) & { id: string; name: string; email: string; role: 'admin' | 'teacher'; department?: string; status: UserApprovalStatus };
 
 export default function HostUserApprovalPage() {
   const { toast } = useToast();
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedUserForApproval, setSelectedUserForApproval] = useState<PendingUser | null>(null);
+  const [userToReject, setUserToReject] = useState<PendingUser | null>(null);
   const [assignedUsername, setAssignedUsername] = useState("");
+  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
+  const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
 
-  const fetchPendingUsers = () => {
-    const pendingAdmins = mockAdmins
-      .filter(a => a.status === "pending_approval")
-      .map(a => ({ ...a, type: 'admin' as const }));
-    const pendingTeachers = mockTeachers
-      .filter(t => t.status === "pending_approval")
-      .map(t => ({ ...t, type: 'teacher' as const }));
-    setPendingUsers([...pendingAdmins, ...pendingTeachers]);
+  const fetchPendingUsers = async () => {
+    setIsLoading(true);
+    try {
+      const [pendingAdminsRes, pendingTeachersRes] = await Promise.all([
+        fetch("/api/admins?status=pending_approval"),
+        fetch("/api/teachers?status=pending_approval"),
+      ]);
+
+      if (!pendingAdminsRes.ok) throw new Error(`Failed to fetch pending admins: ${pendingAdminsRes.statusText}`);
+      if (!pendingTeachersRes.ok) throw new Error(`Failed to fetch pending teachers: ${pendingTeachersRes.statusText}`);
+
+      const pendingAdmins: Admin[] = await pendingAdminsRes.json();
+      const pendingTeachers: Teacher[] = await pendingTeachersRes.json();
+      
+      const combinedUsers: PendingUser[] = [
+        ...pendingAdmins.map(a => ({ ...a, role: 'admin' as const })),
+        ...pendingTeachers.map(t => ({ ...t, role: 'teacher' as const })),
+      ];
+      setPendingUsers(combinedUsers.filter(u => u.status === "pending_approval"));
+
+    } catch (error: any) {
+      toast({ title: "Error Fetching Users", description: error.message, variant: "destructive" });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   useEffect(() => {
     fetchPendingUsers();
-  }, []);
+  }, [toast]);
 
-  const handleApproveUser = () => {
+  const handleApproveUser = async () => {
     if (!selectedUserForApproval || !assignedUsername.trim()) {
       toast({ title: "Error", description: "Username is required for approval.", variant: "destructive" });
       return;
     }
 
+    // Client-side mock username uniqueness check (replace with backend validation in a real app)
     const isUsernameTaken = 
-        mockAdmins.some(a => a.username === assignedUsername.trim() && a.id !== selectedUserForApproval.id) ||
-        mockTeachers.some(t => t.username === assignedUsername.trim() && t.id !== selectedUserForApproval.id);
+        mockAdminsData.some(a => a.username === assignedUsername.trim() && a.id !== selectedUserForApproval.id && a.status === 'active') ||
+        mockTeachersData.some(t => t.username === assignedUsername.trim() && t.id !== selectedUserForApproval.id && t.status === 'active');
 
     if (isUsernameTaken) {
-        toast({ title: "Error", description: "This username is already taken. Please choose another.", variant: "destructive" });
+        toast({ title: "Username Taken", description: "This username is already in use. Please choose another.", variant: "destructive" });
         return;
     }
     
-    if (selectedUserForApproval.type === 'admin') {
-      const adminIndex = mockAdmins.findIndex(a => a.id === selectedUserForApproval.id);
-      if (adminIndex !== -1) {
-        mockAdmins[adminIndex].status = "active";
-        mockAdmins[adminIndex].username = assignedUsername.trim();
-      }
-    } else if (selectedUserForApproval.type === 'teacher') {
-      const teacherIndex = mockTeachers.findIndex(t => t.id === selectedUserForApproval.id);
-      if (teacherIndex !== -1) {
-        mockTeachers[teacherIndex].status = "active";
-        mockTeachers[teacherIndex].username = assignedUsername.trim();
-      }
-    }
+    const apiPath = selectedUserForApproval.role === 'admin' ? `/api/admins/${selectedUserForApproval.id}` : `/api/teachers/${selectedUserForApproval.id}`;
+    
+    try {
+      const response = await fetch(apiPath, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: "active", username: assignedUsername.trim() }),
+      });
 
-    toast({ title: "User Approved", description: `${selectedUserForApproval.name} has been approved with username ${assignedUsername.trim()}.` });
-    setSelectedUserForApproval(null);
-    setAssignedUsername("");
-    fetchPendingUsers(); // Refresh list
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `Failed to approve user (${response.status})`}));
+        throw new Error(errorData.message);
+      }
+
+      toast({ title: "User Approved", description: `${selectedUserForApproval.name} has been approved with username @${assignedUsername.trim()}.` });
+      setIsApproveDialogOpen(false);
+      setSelectedUserForApproval(null);
+      setAssignedUsername("");
+      fetchPendingUsers(); // Refresh list
+    } catch (error: any) {
+       toast({ title: "Approval Error", description: error.message, variant: "destructive" });
+    }
   };
 
-  const handleRejectUser = (userToReject: PendingUser) => {
-    if (userToReject.type === 'admin') {
-      const adminIndex = mockAdmins.findIndex(a => a.id === userToReject.id);
-      if (adminIndex !== -1) mockAdmins[adminIndex].status = "rejected";
-    } else if (userToReject.type === 'teacher') {
-      const teacherIndex = mockTeachers.findIndex(t => t.id === userToReject.id);
-      if (teacherIndex !== -1) mockTeachers[teacherIndex].status = "rejected";
+  const handleRejectUser = async () => {
+    if (!userToReject) return;
+
+    const apiPath = userToReject.role === 'admin' ? `/api/admins/${userToReject.id}` : `/api/teachers/${userToReject.id}`;
+    try {
+      const response = await fetch(apiPath, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: "rejected" }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: `Failed to reject user (${response.status})`}));
+        throw new Error(errorData.message);
+      }
+      toast({ title: "User Rejected", description: `${userToReject.name}'s registration has been rejected.`, variant: "default" });
+      setIsRejectDialogOpen(false);
+      setUserToReject(null);
+      fetchPendingUsers(); // Refresh list
+    } catch (error: any) {
+       toast({ title: "Rejection Error", description: error.message, variant: "destructive" });
     }
-    toast({ title: "User Rejected", description: `${userToReject.name}'s registration has been rejected.`, variant: "default" });
-    fetchPendingUsers(); // Refresh list
   };
 
   const getDepartmentLabel = (deptValue?: string) => {
     if (!deptValue) return "N/A";
     return DEPARTMENTS.find(d => d.value === deptValue)?.label || deptValue;
   };
+  
+  const openApproveDialog = (user: PendingUser) => {
+    setSelectedUserForApproval(user);
+    setAssignedUsername(user.name.toLowerCase().replace(/\s+/g, '_') + (user.role === 'admin' ? '_admin' : '_teacher'));
+    setIsApproveDialogOpen(true);
+  };
+
+  const openRejectDialog = (user: PendingUser) => {
+    setUserToReject(user);
+    setIsRejectDialogOpen(true);
+  };
+
+
+  if (isLoading) {
+    return (
+      <div className="space-y-8">
+        <PageHeader title="User Registration Approval (Host)" icon={ShieldQuestion} />
+        <Card className="shadow-lg">
+          <CardHeader><CardTitle>Pending Approvals</CardTitle></CardHeader>
+          <CardContent className="flex justify-center items-center h-64">
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
@@ -128,7 +193,7 @@ export default function HostUserApprovalPage() {
                 <TableRow>
                   <TableHead>Name</TableHead>
                   <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
+                  <TableHead>Requested Role</TableHead>
                   <TableHead>Department</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
@@ -144,68 +209,24 @@ export default function HostUserApprovalPage() {
                         {user.role}
                       </span>
                     </TableCell>
-                    <TableCell>{user.role === USER_ROLES.TEACHER ? getDepartmentLabel((user as Teacher).department) : "N/A"}</TableCell>
+                    <TableCell>{user.role === USER_ROLES.TEACHER ? getDepartmentLabel(user.department) : "N/A"}</TableCell>
                     <TableCell className="text-right space-x-2">
-                      <Dialog onOpenChange={(open) => { if (open) setSelectedUserForApproval(user); else { setSelectedUserForApproval(null); setAssignedUsername(""); }}}>
-                        <DialogTrigger asChild>
-                          <Button variant="outline" size="sm" className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700">
-                            <UserCheck className="mr-1 h-4 w-4" /> Approve
-                          </Button>
-                        </DialogTrigger>
-                        {selectedUserForApproval && selectedUserForApproval.id === user.id && (
-                        <DialogContent className="sm:max-w-[425px]">
-                          <DialogHeader>
-                            <DialogTitle>Approve User & Assign Username</DialogTitle>
-                            <DialogDescription>
-                              Assign a unique username for {selectedUserForApproval.name} ({selectedUserForApproval.email}). This username will be used for display purposes.
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="grid gap-4 py-4">
-                            <div className="grid grid-cols-4 items-center gap-4">
-                              <Label htmlFor="username" className="text-right col-span-1">
-                                Username
-                              </Label>
-                              <Input
-                                id="username"
-                                value={assignedUsername}
-                                onChange={(e) => setAssignedUsername(e.target.value)}
-                                className="col-span-3"
-                                placeholder="e.g., john_doe_admin"
-                              />
-                            </div>
-                          </div>
-                          <DialogFooter>
-                            <DialogClose asChild>
-                               <Button variant="outline" onClick={() => { setSelectedUserForApproval(null); setAssignedUsername(""); }}>Cancel</Button>
-                            </DialogClose>
-                            <Button onClick={handleApproveUser} disabled={!assignedUsername.trim()}>Confirm Approval</Button>
-                          </DialogFooter>
-                        </DialogContent>
-                        )}
-                      </Dialog>
-                      
-                       <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="outline" size="sm" className="text-red-600 border-red-600 hover:bg-red-50 hover:text-red-700">
-                            <UserX className="mr-1 h-4 w-4" /> Reject
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>Confirm Rejection</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                Are you sure you want to reject the registration for {user.name} ({user.email})? This action cannot be undone easily.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleRejectUser(user)} className="bg-destructive hover:bg-destructive/90">
-                                Confirm Rejection
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                       </AlertDialog>
-
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-green-600 border-green-600 hover:bg-green-50 hover:text-green-700"
+                        onClick={() => openApproveDialog(user)}
+                      >
+                        <UserCheck className="mr-1 h-4 w-4" /> Approve
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="text-red-600 border-red-600 hover:bg-red-50 hover:text-red-700"
+                        onClick={() => openRejectDialog(user)}
+                      >
+                        <UserX className="mr-1 h-4 w-4" /> Reject
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -216,6 +237,57 @@ export default function HostUserApprovalPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Approve Dialog */}
+      <Dialog open={isApproveDialogOpen} onOpenChange={(open) => { if (!open) { setSelectedUserForApproval(null); setAssignedUsername(""); } setIsApproveDialogOpen(open); }}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Approve User & Assign Username</DialogTitle>
+            <DialogDescription>
+              Assign a unique username for {selectedUserForApproval?.name} ({selectedUserForApproval?.email}). This username will be used for display and login.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="username" className="text-right col-span-1">
+                Username
+              </Label>
+              <Input
+                id="username"
+                value={assignedUsername}
+                onChange={(e) => setAssignedUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                className="col-span-3"
+                placeholder="e.g., john_doe_admin"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground col-span-4 px-1">Usernames can only contain lowercase letters, numbers, and underscores.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setIsApproveDialogOpen(false); setSelectedUserForApproval(null); setAssignedUsername(""); }}>Cancel</Button>
+            <Button onClick={handleApproveUser} disabled={!assignedUsername.trim()}>Confirm Approval</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Dialog */}
+      <AlertDialog open={isRejectDialogOpen} onOpenChange={setIsRejectDialogOpen}>
+        <AlertDialogContent>
+            <AlertDialogHeader>
+                <AlertDialogTitle>Confirm Rejection</AlertDialogTitle>
+                <AlertDialogDescription>
+                Are you sure you want to reject the registration for {userToReject?.name} ({userToReject?.email})? This action cannot be undone easily.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setUserToReject(null)}>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleRejectUser} className="bg-destructive hover:bg-destructive/90">
+                Confirm Rejection
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+       </AlertDialog>
     </div>
   );
 }
+
+    
