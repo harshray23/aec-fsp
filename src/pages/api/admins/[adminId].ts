@@ -2,9 +2,10 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { db } from '@/lib/firebaseAdmin';
 import type { Admin } from '@/lib/types';
+import { teachers } from '@/lib/mockData';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const { adminId } = req.query;
+  const { adminId } = req.query; // This can be the Firestore Doc ID or the Firebase UID
 
   if (!db) {
     return res.status(500).json({ message: 'Database connection not initialized.' });
@@ -13,14 +14,44 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (typeof adminId !== 'string') {
     return res.status(400).json({ message: 'Admin ID must be a string.' });
   }
+  
+  // A helper function to get the document reference, whether by UID or Doc ID
+  async function getAdminDocRef(id: string) {
+    // A simple check to see if the ID looks like a Firebase UID (28 chars, alphanumeric)
+    // This isn't foolproof but helps distinguish. A better way might be a query param `?findBy=uid`.
+    if (id.length === 28) {
+        const querySnapshot = await db.collection('admins').where('uid', '==', id).limit(1).get();
+        if (!querySnapshot.empty) {
+            return querySnapshot.docs[0].ref;
+        }
+    }
+    // Fallback or default is to treat it as a document ID
+    const docRef = db.collection('admins').doc(id);
+    const doc = await docRef.get();
+    if (doc.exists) {
+        return docRef;
+    }
+    // Final fallback: Maybe the UID was passed as the doc ID
+    const uidAsDocIdRef = db.collection('admins').doc(id);
+    const uidAsDocId = await uidAsDocIdRef.get();
+    if(uidAsDocId.exists) return uidAsDocIdRef;
 
-  const adminRef = db.collection('admins').doc(adminId);
+    return null; // Not found by any method
+  }
+
+  const adminRef = await getAdminDocRef(adminId);
+  
+  if (!adminRef) {
+      return res.status(404).json({ message: `Admin with identifier ${adminId} not found.` });
+  }
+
 
   switch (req.method) {
     case 'GET':
       try {
         const doc = await adminRef.get();
         if (!doc.exists) {
+          // This case should be covered by getAdminDocRef, but as a safeguard:
           return res.status(404).json({ message: 'Admin not found.' });
         }
         res.status(200).json({ id: doc.id, ...doc.data() } as Admin);
@@ -32,10 +63,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     case 'PUT':
       try {
-        const currentDoc = await adminRef.get();
-        if (!currentDoc.exists) {
-          return res.status(404).json({ message: 'Admin not found to update.' });
-        }
+        // const currentDoc = await adminRef.get(); // getAdminDocRef already confirms existence
+        // if (!currentDoc.exists) {
+        //   return res.status(404).json({ message: 'Admin not found to update.' });
+        // }
         
         const { name, email, phoneNumber, whatsappNumber, status, username } = req.body;
         const updateData: Partial<Admin> = {};
@@ -53,7 +84,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
         
         await adminRef.update(updateData);
-        res.status(200).json({ message: `Admin ${adminId} updated successfully.`, admin: { id: adminId, ...updateData } });
+        const updatedDoc = await adminRef.get();
+        res.status(200).json({ message: `Admin ${adminId} updated successfully.`, admin: { id: adminRef.id, ...updatedDoc.data() } });
       } catch (error) {
         console.error(`Error updating admin ${adminId}:`, error);
         res.status(500).json({ message: 'Internal server error while updating admin.' });
@@ -62,18 +94,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     case 'DELETE':
       try {
-        const doc = await adminRef.get();
-        if (!doc.exists) {
-          return res.status(404).json({ message: 'Admin not found to delete.' });
-        }
-        
-        // Before deleting an admin, consider implications:
-        // - Are they the last admin?
-        // - Are there any system resources exclusively owned/managed by this admin?
-        // For this example, we'll proceed with a simple delete.
-        // In a real app, you might want to prevent deletion of the primary admin or transfer ownership.
-        
         await adminRef.delete();
+        // Also delete from Firebase Auth if needed
+        // await admin.auth().deleteUser(adminId); // Assuming adminId is UID
         res.status(200).json({ message: `Admin ${adminId} deleted successfully.` });
       } catch (error) {
         console.error(`Error deleting admin ${adminId}:`, error);

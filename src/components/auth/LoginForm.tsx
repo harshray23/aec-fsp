@@ -7,9 +7,8 @@ import * as z from "zod";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import React, { useEffect } from "react"; 
-import { getAuth, signInWithEmailAndPassword, type User as FirebaseUser } from "firebase/auth"; // Firebase Auth
-import { app as firebaseApp } from "@/firebase"; // Firebase app instance
-
+import { getAuth, signInWithEmailAndPassword, type User as FirebaseUser } from "firebase/auth";
+import { app as firebaseApp } from "@/firebase";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -24,16 +23,13 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { USER_ROLES, type UserRole } from "@/lib/constants";
-import type { Student } from "@/lib/types"; // For fetching student profile
 
-// Schema now always expects email for Firebase Auth with client SDK
-const getLoginFormSchema = () => {
-  return z.object({
-    email: z.string().email("Valid email is required for login."),
-    password: z.string().min(1, "Password is required"),
-  });
-};
+const loginFormSchema = z.object({
+  email: z.string().email("A valid email is required for login."),
+  password: z.string().min(1, "Password is required"),
+});
 
+type LoginFormValues = z.infer<typeof loginFormSchema>;
 
 export default function LoginForm() {
   const router = useRouter();
@@ -42,22 +38,16 @@ export default function LoginForm() {
   const role = searchParams.get("role") as UserRole | null;
   const auth = getAuth(firebaseApp);
 
-  const formSchema = getLoginFormSchema(); // Simplified schema
-  type LoginFormValues = z.infer<typeof formSchema>;
-
   const form = useForm<LoginFormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(loginFormSchema),
     defaultValues: { email: "", password: "" },
   });
 
   useEffect(() => {
-    if (typeof window !== 'undefined') { 
-      if (!role || !Object.values(USER_ROLES).includes(role)) {
-        router.push('/');
-      }
+    if (typeof window !== 'undefined' && (!role || !Object.values(USER_ROLES).includes(role))) {
+      router.push('/');
     }
   }, [role, router]);
-
 
   const onSubmit = async (values: LoginFormValues) => {
     if (!role) {
@@ -65,17 +55,8 @@ export default function LoginForm() {
       return;
     }
 
-    let successRedirectPath = "/";
-    switch (role) {
-      case USER_ROLES.STUDENT: successRedirectPath = "/student/dashboard"; break;
-      case USER_ROLES.TEACHER: successRedirectPath = "/teacher/dashboard"; break;
-      case USER_ROLES.ADMIN: successRedirectPath = "/admin/dashboard"; break;
-      case USER_ROLES.HOST: successRedirectPath = "/host/dashboard"; break;
-      default: break;
-    }
-
     try {
-      // --- Firebase Client-Side Authentication ---
+      // Step 1: Authenticate with Firebase Client-Side Authentication
       const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
 
@@ -83,55 +64,69 @@ export default function LoginForm() {
         throw new Error("Firebase authentication succeeded but user object is null.");
       }
 
-      // --- Fetch additional profile data from Firestore ---
-      let userProfile: any = { // `any` for now, will be typed based on role
-        id: firebaseUser.uid, // Use Firebase UID as the primary ID for lookup
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        name: firebaseUser.displayName || values.email.split('@')[0], // Fallback name
-        role: role,
-        // Add other common fields from Firebase user if needed
-      };
+      // Step 2: Fetch the user's detailed profile from our Firestore database via API
+      let profileApiUrl: string;
+      let successRedirectPath: string;
 
-      if (role === USER_ROLES.STUDENT) {
-        const profileRes = await fetch(`/api/students/profile?studentId=${firebaseUser.uid}`); // Fetch by UID
-        if (profileRes.ok) {
-          const studentData: Student = await profileRes.json();
-          userProfile = { ...userProfile, ...studentData, id: studentData.id || firebaseUser.uid }; // Prefer Firestore ID if available
-        } else {
-          console.warn(`Could not fetch student profile for UID ${firebaseUser.uid} after Firebase login. Status: ${profileRes.status}`);
-          // Proceed with basic Firebase user data, or handle as error
-        }
-      } else {
-        // For Teacher, Admin, Host - Fetch profile from their respective Firestore collections using UID
-        // Example for Teacher (similar for Admin, Host if they have Firestore profiles beyond basic auth)
-        // For now, let's assume non-student roles will primarily use the info from their server-side session/token if we mix auth strategies
-        // Or, more simply for now, we store basic info from Firebase Auth and expect profile to be updated.
-        // For simplicity, we'll use a generic mock API for non-student profile fetching for now.
-        // In a real app, you'd fetch from /api/teachers/profile (using UID), /api/admins/profile etc.
+      switch (role) {
+        case USER_ROLES.STUDENT:
+          profileApiUrl = `/api/students/profile?studentId=${firebaseUser.uid}`;
+          successRedirectPath = "/student/dashboard";
+          break;
+        case USER_ROLES.TEACHER:
+          profileApiUrl = `/api/teachers/${firebaseUser.uid}`; // Assuming API can fetch by UID
+          successRedirectPath = "/teacher/dashboard";
+          break;
+        case USER_ROLES.ADMIN:
+          profileApiUrl = `/api/admins/${firebaseUser.uid}`; // Assuming API can fetch by UID
+          successRedirectPath = "/admin/dashboard";
+          break;
+        case USER_ROLES.HOST:
+          // Hosts might not have a separate Firestore profile, or it could be in 'admins' or its own collection.
+          // For now, we assume they are a type of admin or have a simple profile.
+          profileApiUrl = `/api/admins/${firebaseUser.uid}`; // Re-using admin for host profile
+          successRedirectPath = "/host/dashboard";
+          break;
+        default:
+          throw new Error("Invalid role for profile fetching.");
+      }
 
-        // This part is simplified. Ideally, you'd have specific profile fetching for each role.
-        // Let's assume the backend `/api/users/login` was previously also fetching this profile,
-        // but now we're doing client-side Firebase Auth.
-        // We'll just use the Firebase user data for now for non-students for simplicity of this step.
-         if (role === USER_ROLES.TEACHER || role === USER_ROLES.ADMIN || role === USER_ROLES.HOST) {
-             // In a full system, you'd fetch teacher/admin/host specific profile data here using firebaseUser.uid
-             // and merge it into userProfile.
-             // For now, basic data from Firebase Auth is stored.
-             console.log(`${role} logged in. Profile details would be fetched from Firestore using UID: ${firebaseUser.uid}`);
-         }
+      const profileRes = await fetch(profileApiUrl);
+
+      if (!profileRes.ok) {
+        // If profile not found, it might be an inactive account or an issue.
+        // Log out the Firebase Auth user to prevent being in a weird state.
+        await auth.signOut(); 
+        const errorData = await profileRes.json().catch(() => ({ message: `Your account profile could not be found for role '${role}'. It may be pending approval or inactive.` }));
+        throw new Error(errorData.message);
       }
       
-      localStorage.setItem("currentUser", JSON.stringify(userProfile));
+      const firestoreProfile = await profileRes.json();
+      
+      // Step 3: Check if the user's account is active (for roles that have a status field)
+      if (firestoreProfile.status && firestoreProfile.status !== 'active') {
+        await auth.signOut();
+        throw new Error(`Your account status is '${firestoreProfile.status}'. You cannot log in.`);
+      }
+
+      // Step 4: Combine Firebase Auth data with Firestore profile and store in localStorage
+      const finalUserData = {
+        ...firestoreProfile, // Contains name, role, department, etc. from Firestore
+        uid: firebaseUser.uid,
+        email: firebaseUser.email, // Ensures email is from the source of truth (Firebase Auth)
+        isEmailVerified: firebaseUser.emailVerified,
+      };
+
+      localStorage.setItem("currentUser", JSON.stringify(finalUserData));
       
       toast({
         title: "Login Successful!",
-        description: `Welcome back, ${userProfile.name || 'User'}! Redirecting...`,
+        description: `Welcome back, ${finalUserData.name || 'User'}! Redirecting...`,
       });
       router.push(successRedirectPath);
 
     } catch (error: any) {
-      console.error("Firebase Login/Profile Fetch error:", error);
+      console.error("Login/Profile Fetch error:", error);
       let errorMessage = "Login failed. Please check your credentials.";
       if (error.code) { // Firebase Auth error codes
         switch (error.code) {
@@ -157,7 +152,7 @@ export default function LoginForm() {
     }
   };
 
-  if (!role || !Object.values(USER_ROLES).includes(role)) {
+  if (!role) {
      return <p>Invalid role. Redirecting...</p>;
   }
 
@@ -165,11 +160,6 @@ export default function LoginForm() {
   if (role === USER_ROLES.HOST) {
     roleTitle = "Management";
   }
-
-  // Label changed to "Email" as Firebase Client SDK signInWithEmailAndPassword requires email
-  let identifierLabel = "Email"; 
-  let identifierPlaceholder = "Enter your email";
-
 
   return (
     <Card className="w-full max-w-md shadow-2xl">
@@ -189,9 +179,9 @@ export default function LoginForm() {
               name="email" 
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{identifierLabel}</FormLabel>
+                  <FormLabel>Email</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder={identifierPlaceholder} {...field} />
+                    <Input type="email" placeholder="Enter your email" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

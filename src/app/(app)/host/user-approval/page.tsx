@@ -6,9 +6,9 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { UserCheck, UserX, ShieldQuestion, Briefcase, CircleUserRound, Loader2 } from "lucide-react";
+import { UserCheck, UserX, ShieldQuestion, Briefcase, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { Admin, Teacher, UserApprovalStatus } from "@/lib/types";
+import type { Admin, Teacher } from "@/lib/types";
 import { USER_ROLES, DEPARTMENTS } from "@/lib/constants";
 import {
   Dialog,
@@ -17,8 +17,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-  DialogClose,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,41 +30,46 @@ import {
   AlertDialogHeader, 
   AlertDialogTitle, 
 } from "@/components/ui/alert-dialog";
-// Import mock data only for client-side username uniqueness check (temporary)
-import { admins as mockAdminsData, teachers as mockTeachersData } from "@/lib/mockData";
 
-
-type PendingUser = (Omit<Admin, 'role'> | Omit<Teacher, 'role'>) & { id: string; name: string; email: string; role: 'admin' | 'teacher'; department?: string; status: UserApprovalStatus };
+type PendingUser = (Admin | Teacher) & { role: 'admin' | 'teacher' };
 
 export default function HostUserApprovalPage() {
   const { toast } = useToast();
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [allActiveUsers, setAllActiveUsers] = useState<(Admin|Teacher)[]>([]);
+  
   const [selectedUserForApproval, setSelectedUserForApproval] = useState<PendingUser | null>(null);
   const [userToReject, setUserToReject] = useState<PendingUser | null>(null);
   const [assignedUsername, setAssignedUsername] = useState("");
   const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [isApproveDialogOpen, setIsApproveDialogOpen] = useState(false);
 
-  const fetchPendingUsers = async () => {
+  const fetchUsers = async () => {
     setIsLoading(true);
     try {
-      const [pendingAdminsRes, pendingTeachersRes] = await Promise.all([
+      const [pendingAdminsRes, pendingTeachersRes, activeAdminsRes, activeTeachersRes] = await Promise.all([
         fetch("/api/admins?status=pending_approval"),
         fetch("/api/teachers?status=pending_approval"),
+        fetch("/api/admins?status=active"),
+        fetch("/api/teachers?status=active"),
       ]);
 
-      if (!pendingAdminsRes.ok) throw new Error(`Failed to fetch pending admins: ${pendingAdminsRes.statusText}`);
-      if (!pendingTeachersRes.ok) throw new Error(`Failed to fetch pending teachers: ${pendingTeachersRes.statusText}`);
+      if (!pendingAdminsRes.ok || !pendingTeachersRes.ok || !activeAdminsRes.ok || !activeTeachersRes.ok) {
+        throw new Error(`Failed to fetch user data`);
+      }
 
       const pendingAdmins: Admin[] = await pendingAdminsRes.json();
       const pendingTeachers: Teacher[] = await pendingTeachersRes.json();
+      const activeAdmins: Admin[] = await activeAdminsRes.json();
+      const activeTeachers: Teacher[] = await activeTeachersRes.json();
       
-      const combinedUsers: PendingUser[] = [
+      const combinedPending: PendingUser[] = [
         ...pendingAdmins.map(a => ({ ...a, role: 'admin' as const })),
         ...pendingTeachers.map(t => ({ ...t, role: 'teacher' as const })),
       ];
-      setPendingUsers(combinedUsers.filter(u => u.status === "pending_approval"));
+      setPendingUsers(combinedPending);
+      setAllActiveUsers([...activeAdmins, ...activeTeachers]);
 
     } catch (error: any) {
       toast({ title: "Error Fetching Users", description: error.message, variant: "destructive" });
@@ -76,7 +79,7 @@ export default function HostUserApprovalPage() {
   };
 
   useEffect(() => {
-    fetchPendingUsers();
+    fetchUsers();
   }, [toast]);
 
   const handleApproveUser = async () => {
@@ -84,18 +87,16 @@ export default function HostUserApprovalPage() {
       toast({ title: "Error", description: "Username is required for approval.", variant: "destructive" });
       return;
     }
-
-    // Client-side mock username uniqueness check (replace with backend validation in a real app)
-    const isUsernameTaken = 
-        mockAdminsData.some(a => a.username === assignedUsername.trim() && a.id !== selectedUserForApproval.id && a.status === 'active') ||
-        mockTeachersData.some(t => t.username === assignedUsername.trim() && t.id !== selectedUserForApproval.id && t.status === 'active');
-
+    
+    const isUsernameTaken = allActiveUsers.some(u => u.username === assignedUsername.trim());
     if (isUsernameTaken) {
         toast({ title: "Username Taken", description: "This username is already in use. Please choose another.", variant: "destructive" });
         return;
     }
     
-    const apiPath = selectedUserForApproval.role === 'admin' ? `/api/admins/${selectedUserForApproval.id}` : `/api/teachers/${selectedUserForApproval.id}`;
+    const apiPath = selectedUserForApproval.role === 'admin' 
+      ? `/api/admins/${selectedUserForApproval.id}` 
+      : `/api/teachers/${selectedUserForApproval.id}`;
     
     try {
       const response = await fetch(apiPath, {
@@ -113,7 +114,7 @@ export default function HostUserApprovalPage() {
       setIsApproveDialogOpen(false);
       setSelectedUserForApproval(null);
       setAssignedUsername("");
-      fetchPendingUsers(); // Refresh list
+      fetchUsers(); // Refresh list
     } catch (error: any) {
        toast({ title: "Approval Error", description: error.message, variant: "destructive" });
     }
@@ -137,7 +138,7 @@ export default function HostUserApprovalPage() {
       toast({ title: "User Rejected", description: `${userToReject.name}'s registration has been rejected.`, variant: "default" });
       setIsRejectDialogOpen(false);
       setUserToReject(null);
-      fetchPendingUsers(); // Refresh list
+      fetchUsers(); // Refresh list
     } catch (error: any) {
        toast({ title: "Rejection Error", description: error.message, variant: "destructive" });
     }
@@ -209,7 +210,7 @@ export default function HostUserApprovalPage() {
                         {user.role}
                       </span>
                     </TableCell>
-                    <TableCell>{user.role === USER_ROLES.TEACHER ? getDepartmentLabel(user.department) : "N/A"}</TableCell>
+                    <TableCell>{user.role === USER_ROLES.TEACHER ? getDepartmentLabel((user as Teacher).department) : "N/A"}</TableCell>
                     <TableCell className="text-right space-x-2">
                       <Button 
                         variant="outline" 
@@ -289,5 +290,3 @@ export default function HostUserApprovalPage() {
     </div>
   );
 }
-
-    
