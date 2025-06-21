@@ -1,10 +1,7 @@
 
 // Import the functions you need from the SDKs you need
 import { initializeApp, getApp, getApps } from "firebase/app";
-import { getFirestore } from "firebase/firestore"; // Added import
-
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+import { getFirestore } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -17,19 +14,9 @@ const firebaseConfig = {
   appId: "1:73106802126:web:78af2c0b38f9c81657179f"
 };
 
-// Initialize Firebase
-let app;
-if (getApps().length === 0) {
-  app = initializeApp(firebaseConfig);
-  console.log("Firebase app initialized for the first time via src/firebase.js");
-} else {
-  app = getApp(); // Get the default app if it has already been initialized
-  console.log("Firebase app already initialized, got existing instance via src/firebase.js");
-}
-
-// Initialize Firestore
+// Initialize Firebase only if it hasn't been initialized yet
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app);
-console.log("Firestore instance initialized via src/firebase.js");
 
-// Export the initialized app and db if you need to use it elsewhere in your client-side code
+// Export the initialized app and db for use in other client-side components
 export { app, db };
