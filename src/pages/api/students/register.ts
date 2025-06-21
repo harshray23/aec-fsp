@@ -42,16 +42,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(409).json({ message: `Student ID ${studentId} already exists.` });
     }
     const existingByEmailQuery = await studentsRef.where('email', '==', email).limit(1).get();
-    if (!existingByEmailQuery.empty && existingByEmailQuery.docs[0].data().uid !== uid) { // Allow if same user re-registering somehow (should not happen)
+    if (!existingByEmailQuery.empty && existingByEmailQuery.docs[0].id !== uid) {
       return res.status(409).json({ message: `Email ${email} already registered to a different user.` });
     }
-     const existingByUidQuery = await studentsRef.where('uid', '==', uid).limit(1).get();
-    if (!existingByUidQuery.empty) {
-      return res.status(409).json({ message: `Firebase UID ${uid} already linked to a student profile.` });
+    const existingDoc = await studentsRef.doc(uid).get();
+    if (existingDoc.exists) {
+        return res.status(409).json({ message: `A user profile with UID ${uid} already exists.` });
     }
 
 
-    const newStudentData: Omit<Student, 'id'> = { // Firestore will generate the document ID
+    const newStudentData: Omit<Student, 'id'> = {
       uid,
       studentId,
       name,
@@ -62,18 +62,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       department,
       phoneNumber,
       whatsappNumber: whatsappNumber || undefined,
-      isEmailVerified: true, // This now refers to Firebase Auth email verification status potentially
-      isPhoneVerified: true, // This now refers to Firebase Auth phone verification status potentially
-      // batchId will be assigned later
+      isEmailVerified: true, 
+      isPhoneVerified: true, 
     };
 
-    // We can choose to use the Firebase UID as the Firestore document ID
-    // or let Firestore auto-generate one and store UID as a field.
-    // Storing UID as a field is often more flexible.
-    // If using UID as document ID: await studentsRef.doc(uid).set(newStudentData);
-    // Let's stick to auto-generated ID and store uid as a field.
-    const docRef = await studentsRef.add(newStudentData);
-    const createdStudent = { id: docRef.id, ...newStudentData };
+    // Use the Firebase UID as the Firestore document ID
+    await studentsRef.doc(uid).set(newStudentData);
+    
+    const createdStudent = { id: uid, ...newStudentData };
 
     return res.status(201).json({ message: 'Student registered successfully', student: createdStudent });
 

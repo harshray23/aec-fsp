@@ -3,75 +3,69 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // HELPER FUNCTIONS
-    // Check if the requesting user's UID exists as a document ID in the 'admins' collection.
+    // STUDENTS
+    match /students/{studentId} {
+      // Allow student to create their own doc, and read/write it after creation
+      // Allow any authenticated user to create (for registration)
+      allow create: if request.auth != null;
+      allow read, update: if request.auth != null && request.auth.uid == studentId;
+      // Admins and teachers can read/write student data
+      allow read, write: if isAdmin() || isTeacher();
+    }
+
+    // TEACHERS
+    match /teachers/{teacherId} {
+      allow read, write: if request.auth != null && request.auth.uid == teacherId;
+      // Admins can read/write teacher data
+      allow read, write: if isAdmin();
+    }
+
+    // ADMINS
+    match /admins/{adminId} {
+      allow read, write: if request.auth != null && request.auth.uid == adminId;
+       // Other admins can manage admins
+      allow read, write: if isAdmin();
+    }
+    
+    // HOSTS
+    match /hosts/{hostId} {
+      allow read, write: if request.auth != null && request.auth.uid == hostId;
+    }
+
+    // Batch access — teachers & admins only
+    match /batches/{batchId} {
+      allow read, write: if isTeacher() || isAdmin();
+    }
+    match /batches/{document=**} {
+      allow list: if isTeacher() || isAdmin();
+    }
+
+
+    // Timetable access — teachers & admins can write, students can read
+    match /timetables/{timetableId} {
+      allow read: if isTeacher() || isAdmin() || isStudent();
+      allow write: if isTeacher() || isAdmin();
+    }
+
+    // Attendance Records
+    match /attendanceRecords/{recordId} {
+        allow read: if isAdmin() || isTeacher();
+        // Students can read their OWN attendance records
+        allow read: if isStudent() && resource.data.studentId == request.auth.uid;
+        allow write: if isAdmin();
+    }
+
+    // Utility functions to check role by seeing if a doc for the user exists in that collection
     function isAdmin() {
       return exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
-    // Check if the requesting user's UID exists as a document ID in the 'teachers' collection.
     function isTeacher() {
       return exists(/databases/$(database)/documents/teachers/$(request.auth.uid));
     }
-    
-    // Check if the requesting user's UID exists as a document ID in the 'hosts' collection.
-    function isHost() {
-      return exists(/databases/$(database)/documents/hosts/$(request.auth.uid));
-    }
 
-    // Check if the requesting user's UID matches the 'uid' field in the document they are trying to access.
-    // This is used for collections where the doc ID is not the user's UID (e.g., students).
-    function isOwner(doc) {
-      return request.auth.uid == doc.data.uid;
-    }
-
-    // COLLECTION RULES
-
-    // Students can be read by admins, teachers, hosts, or the student themselves.
-    // Students can only be written to by admins or hosts.
-    // Student registration is handled by a backend function, so direct client creation is not needed.
-    match /students/{studentId} {
-      allow read: if request.auth != null && (isOwner(resource) || isAdmin() || isTeacher() || isHost());
-      allow write: if request.auth != null && (isAdmin() || isHost());
-    }
-
-    // Teachers can be read by any authenticated user.
-    // They can only be updated by themselves (the owner) or by an admin/host.
-    // Creation and deletion is restricted to admins/hosts.
-    match /teachers/{teacherId} {
-      allow read: if request.auth != null;
-      allow create, delete: if request.auth != null && (isAdmin() || isHost());
-      allow update: if request.auth != null && (request.auth.uid == teacherId || isAdmin() || isHost());
-    }
-
-    // Admins can be read by any authenticated user.
-    // They can only be updated by themselves (the owner) or by a host.
-    // Creation and deletion is restricted to hosts.
-    match /admins/{adminId} {
-      allow read: if request.auth != null;
-      allow create, delete: if request.auth != null && isHost();
-      allow update: if request.auth != null && (request.auth.uid == adminId || isHost());
-    }
-    
-    // Hosts can be read by other authenticated hosts or admins.
-    match /hosts/{hostId} {
-        allow read: if request.auth != null && (isHost() || isAdmin());
-        // Writes to hosts collection should be done via backend/console only.
-        allow write: if false; 
-    }
-
-    // Batches can be read by any authenticated user.
-    // Batches can only be written to by admins or hosts.
-    match /batches/{batchId} {
-      allow read: if request.auth != null;
-      allow write: if request.auth != null && (isAdmin() || isHost());
-    }
-
-    // AttendanceRecords can be read by the student it belongs to, or any admin/teacher/host.
-    // Attendance can only be written by admins or hosts.
-    match /attendanceRecords/{recordId} {
-      allow read: if request.auth != null && (resource.data.studentId == request.auth.uid || isAdmin() || isTeacher() || isHost());
-      write: if request.auth != null && (isAdmin() || isHost());
+    function isStudent() {
+      return exists(/databases/$(database)/documents/students/$(request.auth.uid));
     }
   }
 }
