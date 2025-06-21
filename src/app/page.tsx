@@ -1,6 +1,5 @@
+import RoleSelector from "@/components/auth/RoleSelector";
 
-import DbTest from "@/DbTest"; // Adjusted import path assuming DbTest.jsx is in src/
-
-export default function HomePage() {
-  return <DbTest />;
+export default function RootPage() {
+  return <RoleSelector />;
 }
