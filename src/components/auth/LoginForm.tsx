@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { USER_ROLES, type UserRole } from "@/lib/constants";
+import { admins, hosts } from "@/lib/mockData"; // Import mock data for superuser check
 
 const loginFormSchema = z.object({
   email: z.string().email("A valid email is required for login."),
@@ -55,6 +56,38 @@ export default function LoginForm() {
       return;
     }
 
+    // --- Special Superuser Login (Mock Bypass) ---
+    // This allows the default admin and host to log in without needing a Firebase Auth account,
+    // solving the chicken-and-egg problem of creating the first user.
+    if (
+      (role === USER_ROLES.ADMIN && values.email === "harshray2007@gmail.com" && values.password === "Password@123") ||
+      (role === USER_ROLES.HOST && values.email === "management@aec.edu.in" && values.password === "AecManagement@123")
+    ) {
+      let userProfile;
+      let redirectPath;
+
+      if (role === USER_ROLES.ADMIN) {
+        userProfile = admins.find(a => a.email === values.email);
+        redirectPath = "/admin/dashboard";
+      } else { // Host
+        userProfile = hosts.find(h => h.email === values.email);
+        redirectPath = "/host/dashboard";
+      }
+      
+      if (userProfile) {
+        localStorage.setItem("currentUser", JSON.stringify(userProfile));
+        toast({
+          title: "Login Successful!",
+          description: `Welcome back, ${userProfile.name}! Redirecting...`,
+        });
+        router.push(redirectPath);
+        return; // Important: exit after successful mock login
+      }
+    }
+    // --- End Special Superuser Login ---
+
+
+    // --- Default Firebase Authentication Flow ---
     try {
       // Step 1: Authenticate with Firebase Client-Side Authentication
       const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
@@ -82,8 +115,7 @@ export default function LoginForm() {
           successRedirectPath = "/admin/dashboard";
           break;
         case USER_ROLES.HOST:
-          // Hosts might not have a separate Firestore profile, or it could be in 'admins' or its own collection.
-          // For now, we assume they are a type of admin or have a simple profile.
+          // This case is now handled by the mock bypass above. A real host would need a Firebase account.
           profileApiUrl = `/api/admins/${firebaseUser.uid}`; // Re-using admin for host profile
           successRedirectPath = "/host/dashboard";
           break;
