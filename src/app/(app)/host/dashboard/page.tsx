@@ -5,10 +5,13 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ServerCog, UserPlus, MonitorPlay, Users, BookUser, CalendarDays, ShieldAlert, FileCog, Briefcase, GraduationCap, UserCheck, Megaphone } from "lucide-react"; 
+import { ServerCog, UserPlus, MonitorPlay, Users, BookUser, CalendarDays, ShieldAlert, FileCog, Briefcase, GraduationCap, UserCheck, Megaphone, Trash2 } from "lucide-react"; 
 import { admins, batches, teachers, students, timetableEntries } from "@/lib/mockData";
+import { useToast } from "@/hooks/use-toast";
 
 export default function HostDashboardPage() {
+  const { toast } = useToast();
+
   const hostStats = [
     { title: "Total Teachers", value: teachers.length.toString(), icon: Briefcase, color: "text-green-500", href: "/host/monitoring/teachers" },
     { title: "Total Admins", value: admins.length.toString(), icon: ShieldAlert, color: "text-red-500", href: "/host/monitoring/admins" },
@@ -23,6 +26,24 @@ export default function HostDashboardPage() {
     { href: "/host/monitoring/batches", label: "Monitor Batches", icon: BookUser, description: "Oversee all program batches." },
     { href: "/host/monitoring/timetables", label: "Monitor Timetables", icon: CalendarDays, description: "View all batch timetables." },
   ];
+  
+  const handleClearAnnouncements = () => {
+    try {
+      localStorage.removeItem("aecFspAnnouncements");
+      toast({
+        title: "Announcements Cleared",
+        description: "All announcements have been successfully deleted.",
+      });
+    } catch (error) {
+      console.error("Failed to clear announcements:", error);
+      toast({
+        title: "Error",
+        description: "Could not clear announcements from local storage.",
+        variant: "destructive",
+      });
+    }
+  };
+
 
   return (
     <div className="space-y-8">
@@ -68,6 +89,21 @@ export default function HostDashboardPage() {
               </Link>
             </Button>
           ))}
+        </CardContent>
+      </Card>
+      
+       <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle>Announcements Management</CardTitle>
+          <CardDescription>Actions related to system-wide announcements.</CardDescription>
+        </CardHeader>
+        <CardContent>
+           <Button variant="destructive" onClick={handleClearAnnouncements}>
+                <Trash2 className="mr-2 h-4 w-4" /> Clear All Announcements
+            </Button>
+            <p className="text-xs text-muted-foreground mt-2">
+                This will remove all sent announcements from being displayed to users. This action cannot be undone.
+            </p>
         </CardContent>
       </Card>
     </div>
