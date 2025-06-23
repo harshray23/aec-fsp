@@ -9,9 +9,11 @@ try {
   if (!admin.apps.length) {
     console.log("Initializing Firebase Admin SDK...");
 
+    const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+
     // This checks if the required environment variables are set.
-    if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
-      throw new Error("Firebase Admin SDK credentials are not set in .env.local");
+    if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !privateKey) {
+      throw new Error("Firebase Admin SDK credentials (FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY) are not set in .env.local. The app cannot connect to the database.");
     }
     
     admin.initializeApp({
@@ -19,7 +21,7 @@ try {
         projectId: process.env.FIREBASE_PROJECT_ID,
         clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
         // The key must have newline characters correctly formatted.
-        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+        privateKey: privateKey.replace(/\\n/g, '\n'),
       }),
     });
 
