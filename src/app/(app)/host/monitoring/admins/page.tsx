@@ -1,21 +1,46 @@
 
 "use client";
 
+import React, { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { ShieldAlert, MoreHorizontal } from "lucide-react";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { ShieldAlert, MoreHorizontal, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { admins as mockAdmins } from "@/lib/mockData";
+import type { Admin } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
 
 export default function HostMonitorAdminsPage() {
+  const { toast } = useToast();
+  const [admins, setAdmins] = useState<Admin[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAdmins = async () => {
+      setIsLoading(true);
+      try {
+        const res = await fetch('/api/admins');
+        if (!res.ok) throw new Error("Failed to fetch admins.");
+        setAdmins(await res.json());
+      } catch (error: any) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchAdmins();
+  }, [toast]);
+  
+  const getStatusVariant = (status?: string): "default" | "secondary" | "outline" | "destructive" => {
+    switch (status) {
+      case "active": return "default";
+      case "pending_approval": return "secondary";
+      case "rejected": return "destructive";
+      default: return "outline";
+    }
+  };
+
   return (
     <div className="space-y-8">
       <PageHeader
@@ -29,54 +54,53 @@ export default function HostMonitorAdminsPage() {
           <CardDescription>A list of all administrators in the FSP system.</CardDescription>
         </CardHeader>
         <CardContent>
+          {isLoading ? (
+             <div className="flex justify-center items-center h-48">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Admin ID</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
+                <TableHead>Username</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockAdmins.map((admin) => (
+              {admins.map((admin) => (
                 <TableRow key={admin.id}>
-                  <TableCell>{admin.id}</TableCell>
+                  <TableCell className="truncate max-w-[100px]">{admin.id}</TableCell>
                   <TableCell className="font-medium">{admin.name}</TableCell>
                   <TableCell>{admin.email}</TableCell>
-                  <TableCell>{admin.role}</TableCell>
+                  <TableCell>{admin.username || "N/A"}</TableCell>
                   <TableCell>
-                    <Badge variant={"default"}>Active</Badge>
+                    <Badge variant={getStatusVariant(admin.status)}>
+                       {admin.status?.replace("_", " ").split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') || "Unknown"}
+                    </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" disabled> {/* Actions disabled for host monitoring view */}
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                         <DropdownMenuItem disabled>View Details</DropdownMenuItem>
-                         <DropdownMenuItem disabled>Manage Permissions</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    <Button variant="ghost" size="icon" disabled>
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
-              {mockAdmins.length === 0 && (
+              {admins.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center text-muted-foreground h-24">
                     No administrators found in the system.
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
+          )}
         </CardContent>
       </Card>
     </div>
   );
 }
-

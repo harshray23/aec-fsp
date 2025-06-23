@@ -7,28 +7,73 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { LayoutDashboard, Users, CalendarDays, BarChart3, GraduationCap, BookUser } from "lucide-react"; 
 import Link from "next/link";
-import type { Announcement } from "@/lib/types";
+import type { Announcement, Batch } from "@/lib/types";
 import { AnnouncementDialog } from "@/components/shared/AnnouncementDialog";
-
-const quickStats = [
-  { title: "Active Batches", value: "0", icon: Users, color: "text-primary" },
-  { title: "Students Enrolled", value: "0", icon: GraduationCap, color: "text-green-500" },
-  { title: "Today's Classes", value: "0", icon: CalendarDays, color: "text-purple-500" },
-];
+import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
+import { USER_ROLES } from "@/lib/constants";
 
 const actions = [
   { href: "/teacher/my-assigned-batches", label: "View My Assigned Batches", icon: BookUser },
-  { href: "/teacher/timetables", label: "Manage Timetables", icon: CalendarDays }, 
+  { href: "/teacher/timetables", label: "View Timetables", icon: CalendarDays }, 
   { href: "/teacher/reports", label: "View Performance Reports", icon: BarChart3 },
 ];
 
 const LOCAL_STORAGE_ANNOUNCEMENT_KEY = "aecFspAnnouncements";
 
 export default function TeacherDashboardPage() {
+  const { toast } = useToast();
   const [latestAnnouncement, setLatestAnnouncement] = useState<Announcement | null>(null);
   const [isAnnouncementDialogOpen, setIsAnnouncementDialogOpen] = useState(false);
+  const [stats, setStats] = useState({ activeBatches: 0, studentsEnrolled: 0, todayClasses: 0 });
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    const fetchStats = async () => {
+      setIsLoading(true);
+      let teacherId = null;
+      const storedUserJSON = localStorage.getItem("currentUser");
+      if (storedUserJSON) {
+        const user = JSON.parse(storedUserJSON);
+        if (user && user.role === USER_ROLES.TEACHER) {
+          teacherId = user.id;
+        }
+      }
+
+      if (!teacherId) {
+        toast({ title: "Error", description: "Could not identify teacher.", variant: "destructive" });
+        setIsLoading(false);
+        return;
+      }
+      
+      try {
+        const res = await fetch('/api/batches');
+        if (!res.ok) throw new Error("Failed to fetch batches.");
+        
+        const allBatches: Batch[] = await res.json();
+        const assignedBatches = allBatches.filter(b => b.teacherId === teacherId);
+        
+        const studentsEnrolled = assignedBatches.reduce((acc, batch) => acc + batch.studentIds.length, 0);
+        
+        // Logic for today's classes would be more complex, depending on specific timetable entries
+        // For now, this is a placeholder.
+        const todayClasses = 0; 
+        
+        setStats({
+          activeBatches: assignedBatches.length,
+          studentsEnrolled: studentsEnrolled,
+          todayClasses: todayClasses,
+        });
+
+      } catch (error: any) {
+         toast({ title: "Error", description: error.message, variant: "destructive" });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchStats();
+
     const announcementsRaw = localStorage.getItem(LOCAL_STORAGE_ANNOUNCEMENT_KEY);
     if (announcementsRaw) {
       const announcements: Announcement[] = JSON.parse(announcementsRaw);
@@ -41,6 +86,7 @@ export default function TeacherDashboardPage() {
         }
       }
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleCloseAnnouncementDialog = () => {
@@ -50,6 +96,12 @@ export default function TeacherDashboardPage() {
     setIsAnnouncementDialogOpen(false);
     setLatestAnnouncement(null);
   };
+
+  const quickStats = [
+    { title: "Active Batches", value: stats.activeBatches.toString(), icon: Users, color: "text-primary" },
+    { title: "Students Enrolled", value: stats.studentsEnrolled.toString(), icon: GraduationCap, color: "text-green-500" },
+    { title: "Today's Classes", value: stats.todayClasses.toString(), icon: CalendarDays, color: "text-purple-500" },
+  ];
 
   return (
     <div className="space-y-8">
@@ -72,7 +124,7 @@ export default function TeacherDashboardPage() {
               <stat.icon className={`h-5 w-5 ${stat.color}`} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
+              {isLoading ? <Skeleton className="h-8 w-1/2" /> : <div className="text-2xl font-bold">{stat.value}</div>}
               <p className="text-xs text-muted-foreground">Current status</p>
             </CardContent>
           </Card>

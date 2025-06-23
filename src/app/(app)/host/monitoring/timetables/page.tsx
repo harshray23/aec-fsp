@@ -1,25 +1,15 @@
 
 "use client";
 
+import React, { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { CalendarDays, Clock, UserCheck2, Building, HomeIcon } from "lucide-react"; 
+import { CalendarDays, Clock, UserCheck2, Building, HomeIcon, Loader2 } from "lucide-react"; 
 import { Badge } from "@/components/ui/badge";
-import {
-  batches as allBatches,
-  teachers as allTeachers,
-  timetableEntries as globalTimetableEntries 
-} from "@/lib/mockData";
 import { DEPARTMENTS } from "@/lib/constants";
-import type { Batch, Teacher, TimetableEntry as TimetableEntryType } from "@/lib/types";
-
-interface ProcessedScheduleEntry {
-  day: string;
-  time: string;
-  subject: string;
-  roomNumber?: string;
-}
+import type { Batch, Teacher } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
 
 interface ProcessedTimetable {
   batchId: string;
@@ -27,52 +17,81 @@ interface ProcessedTimetable {
   departmentName: string;
   teacherName: string;
   roomNumber?: string;
-  schedule: ProcessedScheduleEntry[];
+  schedule: {
+    days: string;
+    time: string;
+    subject: string;
+  }[];
 }
 
 export default function HostMonitorTimetablesPage() {
-  const processedTimetables: ProcessedTimetable[] = [];
-  const groupedByBatch: Record<string, { batch: Batch; entries: TimetableEntryType[] }> = {};
+  const [processedTimetables, setProcessedTimetables] = useState<ProcessedTimetable[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
-  globalTimetableEntries.forEach(entry => {
-    const batch = allBatches.find(b => b.id === entry.batchId);
-    if (batch) {
-      if (!groupedByBatch[entry.batchId]) {
-        groupedByBatch[entry.batchId] = { batch, entries: [] };
-      }
-      groupedByBatch[entry.batchId].entries.push(entry);
-    }
-  });
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const [batchesRes, teachersRes] = await Promise.all([
+          fetch('/api/batches'),
+          fetch('/api/teachers'),
+        ]);
 
-  for (const batchId in groupedByBatch) {
-    const group = groupedByBatch[batchId];
-    const batch = group.batch;
-    const teacher = allTeachers.find(t => t.id === batch.teacherId);
-    const departmentInfo = DEPARTMENTS.find(d => d.value === batch.department);
-
-    processedTimetables.push({
-      batchId: batch.id,
-      batchName: batch.name,
-      departmentName: departmentInfo ? departmentInfo.label : batch.department,
-      teacherName: teacher ? teacher.name : "N/A",
-      roomNumber: batch.roomNumber,
-      schedule: group.entries.map(entry => ({
-        day: entry.dayOfWeek,
-        time: `${entry.startTime} - ${entry.endTime}`,
-        subject: entry.subject,
-        roomNumber: entry.roomNumber || batch.roomNumber, // Prefer entry specific room, fallback to batch room
-      })).sort((a, b) => { 
-        const daysOrder = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-        const dayIndexA = daysOrder.indexOf(a.day);
-        const dayIndexB = daysOrder.indexOf(b.day);
-        if (dayIndexA !== dayIndexB) {
-            return dayIndexA - dayIndexB;
+        if (!batchesRes.ok || !teachersRes.ok) {
+          throw new Error('Failed to fetch timetable data.');
         }
-        return a.time.localeCompare(b.time);
-      }),
-    });
+        
+        const allBatches: Batch[] = await batchesRes.json();
+        const allTeachers: Teacher[] = await teachersRes.json();
+        
+        const teachersMap = new Map(allTeachers.map(t => [t.id, t.name]));
+
+        const timetables = allBatches
+          .filter(batch => batch.daysOfWeek?.length > 0 && batch.startTime && batch.endTime)
+          .map(batch => {
+            const departmentInfo = DEPARTMENTS.find(d => d.value === batch.department);
+            return {
+              batchId: batch.id,
+              batchName: batch.name,
+              departmentName: departmentInfo ? departmentInfo.label : batch.department,
+              teacherName: teachersMap.get(batch.teacherId) || "N/A",
+              roomNumber: batch.roomNumber,
+              schedule: [{
+                days: batch.daysOfWeek.join(', '),
+                time: `${batch.startTime} - ${batch.endTime}`,
+                subject: batch.topic,
+              }],
+            };
+          })
+          .sort((a, b) => a.batchName.localeCompare(b.batchName));
+
+        setProcessedTimetables(timetables);
+
+      } catch (error: any) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [toast]);
+  
+  if (isLoading) {
+    return (
+      <div className="space-y-8">
+        <PageHeader title="Monitor Timetables (Host)" icon={CalendarDays} />
+        <Card className="shadow-lg">
+          <CardHeader>
+            <CardTitle>All Batch Timetables</CardTitle>
+          </CardHeader>
+          <CardContent className="flex justify-center items-center h-48">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
-  processedTimetables.sort((a, b) => a.batchName.localeCompare(b.batchName));
 
   return (
     <div className="space-y-8">
@@ -101,34 +120,30 @@ export default function HostMonitorTimetablesPage() {
                           {timetable.roomNumber && <span className="flex items-center"><HomeIcon className="h-3.5 w-3.5 mr-1 flex-shrink-0" /> Room: {timetable.roomNumber}</span>}
                         </div>
                       </div>
-                      <Badge variant="outline" className="mt-1 md:mt-0 self-start md:self-center">{timetable.schedule.length} sessions</Badge>
+                      <Badge variant="outline" className="mt-1 md:mt-0 self-start md:self-center">1 schedule</Badge>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent>
-                    {timetable.schedule.length > 0 ? (
                     <ul className="space-y-3 pl-4 pt-2 border-l ml-2">
                       {timetable.schedule.map((session, index) => (
                         <li key={index} className="p-3 bg-muted/30 rounded-md shadow-sm">
                           <div className="flex justify-between items-center">
                             <p className="font-medium">{session.subject}</p>
-                            <Badge>{session.day}</Badge>
+                            <Badge>{session.days}</Badge>
                           </div>
                           <div className="text-sm text-muted-foreground flex items-center gap-x-4 mt-1">
                              <span className="flex items-center gap-1"><Clock className="h-4 w-4" />{session.time}</span>
-                            {session.roomNumber && <span className="flex items-center gap-1"><HomeIcon className="h-4 w-4" />{session.roomNumber}</span>}
+                            {timetable.roomNumber && <span className="flex items-center gap-1"><HomeIcon className="h-4 w-4" />{timetable.roomNumber}</span>}
                           </div>
                         </li>
                       ))}
                     </ul>
-                    ) : (
-                       <p className="text-sm text-muted-foreground pl-4 pt-2 border-l ml-2">No sessions scheduled for this batch.</p>
-                    )}
                   </AccordionContent>
                 </AccordionItem>
               ))}
             </Accordion>
           ) : (
-             <p className="text-center text-muted-foreground py-4">No timetable entries found in the system.</p>
+             <p className="text-center text-muted-foreground py-4">No batches with schedules found. Configure batches to see their timetables here.</p>
           )}
         </CardContent>
       </Card>

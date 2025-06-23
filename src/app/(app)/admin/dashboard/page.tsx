@@ -5,21 +5,58 @@ import React, { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ShieldAlert, Users, UserPlus, BookUser, Settings, Briefcase, GraduationCap, CheckSquare } from "lucide-react"; 
+import { ShieldAlert, Users, UserPlus, BookUser, Settings, Briefcase, GraduationCap, CheckSquare, Loader2 } from "lucide-react"; 
 import Link from "next/link";
-import { students, teachers, batches, admins } from "@/lib/mockData"; 
 import type { Announcement } from "@/lib/types";
 import { AnnouncementDialog } from "@/components/shared/AnnouncementDialog";
+import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const LOCAL_STORAGE_ANNOUNCEMENT_KEY = "aecFspAnnouncements";
 
 export default function AdminDashboardPage() {
-  const [dataVersion, setDataVersion] = React.useState(0);
   const [latestAnnouncement, setLatestAnnouncement] = useState<Announcement | null>(null);
   const [isAnnouncementDialogOpen, setIsAnnouncementDialogOpen] = useState(false);
+  const [stats, setStats] = useState({ students: 0, teachers: 0, batches: 0, admins: 0 });
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
-  React.useEffect(() => {
-    // Placeholder for potential future live data updates
+  useEffect(() => {
+    // Fetch dashboard stats
+    const fetchStats = async () => {
+      setIsLoading(true);
+      try {
+        const [studentsRes, teachersRes, batchesRes, adminsRes] = await Promise.all([
+          fetch('/api/students'),
+          fetch('/api/teachers'),
+          fetch('/api/batches'),
+          fetch('/api/admins')
+        ]);
+
+        if (!studentsRes.ok || !teachersRes.ok || !batchesRes.ok || !adminsRes.ok) {
+            throw new Error("Failed to fetch all dashboard statistics.");
+        }
+        
+        const studentsData = await studentsRes.json();
+        const teachersData = await teachersRes.json();
+        const batchesData = await batchesRes.json();
+        const adminsData = await adminsRes.json();
+
+        setStats({
+          students: studentsData.length,
+          teachers: teachersData.length,
+          batches: batchesData.length,
+          admins: adminsData.length,
+        });
+
+      } catch (error: any) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchStats();
 
     // Check for announcements
     const announcementsRaw = localStorage.getItem(LOCAL_STORAGE_ANNOUNCEMENT_KEY);
@@ -34,7 +71,7 @@ export default function AdminDashboardPage() {
         }
       }
     }
-  }, []);
+  }, [toast]);
 
   const handleCloseAnnouncementDialog = () => {
     if (latestAnnouncement) {
@@ -45,10 +82,10 @@ export default function AdminDashboardPage() {
   };
 
   const adminStats = [
-    { title: "Total Students", value: students.length.toString(), icon: GraduationCap, color: "text-blue-500" },
-    { title: "Active Teachers", value: teachers.length.toString(), icon: Briefcase, color: "text-green-500" },
-    { title: "Total Batches", value: batches.length.toString(), icon: BookUser, color: "text-purple-500" },
-    { title: "Active Admins", value: admins.length.toString(), icon: ShieldAlert, color: "text-red-500" },
+    { title: "Total Students", value: stats.students.toString(), icon: GraduationCap, color: "text-blue-500" },
+    { title: "Active Teachers", value: stats.teachers.toString(), icon: Briefcase, color: "text-green-500" },
+    { title: "Total Batches", value: stats.batches.toString(), icon: BookUser, color: "text-purple-500" },
+    { title: "Active Admins", value: stats.admins.toString(), icon: ShieldAlert, color: "text-red-500" },
   ];
 
   const adminActions = [
@@ -87,7 +124,11 @@ export default function AdminDashboardPage() {
               <stat.icon className={`h-5 w-5 ${stat.color}`} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
+              {isLoading ? (
+                <Skeleton className="h-8 w-1/2" />
+              ) : (
+                <div className="text-2xl font-bold">{stat.value}</div>
+              )}
               <p className="text-xs text-muted-foreground">System-wide count</p>
             </CardContent>
           </Card>

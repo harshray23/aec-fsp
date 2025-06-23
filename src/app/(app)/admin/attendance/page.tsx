@@ -11,10 +11,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
-import { CheckSquare, CalendarIcon, Save, Users } from "lucide-react";
+import { CheckSquare, CalendarIcon, Save, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { batches as allBatches, students as allStudents, attendanceRecords as mockAttendanceRecords } from "@/lib/mockData";
 import type { Student, Batch, AttendanceRecord } from "@/lib/types";
 import { DEPARTMENTS } from "@/lib/constants";
 
@@ -22,89 +21,124 @@ type AttendanceStatus = "present" | "absent" | "late";
 
 export default function AdminManageAttendancePage() {
   const { toast } = useToast();
+  const [batches, setBatches] = useState<Batch[]>([]);
+  const [students, setStudents] = useState<Student[]>([]);
+  const [isLoadingBatches, setIsLoadingBatches] = useState(true);
+  const [isLoadingStudents, setIsLoadingStudents] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
   const [selectedBatchId, setSelectedBatchId] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [attendanceRecords, setAttendanceRecords] = useState<Record<string, AttendanceStatus>>({});
+  
+  const selectedBatch = useMemo(() => batches.find(b => b.id === selectedBatchId), [selectedBatchId, batches]);
 
-  const selectedBatch = useMemo(() => allBatches.find(b => b.id === selectedBatchId), [selectedBatchId]);
-
-  const studentsInSelectedBatch = useMemo(() => {
-    if (!selectedBatch) return [];
-    return allStudents.filter(student => selectedBatch.studentIds.includes(student.id));
-  }, [selectedBatch]);
-
-  // Load existing records or initialize when batch/date changes
+  // Fetch all batches on component mount
   useEffect(() => {
-    const newRecords: Record<string, AttendanceStatus> = {};
-    if (selectedBatch && selectedDate) {
-      studentsInSelectedBatch.forEach(student => {
-        const existingRecord = mockAttendanceRecords.find(
-          r => r.batchId === selectedBatch.id &&
-               r.studentId === student.id &&
-               format(new Date(r.date), "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd")
-        );
-        if (existingRecord) {
-          newRecords[student.id] = existingRecord.status;
-        } else {
-          // newRecords[student.id] = "present"; // Default to present or leave blank
-        }
-      });
-    }
-    setAttendanceRecords(newRecords);
-  }, [selectedBatch, selectedDate, studentsInSelectedBatch]);
+    const fetchBatches = async () => {
+      setIsLoadingBatches(true);
+      try {
+        const res = await fetch('/api/batches');
+        if (!res.ok) throw new Error("Failed to fetch batches");
+        const data: Batch[] = await res.json();
+        setBatches(data);
+      } catch (error: any) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+      } finally {
+        setIsLoadingBatches(false);
+      }
+    };
+    fetchBatches();
+  }, [toast]);
+
+  // Fetch students and attendance records when batch or date changes
+  useEffect(() => {
+    if (!selectedBatchId || !selectedDate) {
+      setStudents([]);
+      setAttendanceRecords({});
+      return;
+    };
+
+    const fetchDataForBatchAndDate = async () => {
+      setIsLoadingStudents(true);
+      try {
+        // Fetch all students in the system, then filter client-side.
+        // For larger scale, an API endpoint /api/students?batchId=... would be better.
+        const studentsRes = await fetch('/api/students');
+        if (!studentsRes.ok) throw new Error("Failed to fetch students");
+        const allStudents: Student[] = await studentsRes.json();
+        const studentsInBatch = allStudents.filter(s => s.batchId === selectedBatchId);
+        setStudents(studentsInBatch);
+
+        // Fetch existing attendance records for this batch and date
+        const attendanceRes = await fetch(`/api/attendance?batchId=${selectedBatchId}&date=${format(selectedDate, 'yyyy-MM-dd')}`);
+        if (!attendanceRes.ok) throw new Error("Failed to fetch attendance records");
+        const existingRecords: AttendanceRecord[] = await attendanceRes.json();
+        
+        const recordsMap: Record<string, AttendanceStatus> = {};
+        existingRecords.forEach(rec => {
+          recordsMap[rec.studentId] = rec.status;
+        });
+        setAttendanceRecords(recordsMap);
+
+      } catch (error: any) {
+        toast({ title: "Error", description: `Failed to load data for batch: ${error.message}`, variant: "destructive" });
+      } finally {
+        setIsLoadingStudents(false);
+      }
+    };
+
+    fetchDataForBatchAndDate();
+
+  }, [selectedBatchId, selectedDate, toast]);
 
 
   const handleAttendanceChange = (studentId: string, status: AttendanceStatus) => {
     setAttendanceRecords(prev => ({ ...prev, [studentId]: status }));
   };
 
-  const handleSaveAttendance = () => {
+  const handleSaveAttendance = async () => {
     if (!selectedBatch || !selectedDate) {
       toast({ title: "Error", description: "Please select a batch and date.", variant: "destructive" });
       return;
     }
-    if (studentsInSelectedBatch.length > 0 && Object.keys(attendanceRecords).length !== studentsInSelectedBatch.length) {
+    if (students.length > 0 && Object.keys(attendanceRecords).length !== students.length) {
        toast({ title: "Incomplete", description: "Please mark attendance for all students.", variant: "destructive" });
       return;
     }
-    if (studentsInSelectedBatch.length === 0 && Object.keys(attendanceRecords).length > 0) {
-        toast({ title: "No Students", description: "No students to mark attendance for in this batch.", variant: "destructive" });
-        return;
-    }
-    if (studentsInSelectedBatch.length === 0 && Object.keys(attendanceRecords).length === 0) {
+    if (students.length === 0) {
         toast({ title: "No Students", description: "No students in the selected batch to mark attendance for." });
         return;
     }
-    
-    // Update or add records in mockAttendanceRecords
-    studentsInSelectedBatch.forEach(student => {
-        const studentStatus = attendanceRecords[student.id];
-        if (studentStatus) { // Only save if a status is set
-            const recordIndex = mockAttendanceRecords.findIndex(
-                r => r.batchId === selectedBatch.id &&
-                     r.studentId === student.id &&
-                     format(new Date(r.date), "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd")
-            );
 
-            if (recordIndex !== -1) {
-                mockAttendanceRecords[recordIndex].status = studentStatus;
-            } else {
-                mockAttendanceRecords.push({
-                    id: `ATTREC_${Date.now()}_${student.id}`,
-                    studentId: student.id,
-                    batchId: selectedBatch.id,
-                    date: selectedDate.toISOString(),
-                    status: studentStatus,
-                    subject: selectedBatch.topic, // Or a more specific subject if available
-                });
-            }
+    setIsSaving(true);
+    try {
+        const response = await fetch('/api/attendance/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                records: attendanceRecords,
+                batchId: selectedBatch.id,
+                date: format(selectedDate, 'yyyy-MM-dd'),
+                subject: selectedBatch.topic,
+            }),
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || 'Failed to save attendance.');
         }
-    });
+        
+        toast({
+          title: "Attendance Saved",
+          description: `Attendance for batch ${selectedBatch.name} on ${format(selectedDate, "PPP")} has been saved.`,
+        });
 
-    toast({
-      title: "Attendance Saved",
-      description: `Attendance for batch ${selectedBatch.name} on ${format(selectedDate, "PPP")} has been saved.`,
-    });
+    } catch (error: any) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+        setIsSaving(false);
+    }
   };
   
 
@@ -119,15 +153,15 @@ export default function AdminManageAttendancePage() {
         <CardHeader>
           <CardTitle>Mark Attendance</CardTitle>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 items-end">
-            <Select onValueChange={setSelectedBatchId} value={selectedBatchId}>
+            <Select onValueChange={setSelectedBatchId} value={selectedBatchId} disabled={isLoadingBatches}>
               <SelectTrigger>
-                <SelectValue placeholder="Select a Batch" />
+                <SelectValue placeholder={isLoadingBatches ? "Loading batches..." : "Select a Batch"} />
               </SelectTrigger>
               <SelectContent>
-                {allBatches.map(batch => (
+                {batches.map(batch => (
                   <SelectItem key={batch.id} value={batch.id}>{batch.name} ({DEPARTMENTS.find(d=>d.value === batch.department)?.label})</SelectItem>
                 ))}
-                 {allBatches.length === 0 && <p className="p-2 text-sm text-muted-foreground">No batches available.</p>}
+                 {batches.length === 0 && !isLoadingBatches && <p className="p-2 text-sm text-muted-foreground">No batches found.</p>}
               </SelectContent>
             </Select>
             <Popover>
@@ -152,13 +186,17 @@ export default function AdminManageAttendancePage() {
           </div>
         </CardHeader>
         <CardContent>
-          {selectedBatch && selectedDate && (
+          {isLoadingStudents ? (
+            <div className="flex justify-center items-center h-40">
+                <Loader2 className="h-8 w-8 animate-spin text-primary"/>
+            </div>
+          ) : selectedBatch && selectedDate ? (
             <>
               <p className="mb-4 text-sm font-medium">
                 Marking attendance for: <span className="text-primary">{selectedBatch.name}</span> on <span className="text-primary">{format(selectedDate, "PPP")}</span>.
                 Topic: <span className="text-primary">{selectedBatch.topic}</span>.
               </p>
-              {studentsInSelectedBatch.length > 0 ? (
+              {students.length > 0 ? (
                 <>
                 <div className="max-h-[60vh] overflow-auto">
                 <Table>
@@ -171,7 +209,7 @@ export default function AdminManageAttendancePage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {studentsInSelectedBatch.map((student) => (
+                    {students.map((student) => (
                       <TableRow key={student.id}>
                         <TableCell>{student.studentId}</TableCell>
                         <TableCell className="font-medium">{student.name}</TableCell>
@@ -201,16 +239,16 @@ export default function AdminManageAttendancePage() {
                   </TableBody>
                 </Table>
                 </div>
-                <Button onClick={handleSaveAttendance} className="mt-6 w-full md:w-auto">
-                  <Save className="mr-2 h-4 w-4" /> Save Attendance
+                <Button onClick={handleSaveAttendance} disabled={isSaving} className="mt-6 w-full md:w-auto">
+                  {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                  {isSaving ? 'Saving...' : 'Save Attendance'}
                 </Button>
                 </>
               ) : (
                 <p className="text-center text-muted-foreground py-4">No students found in the selected batch, or students have not yet been assigned.</p>
               )}
             </>
-          )}
-          {(!selectedBatch || !selectedDate) && (
+          ) : (
             <p className="text-center text-muted-foreground py-4">Please select a batch and a date to mark attendance.</p>
           )}
         </CardContent>

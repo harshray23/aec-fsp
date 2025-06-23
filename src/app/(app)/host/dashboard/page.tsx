@@ -1,22 +1,56 @@
 
 "use client";
 
+import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { ServerCog, UserPlus, MonitorPlay, Users, BookUser, CalendarDays, ShieldAlert, FileCog, Briefcase, GraduationCap, UserCheck, Megaphone, Trash2 } from "lucide-react"; 
-import { admins, batches, teachers, students, timetableEntries } from "@/lib/mockData";
 import { useToast } from "@/hooks/use-toast";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function HostDashboardPage() {
   const { toast } = useToast();
+  const [stats, setStats] = useState({ teachers: 0, admins: 0, batches: 0, students: 0 });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      setIsLoading(true);
+      try {
+        const [teachersRes, adminsRes, batchesRes, studentsRes] = await Promise.all([
+          fetch('/api/teachers'),
+          fetch('/api/admins'),
+          fetch('/api/batches'),
+          fetch('/api/students')
+        ]);
+
+        if (!teachersRes.ok || !adminsRes.ok || !batchesRes.ok || !studentsRes.ok) {
+          throw new Error("Failed to fetch dashboard statistics.");
+        }
+
+        setStats({
+          teachers: (await teachersRes.json()).length,
+          admins: (await adminsRes.json()).length,
+          batches: (await batchesRes.json()).length,
+          students: (await studentsRes.json()).length
+        });
+
+      } catch (error: any) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchStats();
+  }, [toast]);
 
   const hostStats = [
-    { title: "Total Teachers", value: teachers.length.toString(), icon: Briefcase, color: "text-green-500", href: "/host/monitoring/teachers" },
-    { title: "Total Admins", value: admins.length.toString(), icon: ShieldAlert, color: "text-red-500", href: "/host/monitoring/admins" },
-    { title: "Total Batches", value: batches.length.toString(), icon: BookUser, color: "text-purple-500", href: "/host/monitoring/batches" },
-    { title: "Total Students", value: students.length.toString(), icon: GraduationCap, color: "text-blue-500" }, 
+    { title: "Total Teachers", value: stats.teachers.toString(), icon: Briefcase, color: "text-green-500", href: "/host/monitoring/teachers" },
+    { title: "Total Admins", value: stats.admins.toString(), icon: ShieldAlert, color: "text-red-500", href: "/host/monitoring/admins" },
+    { title: "Total Batches", value: stats.batches.toString(), icon: BookUser, color: "text-purple-500", href: "/host/monitoring/batches" },
+    { title: "Total Students", value: stats.students.toString(), icon: GraduationCap, color: "text-blue-500" }, 
   ];
 
   const hostActions = [
@@ -61,7 +95,11 @@ export default function HostDashboardPage() {
               <stat.icon className={`h-5 w-5 ${stat.color}`} />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
+              {isLoading ? (
+                <Skeleton className="h-8 w-1/2" />
+              ) : (
+                <div className="text-2xl font-bold">{stat.value}</div>
+              )}
               {stat.href ? (
                 <Link href={stat.href} className="text-xs text-primary hover:underline">View details</Link>
               ) : (

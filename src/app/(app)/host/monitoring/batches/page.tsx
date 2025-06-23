@@ -1,20 +1,46 @@
 
 "use client";
+import React, { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BookUser, Eye, Home } from "lucide-react";
+import { BookUser, Eye, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { batches as mockBatches, teachers as mockTeachersData } from "@/lib/mockData"; 
 import { DEPARTMENTS } from "@/lib/constants";
-
+import type { Batch, Teacher } from "@/lib/types";
+import { useToast } from "@/hooks/use-toast";
 
 export default function HostMonitorBatchesPage() {
+  const [batches, setBatches] = useState<Batch[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const [batchesRes, teachersRes] = await Promise.all([
+          fetch('/api/batches'),
+          fetch('/api/teachers')
+        ]);
+        if (!batchesRes.ok || !teachersRes.ok) throw new Error('Failed to fetch data.');
+        
+        setBatches(await batchesRes.json());
+        setTeachers(await teachersRes.json());
+      } catch (error: any) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [toast]);
 
   const getTeacherName = (teacherId: string) => {
-    const teacher = mockTeachersData.find(t => t.id === teacherId);
+    const teacher = teachers.find(t => t.id === teacherId);
     return teacher ? teacher.name : "N/A";
   };
 
@@ -23,6 +49,20 @@ export default function HostMonitorBatchesPage() {
     return dept ? dept.label : deptValue;
   }
   
+  if (isLoading) {
+    return (
+       <div className="space-y-8">
+        <PageHeader title="Monitor Batches (Host)" icon={BookUser} />
+        <Card className="shadow-lg">
+          <CardHeader><CardTitle>All System Batches</CardTitle></CardHeader>
+          <CardContent className="flex justify-center items-center h-48">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <PageHeader
@@ -51,9 +91,9 @@ export default function HostMonitorBatchesPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockBatches.map((batch) => (
+              {batches.map((batch) => (
                 <TableRow key={batch.id}>
-                  <TableCell>{batch.id}</TableCell>
+                  <TableCell className="truncate max-w-[100px]">{batch.id}</TableCell>
                   <TableCell className="font-medium">{batch.name}</TableCell>
                   <TableCell>{getDepartmentLabel(batch.department)}</TableCell>
                   <TableCell>{batch.topic}</TableCell>
@@ -74,9 +114,9 @@ export default function HostMonitorBatchesPage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {mockBatches.length === 0 && (
+              {batches.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center text-muted-foreground h-24">
                     No batches found in the system.
                   </TableCell>
                 </TableRow>

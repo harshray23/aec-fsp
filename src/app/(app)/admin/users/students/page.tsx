@@ -1,25 +1,57 @@
 
 "use client"; 
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { GraduationCap, Filter as FilterIcon } from "lucide-react"; 
+import { GraduationCap, Loader2 } from "lucide-react"; 
 import { DEPARTMENTS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { students as mockStudents } from "@/lib/mockData"; // Import from central store
+import { useToast } from "@/hooks/use-toast";
+import type { Student, Batch } from "@/lib/types";
 
 export default function ViewStudentsPage() {
-  const [searchTerm, setSearchTerm] = React.useState("");
-  const [selectedDepartment, setSelectedDepartment] = React.useState("all"); 
+  const { toast } = useToast();
+  const [students, setStudents] = useState<Student[]>([]);
+  const [batches, setBatches] = useState<Batch[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedDepartment, setSelectedDepartment] = useState("all"); 
 
-  // Filter students based on search term and selected department
-  const filteredStudents = mockStudents.filter(student =>
-    (student.name.toLowerCase().includes(searchTerm.toLowerCase()) || student.studentId.toLowerCase().includes(searchTerm.toLowerCase())) &&
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const [studentsRes, batchesRes] = await Promise.all([
+          fetch('/api/students'),
+          fetch('/api/batches')
+        ]);
+        if (!studentsRes.ok || !batchesRes.ok) throw new Error("Failed to fetch data.");
+        
+        setStudents(await studentsRes.json());
+        setBatches(await batchesRes.json());
+
+      } catch (error: any) {
+        toast({ title: "Error", description: error.message, variant: "destructive" });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [toast]);
+  
+  const getBatchName = (batchId?: string) => {
+    if (!batchId) return "N/A";
+    return batches.find(b => b.id === batchId)?.name || batchId;
+  };
+
+  const filteredStudents = students.filter(student =>
+    (student.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+     student.studentId.toLowerCase().includes(searchTerm.toLowerCase()) ||
+     (student.rollNumber && student.rollNumber.toLowerCase().includes(searchTerm.toLowerCase()))) &&
     (selectedDepartment === "all" || student.department === selectedDepartment)
   );
 
@@ -36,7 +68,7 @@ export default function ViewStudentsPage() {
           <CardDescription>A comprehensive list of all students enrolled in the FSP.</CardDescription>
           <div className="mt-4 flex flex-wrap gap-4">
             <Input 
-              placeholder="Search by name or ID..." 
+              placeholder="Search by name, ID, roll no..." 
               className="max-w-sm" 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -52,10 +84,14 @@ export default function ViewStudentsPage() {
                 ))}
               </SelectContent>
             </Select>
-            {/* <Button variant="outline"><FilterIcon className="mr-2 h-4 w-4" /> Apply Filters</Button> */}
           </div>
         </CardHeader>
         <CardContent>
+          {isLoading ? (
+            <div className="flex justify-center items-center h-48">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
           <Table>
             <TableHeader>
               <TableRow>
@@ -78,7 +114,7 @@ export default function ViewStudentsPage() {
                   <TableCell>{DEPARTMENTS.find(d => d.value === student.department)?.label || student.department}</TableCell>
                   <TableCell>{student.section || "N/A"}</TableCell>
                   <TableCell>{student.rollNumber}</TableCell>
-                  <TableCell>{student.batchId || "N/A"}</TableCell> 
+                  <TableCell>{getBatchName(student.batchId)}</TableCell> 
                   <TableCell>
                     <Badge variant={"default"}> 
                       Active
@@ -86,15 +122,16 @@ export default function ViewStudentsPage() {
                   </TableCell>
                 </TableRow>
               ))}
-              {filteredStudents.length === 0 && (
+              {filteredStudents.length === 0 && !isLoading && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground">
-                    No students found.
+                  <TableCell colSpan={8} className="text-center text-muted-foreground h-24">
+                    No students found with the current filters.
                   </TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
+          )}
         </CardContent>
       </Card>
     </div>
