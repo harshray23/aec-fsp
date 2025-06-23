@@ -65,7 +65,6 @@ export default function UserRegistrationForm({ onSuccess }: UserRegistrationForm
   const selectedRole = form.watch("role");
 
   const onSubmit = async (values: UserRegistrationFormValues) => {
-    form.formState.isSubmitting = true;
     try {
       const response = await fetch('/api/admin/register-user', {
         method: 'POST',
@@ -100,8 +99,6 @@ export default function UserRegistrationForm({ onSuccess }: UserRegistrationForm
         description: error.message || "Could not submit user registration.",
         variant: "destructive",
       });
-    } finally {
-      form.formState.isSubmitting = false;
     }
   };
 
