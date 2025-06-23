@@ -1,32 +1,35 @@
 
-import { initializeApp, getApps, getApp, type App } from 'firebase-admin/app';
-import { getFirestore, Firestore, Timestamp } from 'firebase-admin/firestore';
-import { getAuth, Auth } from 'firebase-admin/auth';
+import admin from 'firebase-admin';
+import { Timestamp } from 'firebase-admin/firestore';
 
-let db: Firestore | undefined;
-let auth: Auth | undefined;
+// Define these as potentially undefined so we can export them
+// regardless of whether the initialization succeeds.
+let db: admin.firestore.Firestore | undefined;
+let auth: admin.auth.Auth | undefined;
 
-if (!getApps().length) {
-  try {
-    console.log("Attempting to initialize Firebase Admin SDK...");
-    if (!process.env.GOOGLE_APPLICATION_CREDENTIALS && !process.env.FIREBASE_CONFIG) {
-        console.warn("WARNING: GOOGLE_APPLICATION_CREDENTIALS environment variable is not set, and no FIREBASE_CONFIG found. Firebase Admin SDK might not initialize correctly unless in a fully managed Firebase environment. For local development, ensure GOOGLE_APPLICATION_CREDENTIALS points to your service account key file.");
-    }
-    
-    initializeApp();
-    
-    db = getFirestore();
-    auth = getAuth();
-    console.log("Firebase Admin SDK initialized successfully. Firestore and Auth are available.");
-  } catch (error: any) {
-    console.error("CRITICAL: Firebase Admin SDK initialization error:", error.message);
-    console.error("Firebase Admin SDK could not be initialized. Firestore and Auth will NOT be available. API calls requiring Firebase will likely fail. Check your service account credentials and environment setup.");
+try {
+  // Check if the app is already initialized to prevent errors in hot-reloading environments
+  if (!admin.apps.length) {
+    console.log("Initializing Firebase Admin SDK...");
+    // In a managed environment like Firebase App Hosting or Cloud Run,
+    // initializeApp() without arguments will use the application's default credentials.
+    admin.initializeApp();
+    console.log("Firebase Admin SDK initialized successfully.");
+  } else {
+    console.log("Re-using existing Firebase Admin SDK instance.");
   }
-} else {
-  const app = getApp();
-  db = getFirestore(app);
-  auth = getAuth(app);
-  console.log("Firebase Admin SDK already initialized. Re-using existing instances for Firestore and Auth.");
+
+  // Now that we're sure an app instance exists (or initialization was attempted),
+  // we can get the services.
+  db = admin.firestore();
+  auth = admin.auth();
+
+} catch (error: any) {
+  // If ANY of the above fails (initializeApp, firestore, or auth),
+  // we log the error and db/auth will remain undefined.
+  console.error("CRITICAL: Firebase Admin SDK setup failed:", error.message);
 }
 
+// Export the (potentially undefined) services and Timestamp.
+// The API routes are responsible for checking if they are defined before use.
 export { db, auth, Timestamp };
