@@ -2,7 +2,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { db, auth as adminAuth } from '@/lib/firebaseAdmin';
 import { USER_ROLES, DEPARTMENTS } from '@/lib/constants';
-import type { Teacher, Student, Batch } from '@/lib/types';
+import type { Teacher, Student, Batch, Host } from '@/lib/types';
 
 // Sample data to seed
 const sampleTeachers: Omit<Teacher, 'id' | 'uid'>[] = [
@@ -24,6 +24,10 @@ const sampleBatches: Omit<Batch, 'id' | 'teacherId' | 'studentIds'>[] = [
   { name: 'FSP-IT-2024-B', department: 'it', topic: 'Cloud Computing', startDate: new Date('2024-08-01').toISOString(), daysOfWeek: ['Tuesday', 'Thursday'], startTime: '14:00', endTime: '15:30', roomNumber: 'R302', status: 'Scheduled' },
 ];
 
+const sampleHosts: Omit<Host, 'id' | 'uid'>[] = [
+  { name: 'Management', email: 'elvishray007@gmail.com', role: 'host' },
+];
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method Not Allowed' });
@@ -37,6 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const studentsCollection = db.collection('students');
     const teachersCollection = db.collection('teachers');
     const batchesCollection = db.collection('batches');
+    const hostsCollection = db.collection('hosts');
 
     // Check if seeding has already been done to prevent duplicates
     const studentCheck = await studentsCollection.limit(1).get();
@@ -45,6 +50,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const writeBatch = db.batch();
+
+    // Seed Hosts
+    for (const host of sampleHosts) {
+        const userRecord = await adminAuth.createUser({ email: host.email, password: 'harsh@123', displayName: host.name, emailVerified: true });
+        const hostRef = hostsCollection.doc(userRecord.uid);
+        writeBatch.set(hostRef, { ...host, uid: userRecord.uid });
+    }
     
     // Seed Teachers
     for (const teacher of sampleTeachers) {
@@ -71,7 +83,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Note: This basic seeder does not assign teachers/students to batches.
     // That can be done via the UI to test the application's functionality.
 
-    return res.status(200).json({ message: `Successfully seeded ${sampleTeachers.length} teachers, ${sampleStudents.length} students, and ${sampleBatches.length} batches.` });
+    return res.status(200).json({ message: `Successfully seeded ${sampleHosts.length} hosts, ${sampleTeachers.length} teachers, ${sampleStudents.length} students, and ${sampleBatches.length} batches.` });
 
   } catch (error: any) {
     console.error('Error seeding database:', error);

@@ -60,8 +60,7 @@ export default function LoginForm() {
     // This allows the default admin and host to log in without needing a Firebase Auth account,
     // solving the chicken-and-egg problem of creating the first user.
     if (
-      (role === USER_ROLES.ADMIN && values.email === "harshray2007@gmail.com" && values.password === "Password@123") ||
-      (role === USER_ROLES.HOST && values.email === "elvishray007@gmail.com" && values.password === "harsh@123")
+      (role === USER_ROLES.ADMIN && values.email === "harshray2007@gmail.com" && values.password === "Password@123")
     ) {
       let userProfile;
       let redirectPath;
@@ -69,9 +68,6 @@ export default function LoginForm() {
       if (role === USER_ROLES.ADMIN) {
         userProfile = admins.find(a => a.email === values.email);
         redirectPath = "/admin/dashboard";
-      } else { // Host
-        userProfile = hosts.find(h => h.email === values.email);
-        redirectPath = "/host/dashboard";
       }
       
       if (userProfile) {
@@ -115,8 +111,7 @@ export default function LoginForm() {
           successRedirectPath = "/admin/dashboard";
           break;
         case USER_ROLES.HOST:
-          // This case is now handled by the mock bypass above. A real host would need a Firebase account.
-          profileApiUrl = `/api/admins/${firebaseUser.uid}`; // Re-using admin for host profile
+          profileApiUrl = `/api/hosts/${firebaseUser.uid}`;
           successRedirectPath = "/host/dashboard";
           break;
         default:

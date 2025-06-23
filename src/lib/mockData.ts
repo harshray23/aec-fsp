@@ -23,9 +23,7 @@ export let admins: Admin[] = [
   },
 ];
 
-export let hosts: User[] = [
-  { id: "HOST_001", name: "Management", email: "elvishray007@gmail.com", role: USER_ROLES.HOST },
-];
+export let hosts: User[] = [];
 
 
 // --- Deprecated Data Arrays (Empty) ---

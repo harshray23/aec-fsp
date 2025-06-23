@@ -8,6 +8,11 @@ export interface User {
   role: UserRole;
 }
 
+export interface Host extends User {
+  role: "host";
+  uid?: string; // Firebase Authentication User ID
+}
+
 export interface Student extends User {
   role: "student";
   uid?: string; // Firebase Authentication User ID
