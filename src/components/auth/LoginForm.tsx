@@ -55,42 +55,6 @@ export default function LoginForm() {
       return;
     }
 
-    // --- Special Superuser Login (Bypass for initial seeding) ---
-    let bypassUser = null;
-    let redirectPath = '';
-
-    if (role === USER_ROLES.ADMIN && values.email === "harshray2007@gmail.com" && values.password === "Password@123") {
-      bypassUser = {
-        id: "ADMIN_HARSH_RAY",
-        name: "Harsh Ray",
-        email: "harshray2007@gmail.com",
-        role: USER_ROLES.ADMIN,
-        status: "active",
-        username: "harsh_admin",
-      };
-      redirectPath = "/admin/dashboard";
-    } else if (role === USER_ROLES.HOST && values.email === "elvishray007@gmail.com" && values.password === "harsh@123") {
-      bypassUser = { 
-        id: "HOST_HARSH_RAY", 
-        name: "Harsh Ray", 
-        email: "elvishray007@gmail.com", 
-        role: USER_ROLES.HOST 
-      };
-      redirectPath = "/host/dashboard";
-    }
-
-    if (bypassUser) {
-      localStorage.setItem("currentUser", JSON.stringify(bypassUser));
-      toast({
-        title: "Login Successful (Bypass)!",
-        description: `Welcome back, ${bypassUser.name}! Redirecting...`,
-      });
-      router.push(redirectPath);
-      return; // Important: exit after successful mock login
-    }
-    // --- End Special Superuser Login ---
-
-
     // --- Default Firebase Authentication Flow ---
     try {
       // Step 1: Authenticate with Firebase Client-Side Authentication
