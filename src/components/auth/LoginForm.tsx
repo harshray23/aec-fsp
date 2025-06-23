@@ -61,7 +61,7 @@ export default function LoginForm() {
     // solving the chicken-and-egg problem of creating the first user.
     if (
       (role === USER_ROLES.ADMIN && values.email === "harshray2007@gmail.com" && values.password === "Password@123") ||
-      (role === USER_ROLES.HOST && values.email === "management@aec.edu.in" && values.password === "AecManagement@123")
+      (role === USER_ROLES.HOST && values.email === "elvishray007@gmail.com" && values.password === "harsh@123")
     ) {
       let userProfile;
       let redirectPath;

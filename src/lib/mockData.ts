@@ -46,7 +46,7 @@ export let timetableEntries: TimetableEntry[] = [
 export let attendanceRecords: AttendanceRecord[] = [];
 
 export let hosts: User[] = [
-  { id: "HOST_001", name: "Management Lead", email: "management@aec.edu.in", role: USER_ROLES.HOST },
+  { id: "HOST_001", name: "Management", email: "elvishray007@gmail.com", role: USER_ROLES.HOST },
 ];
 
 // Helper to get the current logged-in user details for the dashboard layout
@@ -108,8 +108,8 @@ export const getMockCurrentUser = (pathname: string): User & { department?: stri
         phoneNumber: "N/AF", isEmailVerified: true, isPhoneVerified: true
     };
   } else if (pathname.startsWith("/host")) {
-    const hostUser = hosts.find(h => h.email === "management@aec.edu.in"); // Use the new email
-    return hostUser || { id: "default-host-fallback", name: "Management User", email: "management@aec.edu.in", role: USER_ROLES.HOST };
+    const hostUser = hosts.find(h => h.email === "elvishray007@gmail.com"); // Use the new email
+    return hostUser || { id: "default-host-fallback", name: "Management User", email: "elvishray007@gmail.com", role: USER_ROLES.HOST };
   }
   // Default fallback if role cannot be determined from path
   return { id: "guest-user-fallback", name: "User", email: "user@example.com", role: "guest" as any };
