@@ -31,57 +31,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     case 'POST':
       try {
-        const { name, department, topic, teacherId, startDate, daysOfWeek, startTime, endTime, roomNumber, selectedStudentIds, status = "Scheduled" } = req.body;
+        // Simplified batch creation for step 1 of the new flow
+        const { name, department } = req.body;
 
-        if (!name || !department || !topic || !teacherId || !startDate || !daysOfWeek || !startTime || !endTime) {
-          return res.status(400).json({ message: 'Missing required batch fields.' });
+        if (!name || !department) {
+          return res.status(400).json({ message: 'Missing required fields: name and department.' });
         }
         
         const newBatchData: Omit<Batch, 'id'> = {
           name,
           department,
-          topic,
-          teacherId,
-          startDate, // Assuming it's already an ISO string from client
-          daysOfWeek,
-          startTime,
-          endTime,
-          roomNumber: roomNumber || null,
-          studentIds: selectedStudentIds || [],
-          status,
+          topic: "", // Default to empty, to be filled in step 2
+          teacherId: "", // Default to empty
+          startDate: new Date().toISOString(), // Default to today
+          daysOfWeek: [],
+          startTime: "",
+          endTime: "",
+          roomNumber: "",
+          studentIds: [],
+          status: "Scheduled", // Default status
         };
 
         const batchRef = await db.collection('batches').add(newBatchData);
         const newBatchId = batchRef.id;
-
-        // Update assigned students in a batch write
-        if (selectedStudentIds && selectedStudentIds.length > 0) {
-          const batchWrite = db.batch();
-          const studentsRef = db.collection('students');
-          
-          // First, unassign students from any old batches if they were in one
-          // This logic might be complex if students can be in multiple batches or if this is a true "move"
-          // For simplicity, this create operation just assigns. Re-assignment logic is better in an "update student" or "assign student to batch" dedicated API.
-          // However, if a student is ALREADY in a batch, we should ideally handle that.
-          // For now, we will overwrite. A more robust system might prevent assigning a student already in another active batch.
-
-          for (const studentId of selectedStudentIds) {
-            // Find student document by 'studentId' field, not Firestore ID.
-            // This assumes 'studentId' is a unique field on your student documents.
-            // If studentId in selectedStudentIds refers to Firestore document ID, then use studentsRef.doc(studentId)
-            const studentQuerySnapshot = await studentsRef.where('studentId', '==', studentId).limit(1).get();
-            if (!studentQuerySnapshot.empty) {
-                const studentDocRef = studentQuerySnapshot.docs[0].ref;
-                batchWrite.update(studentDocRef, { batchId: newBatchId });
-            } else {
-                // If selectedStudentIds are Firestore document IDs:
-                // const studentDocRef = studentsRef.doc(studentId);
-                // batchWrite.update(studentDocRef, { batchId: newBatchId });
-                console.warn(`Student with ID (field) ${studentId} not found, cannot assign to batch ${newBatchId}. If these are document IDs, adjust query.`);
-            }
-          }
-          await batchWrite.commit();
-        }
 
         res.status(201).json({ message: 'Batch created successfully', batch: { id: newBatchId, ...newBatchData } });
       } catch (error) {

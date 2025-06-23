@@ -180,13 +180,8 @@ export default function AdminBatchOverviewPage() {
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem asChild>
                           <Link href={`/admin/batches/edit/${batch.id}`} className="flex items-center cursor-pointer">
-                            <Edit className="mr-2 h-4 w-4" /> Edit
+                            <Edit className="mr-2 h-4 w-4" /> Configure Batch
                           </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                           <Link href={`/admin/batches/assign?batchId=${batch.id}`} className="flex items-center cursor-pointer">
-                                <Users className="mr-2 h-4 w-4" /> Manage Students
-                            </Link>
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem

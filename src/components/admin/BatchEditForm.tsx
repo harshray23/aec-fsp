@@ -1,13 +1,13 @@
 
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
 import { format, parseISO } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Users } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -29,6 +29,8 @@ import { DEPARTMENTS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import type { Batch, Teacher, Student } from "@/lib/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 const daysOfWeekOptions = [
   { id: "monday", label: "Monday" },
@@ -39,7 +41,6 @@ const daysOfWeekOptions = [
   { id: "saturday", label: "Saturday" },
 ];
 
-// Schema for editing a batch
 const batchEditSchema = z.object({
   name: z.string().min(3, "Batch name must be at least 3 characters"),
   department: z.string().min(1, "Department is required"),
@@ -53,7 +54,6 @@ const batchEditSchema = z.object({
   endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid end time (HH:MM)."),
   roomNumber: z.string().max(20, "Room number too long").optional(),
   status: z.enum(["Scheduled", "Ongoing", "Completed"], { required_error: "Status is required." }),
-  // selectedStudentIds will represent the new set of student document IDs for the batch
   selectedStudentIds: z.array(z.string()).optional(),
 }).refine(data => data.startTime < data.endTime, {
   message: "End time must be after start time.",
@@ -70,10 +70,11 @@ interface BatchEditFormProps {
 export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: BatchEditFormProps) {
   const router = useRouter();
   const { toast } = useToast();
-  const [teachers, setTeachers] = React.useState<Teacher[]>([]);
-  const [allStudents, setAllStudents] = React.useState<Student[]>([]);
-  const [isLoadingTeachers, setIsLoadingTeachers] = React.useState(true);
-  const [isLoadingStudents, setIsLoadingStudents] = React.useState(true);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
+  const [isLoadingTeachers, setIsLoadingTeachers] = useState(true);
+  const [isLoadingStudents, setIsLoadingStudents] = useState(true);
+  const [studentSearchTerm, setStudentSearchTerm] = useState("");
 
   const form = useForm<BatchEditFormValues>({
     resolver: zodResolver(batchEditSchema),
@@ -88,7 +89,7 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
       endTime: batchData.endTime || "",
       roomNumber: batchData.roomNumber || "",
       status: batchData.status || "Scheduled",
-      selectedStudentIds: batchData.studentIds || [], // Firestore document IDs
+      selectedStudentIds: batchData.studentIds || [],
     },
   });
   
@@ -143,22 +144,33 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
   }, [toast]);
   
   const selectedDepartment = form.watch("department");
-
-  // Students available for assignment: those in the selected department NOT in this batch, OR already in this batch
-  const availableStudentsForAssignment = React.useMemo(() => {
-    if (!selectedDepartment || isLoadingStudents) return [];
+  
+  const studentsInDepartment = useMemo(() => {
+     if (!selectedDepartment || isLoadingStudents) return [];
     return allStudents.filter(student => 
         student.department === selectedDepartment && 
-        (!student.batchId || student.batchId === batchData.id) // Either not in any batch OR already in this current batch
+        (!student.batchId || student.batchId === batchData.id)
     );
-  }, [selectedDepartment, allStudents, isLoadingStudents, batchData.id]);
+  },[selectedDepartment, allStudents, isLoadingStudents, batchData.id]);
+
+  const filteredStudents = useMemo(() => {
+    if (!studentSearchTerm) return studentsInDepartment;
+    return studentsInDepartment.filter(student => 
+        student.name.toLowerCase().includes(studentSearchTerm.toLowerCase()) ||
+        student.studentId.toLowerCase().includes(studentSearchTerm.toLowerCase()) ||
+        (student.rollNumber && student.rollNumber.toLowerCase().includes(studentSearchTerm.toLowerCase()))
+    );
+  }, [studentsInDepartment, studentSearchTerm]);
 
 
   const onSubmit = async (values: BatchEditFormValues) => {
     form.control.disabled = true;
     try {
+      // The name of the field in the form is selectedStudentIds, but the API expects studentIds
+      const { selectedStudentIds, ...otherValues } = values;
       const payload = {
-        ...values,
+        ...otherValues,
+        studentIds: selectedStudentIds, // Rename the field for the API
         startDate: values.startDate.toISOString(),
       };
 
@@ -194,8 +206,7 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        {/* Fields are similar to creation form, pre-filled with batchData */}
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Batch Name</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
             <FormField control={form.control} name="topic" render={({ field }) => ( <FormItem> <FormLabel>Topic / Module Name</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
@@ -211,70 +222,91 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
         <FormField control={form.control} name="roomNumber" render={({ field }) => ( <FormItem> <FormLabel>Room Number (Optional)</FormLabel> <FormControl><Input placeholder="E.g., R101" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
         <FormField control={form.control} name="status" render={({ field }) => ( <FormItem> <FormLabel>Batch Status</FormLabel> <Select onValueChange={field.onChange} value={field.value}> <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl> <SelectContent><SelectItem value="Scheduled">Scheduled</SelectItem><SelectItem value="Ongoing">Ongoing</SelectItem><SelectItem value="Completed">Completed</SelectItem></SelectContent> </Select> <FormMessage /> </FormItem> )}/>
         
-        {selectedDepartment && (
-          <FormField
-            control={form.control}
-            name="selectedStudentIds"
-            render={() => (
-              <FormItem>
-                <FormLabel>Manage Students for {DEPARTMENTS.find(d=>d.value === selectedDepartment)?.label || 'Selected Department'}</FormLabel>
-                <FormDescription>
-                  Select students to assign to this batch. Students already in this batch are pre-selected.
-                  Unchecking a student will remove them from this batch. Student IDs are Firestore document IDs.
-                </FormDescription>
-                {isLoadingStudents ? <p>Loading students...</p> : 
-                availableStudentsForAssignment.length > 0 ? (
-                  <ScrollArea className="h-40 w-full rounded-md border p-4 mt-2">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                      {availableStudentsForAssignment.map((student) => (
-                        <FormField
-                          key={student.id}
-                          control={form.control}
-                          name="selectedStudentIds"
-                          render={({ field }) => {
-                            return (
-                              <FormItem
-                                key={student.id}
-                                className="flex flex-row items-start space-x-3 space-y-0"
-                              >
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value?.includes(student.id)}
-                                    onCheckedChange={(checked) => {
-                                      const currentStudentIds = field.value || [];
-                                      return checked
-                                        ? field.onChange([...currentStudentIds, student.id])
-                                        : field.onChange(currentStudentIds.filter(id => id !== student.id));
-                                    }}
-                                  />
-                                </FormControl>
-                                <FormLabel className="font-normal">
-                                  {student.name} ({student.studentId})
-                                  {student.batchId && student.batchId !== batchData.id && <span className="text-xs text-muted-foreground"> (In another batch)</span>}
-                                </FormLabel>
-                              </FormItem>
-                            );
-                          }}
-                        />
-                      ))}
-                    </div>
-                  </ScrollArea>
-                ) : (
-                  <p className="text-sm text-muted-foreground mt-2 p-4 border rounded-md">
-                    No students available in the selected department or matching criteria.
-                  </p>
-                )}
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
+        <Card className="shadow-inner bg-muted/50">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Users /> Student Enrollment</CardTitle>
+            <CardDescription>
+              Assign or unassign students. Only students from the batch's department who are not already in another active batch are shown.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Input
+                placeholder="Search students by name, ID, or roll no..."
+                value={studentSearchTerm}
+                onChange={(e) => setStudentSearchTerm(e.target.value)}
+                className="max-w-sm mb-4 bg-background"
+                disabled={!selectedDepartment || isLoadingStudents}
+            />
+            <FormField
+              control={form.control}
+              name="selectedStudentIds"
+              render={({ field }) => (
+                <>
+                <ScrollArea className="h-60 w-full rounded-md border bg-background">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[50px]">
+                          <Checkbox
+                              onCheckedChange={(checked) => {
+                                const allStudentIds = filteredStudents.map(s => s.id);
+                                const currentSelection = field.value || [];
+                                if (checked) {
+                                    const newSelection = [...new Set([...currentSelection, ...allStudentIds])];
+                                    field.onChange(newSelection);
+                                } else {
+                                    field.onChange(currentSelection.filter(id => !allStudentIds.includes(id)));
+                                }
+                              }}
+                              checked={filteredStudents.length > 0 && filteredStudents.every(s => field.value?.includes(s.id))}
+                              aria-label="Select all students in current view"
+                          />
+                        </TableHead>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Student ID</TableHead>
+                        <TableHead>Roll No.</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {filteredStudents.length > 0 ? filteredStudents.map((student) => (
+                           <TableRow key={student.id}>
+                               <TableCell>
+                                   <Checkbox
+                                       checked={field.value?.includes(student.id)}
+                                       onCheckedChange={(checked) => {
+                                           const currentIds = field.value || [];
+                                           return checked
+                                            ? field.onChange([...currentIds, student.id])
+                                            : field.onChange(currentIds.filter(id => id !== student.id))
+                                       }}
+                                   />
+                               </TableCell>
+                               <TableCell>{student.name}</TableCell>
+                               <TableCell>{student.studentId}</TableCell>
+                               <TableCell>{student.rollNumber}</TableCell>
+                           </TableRow>
+                        )) : (
+                            <TableRow>
+                                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                                    {isLoadingStudents ? "Loading students..." : "No eligible students found for this department."}
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                  </Table>
+                </ScrollArea>
+                <FormMessage className="mt-2" />
+                </>
+              )}
+            />
+          </CardContent>
+        </Card>
 
-        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || isLoadingTeachers || (teachers.length === 0 && !form.getValues("teacherId"))}>
-          {form.formState.isSubmitting ? "Saving Changes..." : "Save Changes"}
+
+        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || isLoadingTeachers || isLoadingStudents}>
+          {form.formState.isSubmitting ? "Saving Changes..." : "Save All Changes"}
         </Button>
       </form>
     </Form>
   );
 }
-
