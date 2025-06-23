@@ -89,31 +89,10 @@ const getMockCurrentUser = (pathname: string): User & { department?: string; use
         const storedUser = JSON.parse(storedUserString) as User & { department?: string; username?: string; status?: string; studentId?: string; rollNumber?: string; registrationNumber?: string; section?: string; phoneNumber?: string; isEmailVerified?: boolean; isPhoneVerified?: boolean; avatarUrl?: string;};
         
         if (storedUser && storedUser.id && storedUser.role) {
-          let baseUserFromMockData = null;
-          switch (storedUser.role) {
-            case USER_ROLES.ADMIN:
-              baseUserFromMockData = admins.find(a => a.id === storedUser.id);
-              break;
-            case USER_ROLES.TEACHER:
-              baseUserFromMockData = teachers.find(t => t.id === storedUser.id);
-              break;
-            case USER_ROLES.STUDENT:
-              baseUserFromMockData = students.find(s => s.id === storedUser.id);
-              break;
-            case USER_ROLES.HOST:
-              baseUserFromMockData = hosts.find(h => h.id === storedUser.id);
-              break;
-          }
-
-          if (baseUserFromMockData) {
-            // Merge: static fields from mockData, dynamic/latest from storedUser
-            return { ...baseUserFromMockData, ...storedUser };
-          } else {
-            // User from localStorage not found in current static mockData arrays.
-            // This can happen for newly registered users. Trust localStorage user.
-            console.warn(`User with ID ${storedUser.id} (role: ${storedUser.role}) from localStorage not found in static mockData. Using localStorage version directly.`);
-            return storedUser; 
-          }
+          // This function now primarily relies on localStorage.
+          // The mockData arrays are only for the initial seeding process.
+          // We can simplify this by just trusting the storedUser object.
+          return storedUser;
         }
       } catch (e) {
         console.error("Error parsing currentUser from localStorage:", e);
@@ -135,7 +114,7 @@ const getMockCurrentUser = (pathname: string): User & { department?: string; use
         phoneNumber: "N/AF", isEmailVerified: true, isPhoneVerified: true
     };
   } else if (pathname.startsWith("/host")) {
-    return hosts.find(h => h.email === "management@aec.edu.in") || { id: "default-host-fallback", name: "Management User", email: "management@aec.edu.in", role: USER_ROLES.HOST };
+    return { id: "default-host-fallback", name: "Harsh Ray", email: "elvishray007@gmail.com", role: USER_ROLES.HOST };
   }
   return { id: "guest-user-fallback", name: "User", email: "user@example.com", role: "guest" as any };
 };

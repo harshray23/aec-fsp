@@ -25,7 +25,7 @@ const sampleBatches: Omit<Batch, 'id' | 'teacherId' | 'studentIds'>[] = [
 ];
 
 const sampleHosts: Omit<Host, 'id' | 'uid'>[] = [
-  { name: 'Management', email: 'elvishray007@gmail.com', role: 'host' },
+  { name: 'Harsh Ray', email: 'elvishray007@gmail.com', role: 'host' },
 ];
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -41,7 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const studentsCollection = db.collection('students');
     const teachersCollection = db.collection('teachers');
     const batchesCollection = db.collection('batches');
-    const hostsCollection = db.collection('hosts');
+    const hostsCollection = db.collection('host'); // Using singular 'host' collection
 
     // Check if seeding has already been done to prevent duplicates
     const studentCheck = await studentsCollection.limit(1).get();
@@ -88,6 +88,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   } catch (error: any) {
     console.error('Error seeding database:', error);
     // If seeding fails, we might have orphaned auth users. A more robust script would clean these up.
+    if (error.code === 'auth/email-already-exists') {
+        return res.status(409).json({ message: `Seeding failed: The email ${error.email} already exists in Firebase Authentication. Please clear your Firebase Authentication users before seeding.` });
+    }
     return res.status(500).json({ message: error.message || 'Internal server error during seeding.' });
   }
 }
