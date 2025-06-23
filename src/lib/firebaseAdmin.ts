@@ -2,34 +2,40 @@
 import admin from 'firebase-admin';
 import { Timestamp } from 'firebase-admin/firestore';
 
-// Define these as potentially undefined so we can export them
-// regardless of whether the initialization succeeds.
 let db: admin.firestore.Firestore | undefined;
 let auth: admin.auth.Auth | undefined;
 
 try {
-  // Check if the app is already initialized to prevent errors in hot-reloading environments
   if (!admin.apps.length) {
     console.log("Initializing Firebase Admin SDK...");
-    // In a managed environment like Firebase App Hosting or Cloud Run,
-    // initializeApp() without arguments will use the application's default credentials.
-    admin.initializeApp();
+
+    // This checks if the required environment variables are set.
+    if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !process.env.FIREBASE_PRIVATE_KEY) {
+      throw new Error("Firebase Admin SDK credentials are not set in .env.local");
+    }
+    
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        // The key must have newline characters correctly formatted.
+        privateKey: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+      }),
+    });
+
     console.log("Firebase Admin SDK initialized successfully.");
   } else {
     console.log("Re-using existing Firebase Admin SDK instance.");
   }
 
-  // Now that we're sure an app instance exists (or initialization was attempted),
-  // we can get the services.
   db = admin.firestore();
   auth = admin.auth();
 
 } catch (error: any) {
-  // If ANY of the above fails (initializeApp, firestore, or auth),
-  // we log the error and db/auth will remain undefined.
   console.error("CRITICAL: Firebase Admin SDK setup failed:", error.message);
+  // Set to undefined so API routes can gracefully fail.
+  db = undefined;
+  auth = undefined;
 }
 
-// Export the (potentially undefined) services and Timestamp.
-// The API routes are responsible for checking if they are defined before use.
 export { db, auth, Timestamp };
