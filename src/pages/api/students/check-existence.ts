@@ -42,5 +42,3 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ message: 'Internal server error while checking student existence.' });
   }
 }
-
-    

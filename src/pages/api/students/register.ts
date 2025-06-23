@@ -9,6 +9,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.setHeader('Allow', ['POST']);
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
+  
+  if (!db) {
+    return res.status(500).json({ message: 'Database connection not initialized.' });
+  }
 
   const {
     uid, // Firebase Auth UID
@@ -20,14 +24,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     department,
     phoneNumber,
     whatsappNumber,
-    // password is intentionally not captured here for Firestore storage
   } = req.body as Partial<Student & { password?: string }>;
 
   if (!studentId || !name || !email || !rollNumber || !registrationNumber || !department || !phoneNumber) {
     return res.status(400).json({ message: 'Missing required student registration fields.' });
   }
   if (!uid) {
-    // uid should now be provided after Firebase Auth user creation on client
     return res.status(400).json({ message: 'Firebase User ID (uid) is required.' });
   }
 
@@ -35,8 +37,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const studentsRef = db.collection('students');
 
-    // Server-side check for duplicates (studentId and email)
-    // UID should be unique by nature from Firebase Auth
     const existingByIdQuery = await studentsRef.where('studentId', '==', studentId).limit(1).get();
     if (!existingByIdQuery.empty) {
       return res.status(409).json({ message: `Student ID ${studentId} already exists.` });
@@ -66,7 +66,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       isPhoneVerified: true, 
     };
 
-    // Use the Firebase UID as the Firestore document ID
     await studentsRef.doc(uid).set(newStudentData);
     
     const createdStudent = { id: uid, ...newStudentData };

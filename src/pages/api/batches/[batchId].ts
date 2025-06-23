@@ -1,10 +1,7 @@
 
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { db } from '@/lib/firebaseAdmin';
+import { db, Timestamp } from '@/lib/firebaseAdmin';
 import type { Batch } from '@/lib/types';
-import { Timestamp } // Import Timestamp
-from 'firebase-admin/firestore';
-
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { batchId } = req.query;
@@ -81,12 +78,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
         
         // Update the batch document itself
-        // Make sure not to overwrite studentIds if it's not part of updateData but handled separately
         const batchUpdatePayload = { ...updateData };
-        // If studentIds was handled above, ensure the batch document reflects the final state.
-        // If updateData.studentIds is the source of truth for the PUT, this is fine.
-        // If not, you might need to merge `currentDoc.data().studentIds` with `newStudentIds` logic.
-        // For simplicity, this example assumes updateData.studentIds is the new desired state.
         
         await batchRef.update(batchUpdatePayload);
         

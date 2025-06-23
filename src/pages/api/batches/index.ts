@@ -1,8 +1,7 @@
 
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { db } from '@/lib/firebaseAdmin';
-import type { Batch, Student } from '@/lib/types';
-import { Timestamp } from 'firebase-admin/firestore';
+import { db, Timestamp } from '@/lib/firebaseAdmin';
+import type { Batch } from '@/lib/types';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (!db) {

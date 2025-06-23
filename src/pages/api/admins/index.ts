@@ -3,6 +3,7 @@ import type { NextApiRequest, NextApiResponse } from 'next';
 import { db } from '@/lib/firebaseAdmin';
 import type { Admin } from '@/lib/types';
 import type { UserApprovalStatus } from '@/lib/types';
+import type { Query } from 'firebase-admin/firestore';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (!db) {
@@ -12,7 +13,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'GET') {
     try {
       const { status } = req.query;
-      let query: admin.firestore.Query = db.collection('admins');
+      let query: Query = db.collection('admins');
 
       if (status && typeof status === 'string') {
         if (!["active", "pending_approval", "rejected"].includes(status)) {

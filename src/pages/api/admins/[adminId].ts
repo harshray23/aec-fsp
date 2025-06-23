@@ -2,7 +2,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { db } from '@/lib/firebaseAdmin';
 import type { Admin } from '@/lib/types';
-import { teachers } from '@/lib/mockData';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { adminId } = req.query; // This can be the Firestore Doc ID or the Firebase UID
@@ -63,11 +62,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     case 'PUT':
       try {
-        // const currentDoc = await adminRef.get(); // getAdminDocRef already confirms existence
-        // if (!currentDoc.exists) {
-        //   return res.status(404).json({ message: 'Admin not found to update.' });
-        // }
-        
         const { name, email, phoneNumber, whatsappNumber, status, username } = req.body;
         const updateData: Partial<Admin> = {};
 

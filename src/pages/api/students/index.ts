@@ -1,5 +1,4 @@
 
-// API route to get all students (e.g., for assignment in forms)
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { db } from '@/lib/firebaseAdmin';
 import type { Student } from '@/lib/types';

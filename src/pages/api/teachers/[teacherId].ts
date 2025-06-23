@@ -6,7 +6,7 @@ import type { Teacher } from '@/lib/types';
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { teacherId } = req.query; // Can be doc ID or UID
 
-  if (!db) {
+  if (!db || !adminAuth) {
     return res.status(500).json({ message: 'Database connection not initialized.' });
   }
   if (typeof teacherId !== 'string') {
@@ -87,10 +87,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         batchWrite.delete(teacherRef);
         await batchWrite.commit();
         
-        // Also delete from Firebase Auth
-        if (adminAuth) {
-            await adminAuth.deleteUser(teacherId); // Assumes teacherId is UID
-        }
+        await adminAuth.deleteUser(teacherId); // Assumes teacherId is UID
         
         res.status(200).json({ message: `Teacher ${teacherId} deleted successfully.` });
       } catch (error) {

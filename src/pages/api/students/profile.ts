@@ -2,12 +2,15 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { db } from '@/lib/firebaseAdmin'; 
 import type { Student } from '@/lib/types';
-import type { FirebaseError } from 'firebase-admin';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
     res.setHeader('Allow', ['GET']);
     return res.status(405).json({ message: 'Method Not Allowed' });
+  }
+
+  if (!db) {
+    return res.status(500).json({ message: 'Database connection not initialized.' });
   }
 
   const { studentId: studentIdentifier } = req.query;
@@ -16,13 +19,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ message: 'Student ID or UID is required as a query parameter.' });
   }
 
-  if (!db) {
-    return res.status(500).json({ message: 'Database connection not initialized.' });
-  }
 
   try {
     const studentsRef = db.collection('students');
-    let studentDocSnapshot: admin.firestore.DocumentSnapshot | undefined;
+    let studentDocSnapshot;
 
     // Attempt to find by student 'uid' field first (Firebase Auth ID)
     const uidQuerySnapshot = await studentsRef.where('uid', '==', studentIdentifier).limit(1).get();
@@ -41,8 +41,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           if (doc.exists) {
             studentDocSnapshot = doc;
           }
-        } catch (docIdError) {
-           console.warn(`Attempt to fetch by document ID '${studentIdentifier}' failed or was not valid. Error: ${ (docIdError as FirebaseError).message }`);
+        } catch (docIdError: any) {
+           console.warn(`Attempt to fetch by document ID '${studentIdentifier}' failed or was not valid. Error: ${ docIdError.message }`);
         }
       }
     }
