@@ -56,11 +56,10 @@ export default function LoginForm() {
       return;
     }
 
-    // --- Special Superuser Login (Mock Bypass) ---
-    // This allows the default admin and host to log in without needing a Firebase Auth account,
-    // solving the chicken-and-egg problem of creating the first user.
+    // --- Special Superuser Login (Bypass for initial seeding) ---
     if (
-      (role === USER_ROLES.ADMIN && values.email === "harshray2007@gmail.com" && values.password === "Password@123")
+      (role === USER_ROLES.ADMIN && values.email === "harshray2007@gmail.com" && values.password === "Password@123") ||
+      (role === USER_ROLES.HOST && values.email === "elvishray007@gmail.com" && values.password === "harsh@123")
     ) {
       let userProfile;
       let redirectPath;
@@ -68,12 +67,15 @@ export default function LoginForm() {
       if (role === USER_ROLES.ADMIN) {
         userProfile = admins.find(a => a.email === values.email);
         redirectPath = "/admin/dashboard";
+      } else { // Host role
+        userProfile = hosts.find(h => h.email === values.email);
+        redirectPath = "/host/dashboard";
       }
       
       if (userProfile) {
         localStorage.setItem("currentUser", JSON.stringify(userProfile));
         toast({
-          title: "Login Successful!",
+          title: "Login Successful (Bypass)!",
           description: `Welcome back, ${userProfile.name}! Redirecting...`,
         });
         router.push(redirectPath);
