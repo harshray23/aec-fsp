@@ -2,7 +2,7 @@
 "use client"; 
 
 import { DashboardLayout } from "@/components/shared/DashboardLayout";
-import type { NavItem, User } from "@/lib/types";
+import type { NavItem, User, Host } from "@/lib/types";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Users, UserPlus, BookUser, CalendarDays, BarChart3, Settings, GraduationCap, ShieldAlert, Briefcase, UserCog, UserCircle, CheckSquare, MonitorPlay, ServerCog, FileCog, UserCheck, CalendarCheck2, Megaphone, PlusCircle } from "lucide-react"; 
 import React from "react";
@@ -114,7 +114,7 @@ const getMockCurrentUser = (pathname: string): User & { department?: string; use
         phoneNumber: "N/AF", isEmailVerified: true, isPhoneVerified: true
     };
   } else if (pathname.startsWith("/host")) {
-    return { id: "default-host-fallback", name: "Harsh Ray", email: "elvishray007@gmail.com", role: USER_ROLES.HOST };
+    return hosts[0] || { id: "default-host-fallback", name: "Harsh Ray", email: "elvishray007@gmail.com", role: USER_ROLES.HOST };
   }
   return { id: "guest-user-fallback", name: "User", email: "user@example.com", role: "guest" as any };
 };

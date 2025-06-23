@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { USER_ROLES, type UserRole } from "@/lib/constants";
-import { admins, hosts } from "@/lib/mockData"; // Import mock data for superuser check
+import { admins, hosts } from "@/lib/mockData";
 
 const loginFormSchema = z.object({
   email: z.string().email("A valid email is required for login."),

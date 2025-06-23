@@ -2,7 +2,7 @@
 // This file will store our "live" mock data for the session.
 // In a real application, this would be a database.
 
-import type { Student, Teacher, Admin, Batch, TimetableEntry, AttendanceRecord, User } from "./types";
+import type { Student, Teacher, Admin, Batch, TimetableEntry, AttendanceRecord, User, Host } from "./types";
 import { DEPARTMENTS, USER_ROLES, SECTIONS } from "./constants";
 
 // --- Most mock data is removed to switch to live Firestore data ---
@@ -23,7 +23,9 @@ export let admins: Admin[] = [
   },
 ];
 
-export let hosts: User[] = [];
+export let hosts: Host[] = [
+    { id: "HOST_HARSH_RAY", name: "Harsh Ray", email: "elvishray007@gmail.com", role: USER_ROLES.HOST }
+];
 
 
 // --- Deprecated Data Arrays (Empty) ---
