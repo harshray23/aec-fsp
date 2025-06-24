@@ -39,7 +39,7 @@ const sampleStudents: Omit<Student, 'id' | 'uid'>[] = [
   { name: 'Arjun Verma', email: 'arjun.v@example.com', studentId: 'S005', rollNumber: 'ECE/20/01', registrationNumber: 'REG-ECE-01', department: 'ece', section: 'C', phoneNumber: '9876543214', isEmailVerified: true, isPhoneVerified: true, role: 'student' },
 ];
 
-const sampleBatches: Omit<Batch, 'id' | 'teacherId' | 'studentIds'>[] = [
+const sampleBatchDefinitions: Omit<Batch, 'id' | 'teacherId' | 'studentIds'>[] = [
   { name: 'FSP-CSE-2024-A', department: 'cse', topic: 'Advanced Python', startDate: new Date('2024-08-01').toISOString(), daysOfWeek: ['Monday', 'Wednesday', 'Friday'], startTime: '10:00', endTime: '11:00', roomNumber: 'R301', status: 'Scheduled' },
   { name: 'FSP-IT-2024-B', department: 'it', topic: 'Cloud Computing', startDate: new Date('2024-08-01').toISOString(), daysOfWeek: ['Tuesday', 'Thursday'], startTime: '14:00', endTime: '15:30', roomNumber: 'R302', status: 'Scheduled' },
 ];
@@ -64,56 +64,80 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Check if the default admin already exists to prevent re-seeding
     try {
         await adminAuth.getUserByEmail(superAdmin.email);
-        return res.status(409).json({ message: 'Database has already been seeded with the default admin user. Seeding aborted.' });
+        return res.status(409).json({ message: 'Database has already been seeded. Please clear Auth and Firestore before seeding again.' });
     } catch (error: any) {
-        if (error.code !== 'auth/user-not-found') {
-            throw error; // Re-throw unexpected errors
-        }
-        // If user is not found, it's safe to proceed with seeding.
+        if (error.code !== 'auth/user-not-found') throw error;
     }
 
+    // 1. Create users in Auth and collect UIDs
+    const adminUserRecord = await adminAuth.createUser({ email: superAdmin.email, password: superAdmin.password, displayName: superAdmin.name, emailVerified: true });
+    const hostUserRecord = await adminAuth.createUser({ email: superHost.email, password: superHost.password, displayName: superHost.name, emailVerified: true });
+    const teacherRecords = await Promise.all(sampleTeachers.map(t => adminAuth.createUser({ email: t.email, password: 'Password@123', displayName: t.name, emailVerified: true })));
+    const studentRecords = await Promise.all(sampleStudents.map(s => adminAuth.createUser({ email: s.email, password: 'Password@123', displayName: s.name, emailVerified: true })));
+
+
+    // 2. Prepare Firestore batch write
     const writeBatch = db.batch();
 
-    // Seed Super Admin
-    const adminUserRecord = await adminAuth.createUser({ email: superAdmin.email, password: superAdmin.password, displayName: superAdmin.name, emailVerified: true });
+    // Add admin and host to batch
     const { password: adminPassword, ...adminData } = superAdmin;
     const adminRef = adminsCollection.doc(adminUserRecord.uid);
     writeBatch.set(adminRef, { ...adminData, uid: adminUserRecord.uid });
-
-    // Seed Super Host
-    const hostUserRecord = await adminAuth.createUser({ email: superHost.email, password: superHost.password, displayName: superHost.name, emailVerified: true });
+    
     const { password: hostPassword, ...hostData } = superHost;
     const hostRef = hostsCollection.doc(hostUserRecord.uid);
     writeBatch.set(hostRef, { ...hostData, uid: hostUserRecord.uid });
 
-    // Seed Teachers
-    for (const teacher of sampleTeachers) {
-        const userRecord = await adminAuth.createUser({ email: teacher.email, password: 'Password@123', displayName: teacher.name, emailVerified: true });
-        const teacherRef = teachersCollection.doc(userRecord.uid);
-        writeBatch.set(teacherRef, { ...teacher, uid: userRecord.uid });
+    // Add teachers to batch
+    const teacherDocIds = teacherRecords.map((record, index) => {
+        const teacherRef = teachersCollection.doc(record.uid);
+        writeBatch.set(teacherRef, { ...sampleTeachers[index], uid: record.uid });
+        return record.uid;
+    });
+
+    // Group student UIDs by department
+    const studentDocIdsByDept: { [key: string]: string[] } = {};
+    studentRecords.forEach((record, index) => {
+        const studentData = sampleStudents[index];
+        if (!studentDocIdsByDept[studentData.department]) {
+            studentDocIdsByDept[studentData.department] = [];
+        }
+        studentDocIdsByDept[studentData.department].push(record.uid);
+        
+        const studentRef = studentsCollection.doc(record.uid);
+        // Initially set student without batchId
+        writeBatch.set(studentRef, { ...studentData, uid: record.uid });
+    });
+
+    // Create batches and update students in the same batch write
+    const cseBatch = { ...sampleBatchDefinitions[0], teacherId: teacherDocIds[0], studentIds: studentDocIdsByDept['cse'] || [] };
+    const itBatch = { ...sampleBatchDefinitions[1], teacherId: teacherDocIds[1], studentIds: studentDocIdsByDept['it'] || [] };
+    
+    // Add CSE batch and update its students
+    const cseBatchRef = batchesCollection.doc();
+    writeBatch.set(cseBatchRef, cseBatch);
+    for (const studentId of cseBatch.studentIds) {
+        const studentRef = studentsCollection.doc(studentId);
+        writeBatch.update(studentRef, { batchId: cseBatchRef.id });
+    }
+
+    // Add IT batch and update its students
+    const itBatchRef = batchesCollection.doc();
+    writeBatch.set(itBatchRef, itBatch);
+    for (const studentId of itBatch.studentIds) {
+        const studentRef = studentsCollection.doc(studentId);
+        writeBatch.update(studentRef, { batchId: itBatchRef.id });
     }
     
-    // Seed Students
-    for (const student of sampleStudents) {
-         const userRecord = await adminAuth.createUser({ email: student.email, password: 'Password@123', displayName: student.name, emailVerified: true });
-         const studentRef = studentsCollection.doc(userRecord.uid);
-         writeBatch.set(studentRef, { ...student, uid: userRecord.uid });
-    }
-
-    // Seed Batches (without assignments)
-    for (const batch of sampleBatches) {
-        const batchRef = batchesCollection.doc(); // Auto-generate ID
-        writeBatch.set(batchRef, { ...batch, teacherId: '', studentIds: [] });
-    }
-
+    // Commit all writes
     await writeBatch.commit();
     
-    return res.status(200).json({ message: `Successfully seeded default users, ${sampleTeachers.length} teachers, ${sampleStudents.length} students, and ${sampleBatches.length} batches.` });
+    return res.status(200).json({ message: `Successfully seeded and assigned users to batches.` });
 
   } catch (error: any) {
     console.error('Error seeding database:', error);
     if (error.code === 'auth/email-already-exists') {
-        return res.status(409).json({ message: `Seeding failed: An email from the sample data already exists in Firebase Authentication. Please clear existing users before seeding.` });
+        return res.status(409).json({ message: `Seeding failed: An email from the sample data already exists. Please clear existing users before seeding.` });
     }
     return res.status(500).json({ message: error.message || 'Internal server error during seeding.' });
   }
