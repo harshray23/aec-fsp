@@ -150,7 +150,3 @@ export default function AdminTimetableOverviewPage() {
     </div>
   );
 }
-
-export const metadata = {
-  title: "Timetable Overview - AEC FSP",
-};

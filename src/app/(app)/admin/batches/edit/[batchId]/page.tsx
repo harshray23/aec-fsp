@@ -9,6 +9,7 @@ import BatchEditForm from "@/components/admin/BatchEditForm";
 import { Edit, Loader2 } from "lucide-react";
 import type { Batch } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
 
 export default function AdminEditBatchPage() {
   const router = useRouter();
@@ -96,7 +97,3 @@ export default function AdminEditBatchPage() {
     </div>
   );
 }
-
-export const metadata = {
-  title: "Edit Batch - AEC FSP",
-};

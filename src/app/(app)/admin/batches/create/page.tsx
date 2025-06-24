@@ -125,7 +125,3 @@ export default function AdminCreateBatchPage() {
     </div>
   );
 }
-
-export const metadata = {
-  title: "Create New Batch - AEC FSP",
-};

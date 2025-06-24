@@ -163,7 +163,3 @@ export default function TeacherDashboardPage() {
     </div>
   );
 }
-
-export const metadata = {
-    title: "Teacher Dashboard - AEC FSP",
-};
