@@ -56,18 +56,19 @@ export default function LoginForm() {
     }
 
     // --- Special Bypass for initial Admin and Host login ---
+    // This allows initial access to the system to seed the database.
     if (
-      (role === USER_ROLES.ADMIN && values.email === "harshray2007@gmail.com" && values.password === "Password@123") ||
-      (role === USER_ROLES.HOST && values.email === "elvishray007@gmail.com" && values.password === "harsh@123")
+      (role === 'admin' && values.email === "harshray2007@gmail.com" && values.password === "Password@123") ||
+      (role === 'host' && values.email === "elvishray007@gmail.com" && values.password === "harsh@123")
     ) {
       let mockUser;
       let redirectPath;
-      if (role === USER_ROLES.ADMIN) {
+      if (role === 'admin') {
         mockUser = {
           id: "ADMIN_HARSH_RAY_BYPASS",
           name: "Harsh Ray",
           email: "harshray2007@gmail.com",
-          role: USER_ROLES.ADMIN,
+          role: "admin",
           status: "active",
           username: "harsh_admin_bypass"
         };
@@ -77,7 +78,7 @@ export default function LoginForm() {
           id: "HOST_HARSH_RAY_BYPASS",
           name: "Harsh Ray",
           email: "elvishray007@gmail.com",
-          role: USER_ROLES.HOST,
+          role: "host",
         };
         redirectPath = "/host/dashboard";
       }
