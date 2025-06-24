@@ -14,7 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ message: 'Firebase Admin SDK not initialized.' });
   }
 
-  const { name, email, role, department, password } = req.body;
+  const { name, email, role, department, password, bypassApproval } = req.body;
 
   if (!name || !email || !role || !password) {
     return res.status(400).json({ message: 'Missing required fields: name, email, role, password.' });
@@ -27,24 +27,58 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    // Step 1: Check if a user with this email already exists in Firestore
+    // Step 1: Check if a user with this email already exists in Firestore or Auth
     const teacherQuery = await db.collection('teachers').where('email', '==', email).limit(1).get();
     const adminQuery = await db.collection('admins').where('email', '==', email).limit(1).get();
     if (!teacherQuery.empty || !adminQuery.empty) {
       return res.status(409).json({ message: `A user with email ${email} already exists.` });
     }
+    
+    try {
+        await adminAuth.getUserByEmail(email);
+        return res.status(409).json({ message: `A user with email ${email} already exists in the authentication system.` });
+    } catch (error: any) {
+        if (error.code !== 'auth/user-not-found') {
+            throw error;
+        }
+    }
 
-    // Step 2: Create user in Firebase Authentication using Admin SDK
+    // Step 2: If bypassing approval, generate and check username uniqueness
+    let username: string | undefined;
+    if (bypassApproval) {
+      const baseUsername = email.split('@')[0].replace(/[.\+]/g, '_').toLowerCase();
+      let finalUsername = baseUsername;
+      let isUsernameTaken = true;
+      let attempts = 0;
+      
+      while (isUsernameTaken && attempts < 10) {
+        const teacherUsernameQuery = await db.collection('teachers').where('username', '==', finalUsername).limit(1).get();
+        const adminUsernameQuery = await db.collection('admins').where('username', '==', finalUsername).limit(1).get();
+        if (teacherUsernameQuery.empty && adminUsernameQuery.empty) {
+          isUsernameTaken = false;
+        } else {
+          attempts++;
+          finalUsername = `${baseUsername}_${attempts}`;
+        }
+      }
+      
+      if (isUsernameTaken) {
+        return res.status(409).json({ message: `Could not generate a unique username for ${email}. Please try registering without bypassing approval.` });
+      }
+      username = finalUsername;
+    }
+
+    // Step 3: Create user in Firebase Authentication
     const userRecord = await adminAuth.createUser({
       email: email,
       password: password,
       displayName: name,
-      emailVerified: true, // Typically admin-created users are considered verified
+      emailVerified: true,
     });
     
     const uid = userRecord.uid;
 
-    // Step 3: Create user profile in Firestore
+    // Step 4: Create user profile in Firestore
     let collectionName: string;
     let userData: Omit<Admin, 'id'> | Omit<Teacher, 'id'>;
 
@@ -56,7 +90,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         email,
         role: USER_ROLES.TEACHER,
         department,
-        status: "pending_approval",
+        status: bypassApproval ? "active" : "pending_approval",
+        username: bypassApproval ? username : undefined,
       };
     } else if (role === USER_ROLES.ADMIN) {
       collectionName = 'admins';
@@ -65,26 +100,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         name,
         email,
         role: USER_ROLES.ADMIN,
-        status: "pending_approval",
+        status: bypassApproval ? "active" : "pending_approval",
+        username: bypassApproval ? username : undefined,
       };
     } else {
-      // If user creation succeeded but role is invalid, delete the auth user to prevent orphans
       await adminAuth.deleteUser(uid);
       return res.status(400).json({ message: 'Invalid user role specified.' });
     }
 
-    // Set the Firestore document with the Firebase Auth UID as the document ID
     await db.collection(collectionName).doc(uid).set(userData);
     
     const createdUser = { id: uid, ...userData };
 
-    return res.status(201).json({ message: `${role} registered successfully and awaiting approval.`, user: createdUser });
+    const message = bypassApproval 
+      ? `${role} registered and activated successfully.`
+      : `${role} registered successfully and awaiting approval.`;
+      
+    return res.status(201).json({ message, user: createdUser });
 
   } catch (error: any) {
     console.error('Error during user registration by admin:', error);
-    if (error.code === 'auth/email-already-exists') {
-        return res.status(409).json({ message: `A user with email ${email} already exists in Firebase Authentication.` });
-    }
     return res.status(500).json({ message: error.message || 'Internal server error during registration.' });
   }
 }

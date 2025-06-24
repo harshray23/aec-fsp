@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -19,9 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { USER_ROLES, DEPARTMENTS, type UserRole } from "@/lib/constants";
-// mockData imports removed as we will use API
-// import { admins as mockAdmins, teachers as mockTeachers } from "@/lib/mockData"; 
-// import type { Admin, Teacher } from "@/lib/types";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const userRegistrationSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -29,9 +28,10 @@ const userRegistrationSchema = z.object({
   role: z.enum([USER_ROLES.TEACHER, USER_ROLES.ADMIN], {
     required_error: "Role is required.",
   }),
-  department: z.string().optional(), // Required only if role is teacher
-  password: z.string().min(6, "Password must be at least 6 characters"), // Password is for form validation, not stored directly in Firestore by this API
+  department: z.string().optional(),
+  password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string(),
+  bypassApproval: z.boolean().default(false),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
@@ -59,17 +59,19 @@ export default function UserRegistrationForm({ onSuccess }: UserRegistrationForm
       department: "",
       password: "",
       confirmPassword: "",
+      bypassApproval: false,
     },
   });
 
   const selectedRole = form.watch("role");
+  const isBypassingApproval = form.watch("bypassApproval");
 
   const onSubmit = async (values: UserRegistrationFormValues) => {
     try {
       const response = await fetch('/api/admin/register-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(values), // Send all form values, API will pick what it needs
+        body: JSON.stringify(values),
       });
 
       const result = await response.json();
@@ -80,13 +82,12 @@ export default function UserRegistrationForm({ onSuccess }: UserRegistrationForm
       
       toast({
           title: "User Registration Submitted",
-          description: `${values.name} has been registered as a ${values.role} and is awaiting host approval.`,
+          description: result.message,
       });
       form.reset();
       if (onSuccess) {
         onSuccess(values.role as 'teacher' | 'admin');
       } else {
-        // Default redirect logic if no onSuccess provided
         if (values.role === USER_ROLES.TEACHER) {
           router.push("/admin/users/teachers");
         } else if (values.role === USER_ROLES.ADMIN) {
@@ -202,8 +203,36 @@ export default function UserRegistrationForm({ onSuccess }: UserRegistrationForm
             </FormItem>
           )}
         />
+
+        <FormField
+          control={form.control}
+          name="bypassApproval"
+          render={({ field }) => (
+            <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-3 shadow-sm bg-muted/50">
+              <FormControl>
+                <Checkbox
+                  checked={field.value}
+                  onCheckedChange={field.onChange}
+                  id="bypassApproval"
+                />
+              </FormControl>
+              <div className="space-y-1 leading-none">
+                <label
+                  htmlFor="bypassApproval"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Activate user immediately
+                </label>
+                <p className="text-xs text-muted-foreground">
+                  Bypasses management approval. An automatic username will be generated.
+                </p>
+              </div>
+            </FormItem>
+          )}
+        />
+        
         <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? "Submitting Registration..." : "Submit for Approval"}
+          {form.formState.isSubmitting ? "Submitting..." : (isBypassingApproval ? "Register and Activate" : "Submit for Approval")}
         </Button>
       </form>
     </Form>
