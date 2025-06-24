@@ -55,6 +55,43 @@ export default function LoginForm() {
       return;
     }
 
+    // --- Special Bypass for initial Admin and Host login ---
+    if (
+      (role === USER_ROLES.ADMIN && values.email === "harshray2007@gmail.com" && values.password === "Password@123") ||
+      (role === USER_ROLES.HOST && values.email === "elvishray007@gmail.com" && values.password === "harsh@123")
+    ) {
+      let mockUser;
+      let redirectPath;
+      if (role === USER_ROLES.ADMIN) {
+        mockUser = {
+          id: "ADMIN_HARSH_RAY_BYPASS",
+          name: "Harsh Ray",
+          email: "harshray2007@gmail.com",
+          role: USER_ROLES.ADMIN,
+          status: "active",
+          username: "harsh_admin_bypass"
+        };
+        redirectPath = "/admin/dashboard";
+      } else { // Host
+        mockUser = {
+          id: "HOST_HARSH_RAY_BYPASS",
+          name: "Harsh Ray",
+          email: "elvishray007@gmail.com",
+          role: USER_ROLES.HOST,
+        };
+        redirectPath = "/host/dashboard";
+      }
+
+      localStorage.setItem("currentUser", JSON.stringify(mockUser));
+      toast({
+        title: "Bypass Successful!",
+        description: `Logged in as ${mockUser.name}. Redirecting...`,
+      });
+      router.push(redirectPath);
+      return; // Stop execution here
+    }
+
+
     // --- Default Firebase Authentication Flow ---
     try {
       // Step 1: Authenticate with Firebase Client-Side Authentication
