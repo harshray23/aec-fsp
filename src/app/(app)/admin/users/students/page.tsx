@@ -1,17 +1,34 @@
 
 "use client"; 
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { GraduationCap, Loader2 } from "lucide-react"; 
+import { GraduationCap, Loader2, MoreHorizontal, Trash2 } from "lucide-react"; 
 import { DEPARTMENTS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import type { Student, Batch } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // A simple debounce hook
 function useDebounce(value: string, delay: number) {
@@ -37,6 +54,10 @@ export default function ViewStudentsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("all"); 
   const debouncedSearchTerm = useDebounce(searchTerm, 500); // 500ms debounce delay
+
+  // State for delete dialog
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
 
   // Fetch batches once on mount
   useEffect(() => {
@@ -83,6 +104,40 @@ export default function ViewStudentsPage() {
     if (!batchId) return <Badge variant="outline">N/A</Badge>;
     const batchName = batches.find(b => b.id === batchId)?.name;
     return batchName ? <Badge variant="secondary">{batchName}</Badge> : <Badge variant="outline">{batchId.substring(0,8)}...</Badge>;
+  };
+  
+  const openDeleteDialog = (student: Student) => {
+    setStudentToDelete(student);
+    setIsDeleteDialogOpen(true);
+  };
+
+  const handleDeleteStudent = async () => {
+    if (!studentToDelete) return;
+    try {
+      const response = await fetch(`/api/students/${studentToDelete.id}`, {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to delete student.' }));
+        throw new Error(errorData.message);
+      }
+      
+      setStudents(prev => prev.filter(s => s.id !== studentToDelete.id));
+      toast({
+        title: "Student Deleted",
+        description: `Student ${studentToDelete.name} has been successfully deleted.`,
+      });
+
+    } catch (error: any) {
+      toast({
+        title: "Error Deleting Student",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setStudentToDelete(null);
+    }
   };
 
   return (
@@ -132,6 +187,7 @@ export default function ViewStudentsPage() {
                 <TableHead>Section</TableHead>
                 <TableHead>Roll No.</TableHead>
                 <TableHead>Batch</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -144,11 +200,28 @@ export default function ViewStudentsPage() {
                   <TableCell>{student.section || "N/A"}</TableCell>
                   <TableCell>{student.rollNumber}</TableCell>
                   <TableCell>{getBatchName(student.batchId)}</TableCell> 
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => openDeleteDialog(student)}
+                          className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" /> Delete Student
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
                 </TableRow>
               ))}
               {students.length === 0 && !isLoading && (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground h-24">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground h-24">
                     No students found with the current filters.
                   </TableCell>
                 </TableRow>
@@ -158,6 +231,26 @@ export default function ViewStudentsPage() {
           )}
         </CardContent>
       </Card>
+      
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the student 
+              "{studentToDelete?.name}" ({studentToDelete?.studentId}) and all associated data,
+              including their authentication account.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setStudentToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteStudent} className="bg-destructive hover:bg-destructive/90">
+              Confirm Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 }
