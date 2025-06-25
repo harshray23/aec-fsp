@@ -7,21 +7,24 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GraduationCap, Edit3, Mail, Phone, UserSquare2, Hash, Building, ImagePlus, ClipboardList, Loader2 } from "lucide-react";
-import type { Student } from "@/lib/types";
+import { GraduationCap, Edit3, Mail, Phone, UserSquare2, Hash, Building, ImagePlus, ClipboardList, Loader2, BookCopy } from "lucide-react";
+import type { Student, AcademicDetails } from "@/lib/types";
 import React, { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { USER_ROLES, DEPARTMENTS } from "@/lib/constants";
 import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ChangePasswordDialog } from "@/components/shared/ChangePasswordDialog"; // Added import
+import { ChangePasswordDialog } from "@/components/shared/ChangePasswordDialog";
+import AcademicDetailsForm, { type AcademicFormValues } from "@/components/student/AcademicDetailsForm";
 
 export default function StudentProfilePage() {
   const [studentProfile, setStudentProfile] = useState<Partial<Student>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [isSavingAcademics, setIsSavingAcademics] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = useState(false); // Added state
+  const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = useState(false);
+  const [isAcademicDialogOpen, setIsAcademicDialogOpen] = useState(false);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -71,6 +74,29 @@ export default function StudentProfilePage() {
     }
     fetchProfile();
   }, [router, toast]);
+
+  const handleSaveAcademics = async (values: AcademicFormValues) => {
+    if (!studentProfile.id) return;
+    setIsSavingAcademics(true);
+    try {
+        const response = await fetch(`/api/students/${studentProfile.id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ academics: values }),
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.message || "Failed to save academic details.");
+        }
+        setStudentProfile(result.student); // Update state with the full updated student object from API
+        toast({ title: "Success", description: "Academic details saved successfully." });
+        setIsAcademicDialogOpen(false);
+    } catch (error: any) {
+        toast({ title: "Error Saving", description: error.message, variant: "destructive" });
+    } finally {
+        setIsSavingAcademics(false);
+    }
+  };
 
   const fallbackName = studentProfile.name || "Student";
   const avatarText = fallbackName.split(' ').map(n => n[0]).join('').toUpperCase() || 'S';
@@ -197,13 +223,58 @@ export default function StudentProfilePage() {
             </CardContent>
           </Card>
 
+          <Card className="bg-secondary/50 mt-6">
+            <CardHeader>
+              <div className="flex justify-between items-center">
+                <CardTitle className="text-base flex items-center gap-2"><BookCopy /> Academic Details</CardTitle>
+                <Button variant="outline" size="sm" onClick={() => setIsAcademicDialogOpen(true)}>Add / Edit Academics</Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {studentProfile.academics ? (
+                 <div className="space-y-4">
+                    <div>
+                        <h4 className="font-semibold">Class 12th</h4>
+                        <p className="text-sm text-muted-foreground">Board: {studentProfile.academics.class12?.board || 'N/A'}, Percentage: {studentProfile.academics.class12?.percentage || 'N/A'}%</p>
+                    </div>
+                     <div>
+                        <h4 className="font-semibold">Class 10th</h4>
+                        <p className="text-sm text-muted-foreground">Board: {studentProfile.academics.class10?.board || 'N/A'}, Percentage: {studentProfile.academics.class10?.percentage || 'N/A'}%</p>
+                    </div>
+                    <div>
+                        <h4 className="font-semibold">Semester SGPA</h4>
+                        <ul className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-sm list-inside text-muted-foreground">
+                        {Object.entries(studentProfile.academics.semesters || {}).map(([sem, sgpa]) => (
+                            sgpa ? <li key={sem}>Sem {sem.replace('sem', '')}: <span className="font-mono">{sgpa.toFixed(2)}</span></li> : null
+                        ))}
+                        </ul>
+                    </div>
+                 </div>
+              ) : (
+                <p className="text-muted-foreground text-sm">No academic details added yet.</p>
+              )}
+            </CardContent>
+          </Card>
+
         </CardContent>
       </Card>
+      
       <ChangePasswordDialog 
         isOpen={isChangePasswordDialogOpen}
         onClose={() => setIsChangePasswordDialogOpen(false)}
         userEmail={studentProfile?.email || ""}
       />
+
+      {isAcademicDialogOpen && (
+        <AcademicDetailsForm
+            isOpen={isAcademicDialogOpen}
+            onClose={() => setIsAcademicDialogOpen(false)}
+            onSave={handleSaveAcademics}
+            isSaving={isSavingAcademics}
+            initialData={studentProfile.academics}
+        />
+      )}
+
     </div>
   );
 }

@@ -19,6 +19,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const studentRef = db.collection('students').doc(studentId);
 
   switch (req.method) {
+    case 'PUT':
+      try {
+        const doc = await studentRef.get();
+        if (!doc.exists) {
+            return res.status(404).json({ message: 'Student not found to update.' });
+        }
+
+        const { academics } = req.body;
+        
+        if (!academics) {
+            return res.status(400).json({ message: 'Academics data is required.' });
+        }
+
+        // We can add validation here for the 'academics' object structure if needed
+
+        await studentRef.update({ academics });
+
+        const updatedDoc = await studentRef.get();
+        const updatedStudent = { id: updatedDoc.id, ...updatedDoc.data() };
+        
+        return res.status(200).json({ message: 'Academic details updated successfully.', student: updatedStudent });
+
+      } catch (error) {
+        console.error(`Error updating student academics for ${studentId}:`, error);
+        return res.status(500).json({ message: 'Internal server error while updating academic details.' });
+      }
+      break;
+    
     case 'DELETE':
       try {
         const studentDoc = await studentRef.get();
@@ -69,7 +97,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       break;
 
     default:
-      res.setHeader('Allow', ['DELETE']);
+      res.setHeader('Allow', ['PUT', 'DELETE']);
       res.status(405).json({ message: `Method ${req.method} Not Allowed` });
   }
 }

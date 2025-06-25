@@ -13,6 +13,28 @@ export interface Host extends User {
   uid?: string; // Firebase Authentication User ID
 }
 
+export interface AcademicDetails {
+  class10?: {
+    board?: string;
+    percentage?: number;
+  };
+  class12?: {
+    board?: string;
+    percentage?: number;
+  };
+  semesters?: {
+    sem1?: number;
+    sem2?: number;
+    sem3?: number;
+    sem4?: number;
+    sem5?: number;
+    sem6?: number;
+    sem7?: number;
+    sem8?: number;
+  };
+}
+
+
 export interface Student extends User {
   role: "student";
   uid?: string; // Firebase Authentication User ID
@@ -26,6 +48,7 @@ export interface Student extends User {
   batchId?: string; // ID of the batch the student is assigned to
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
+  academics?: AcademicDetails;
 }
 
 export type UserApprovalStatus = "pending_approval" | "active" | "rejected";
