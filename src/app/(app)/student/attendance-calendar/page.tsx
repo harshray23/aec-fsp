@@ -30,20 +30,22 @@ export default function StudentAttendanceCalendarPage() {
       setIsLoading(true);
       setError(null);
       try {
-        let studentId = null;
+        let studentDocId = null; // Changed variable name for clarity
         const storedUser = localStorage.getItem("currentUser");
         if (storedUser) {
           const user = JSON.parse(storedUser);
-          studentId = user?.studentId || user?.id; 
+          // We MUST use the document ID/UID, as that's what's stored in the attendance records.
+          studentDocId = user?.id; 
         }
 
-        if (!studentId) {
+        if (!studentDocId) {
           setError("Could not identify student. Please log in again.");
           setIsLoading(false);
           return;
         }
 
-        const response = await fetch(`/api/attendance?studentId=${studentId}`);
+        // Use the document ID to fetch attendance records
+        const response = await fetch(`/api/attendance?studentId=${studentDocId}`);
         
         if (!response.ok) {
           let errorMessage = `API Error: ${response.status} ${response.statusText || ''}`.trim();
