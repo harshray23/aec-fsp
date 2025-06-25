@@ -76,6 +76,7 @@ export default function LoginForm() {
         if (role === USER_ROLES.HOST) {
             userData = {
                 id: "host_bypass_user",
+                uid: "host_bypass_uid",
                 name: "Sanjay",
                 email: bypassCredentials.host.email,
                 role: USER_ROLES.HOST,
