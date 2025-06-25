@@ -72,6 +72,7 @@ export interface AttendanceRecord {
   status: "present" | "absent" | "late";
   batchId: string; 
   subject: string; // Subject/module for which attendance was taken
+  remarks?: string;
 }
 
 export interface TimetableEntry {

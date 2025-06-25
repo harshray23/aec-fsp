@@ -104,6 +104,40 @@ export default function AdminViewReportsPage() {
     return [];
   }, [reportType, filteredAttendanceData]);
 
+  // Data for detailed Excel export
+  const detailedExportData = useMemo(() => {
+      const studentsMap = new Map(allStudents.map(s => [s.id, s]));
+      const batchesMap = new Map(allBatches.map(b => [b.id, b]));
+
+      let recordsToExport = allAttendanceRecords;
+
+      // Apply department filter by first filtering batches
+      if (selectedDepartmentFilter !== 'all') {
+          const departmentBatchIds = new Set(allBatches.filter(b => b.department === selectedDepartmentFilter).map(b => b.id));
+          recordsToExport = recordsToExport.filter(r => departmentBatchIds.has(r.batchId));
+      }
+
+      // Apply batch filter
+      if (selectedBatchFilter !== 'all') {
+          recordsToExport = recordsToExport.filter(r => r.batchId === selectedBatchFilter);
+      }
+
+      return recordsToExport.map(record => {
+          const student = studentsMap.get(record.studentId);
+          const batch = batchesMap.get(record.batchId);
+          return {
+              'Date': record.date,
+              'Student Name': student?.name || 'N/A',
+              'Student ID': student?.studentId || 'N/A',
+              'Batch Name': batch?.name || 'N/A',
+              'Subject': record.subject,
+              'Status': record.status,
+              'Remarks': record.remarks || '',
+          };
+      });
+  }, [allAttendanceRecords, allStudents, allBatches, selectedBatchFilter, selectedDepartmentFilter]);
+
+
   const exportToExcel = (data: any[], fileName: string) => {
     if (data.length === 0) {
       toast({ title: "No Data", description: "There is no data to export for the selected filters.", variant: "destructive" });
@@ -117,27 +151,7 @@ export default function AdminViewReportsPage() {
   };
 
   const handleDownloadReport = () => {
-    let dataToExport: any[] = [];
-    let fileName = "admin_report";
-
-    switch (reportType) {
-      case "attendance-batch":
-        dataToExport = filteredAttendanceData.map(d => ({
-          'Batch Name': d.batchName,
-          'Present': d.present,
-          'Absent': d.absent,
-          'Late': d.late,
-          'Total Students': d.totalStudents,
-          'Present (%)': (d.totalStudents > 0 ? (d.present / d.totalStudents * 100) : 0).toFixed(1),
-          'Absent (%)': (d.totalStudents > 0 ? (d.absent / d.totalStudents * 100) : 0).toFixed(1),
-        }));
-        fileName = "Admin_Batch_Attendance_Report";
-        break;
-      default:
-        toast({ title: "Not Implemented", description: `Excel export for this report is not yet available.`, variant: "default" });
-        return;
-    }
-    exportToExcel(dataToExport, fileName);
+    exportToExcel(detailedExportData, "Admin_Detailed_Attendance_Report");
   };
   
   if (isLoading) {
@@ -156,8 +170,8 @@ export default function AdminViewReportsPage() {
         description="Analyze system-wide attendance and performance data."
         icon={BarChart3}
         actions={
-          <Button onClick={handleDownloadReport} disabled={filteredAttendanceData.length === 0}>
-            <Download className="mr-2 h-4 w-4" /> Download Report
+          <Button onClick={handleDownloadReport} disabled={detailedExportData.length === 0}>
+            <Download className="mr-2 h-4 w-4" /> Download Detailed Report
           </Button>
         }
       />

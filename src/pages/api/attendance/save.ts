@@ -11,8 +11,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ message: 'Database not initialized' });
   }
 
-  const { records, batchId, date, subject } = req.body;
+  const { records, remarks, batchId, date, subject } = req.body;
   // `records` is expected to be an object like: { studentId1: 'present', studentId2: 'absent' }
+  // `remarks` is expected to be an object like: { studentId1: 'Good work', studentId2: 'Missed quiz' }
 
   if (!records || typeof records !== 'object' || !batchId || !date || !subject) {
     return res.status(400).json({ message: 'Missing required fields: records, batchId, date, subject' });
@@ -25,9 +26,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const q = attendanceCollection.where('batchId', '==', batchId).where('date', '==', date);
     const existingDocsSnap = await q.get();
     
-    const existingRecordsMap = new Map<string, {docId: string, status: string}>();
+    const existingRecordsMap = new Map<string, {docId: string, status: string, remarks?: string}>();
     existingDocsSnap.forEach(doc => {
-      existingRecordsMap.set(doc.data().studentId, { docId: doc.id, status: doc.data().status });
+      existingRecordsMap.set(doc.data().studentId, { 
+          docId: doc.id, 
+          status: doc.data().status,
+          remarks: doc.data().remarks
+      });
     });
 
     const writeBatch = db.batch();
@@ -35,13 +40,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     for (const studentId in records) {
         if (Object.prototype.hasOwnProperty.call(records, studentId)) {
             const newStatus = records[studentId];
+            const newRemark = remarks ? remarks[studentId] : undefined;
             const existingRecord = existingRecordsMap.get(studentId);
 
             if (existingRecord) {
-                // Update if status is different
-                if (existingRecord.status !== newStatus) {
-                const docRef = attendanceCollection.doc(existingRecord.docId);
-                writeBatch.update(docRef, { status: newStatus });
+                // Update if status or remark is different
+                const updatePayload: { status: string; remarks?: string } = { status: newStatus };
+                if (newRemark !== undefined) {
+                    updatePayload.remarks = newRemark;
+                }
+                
+                if (existingRecord.status !== newStatus || (newRemark !== undefined && existingRecord.remarks !== newRemark)) {
+                    const docRef = attendanceCollection.doc(existingRecord.docId);
+                    writeBatch.update(docRef, updatePayload);
                 }
             } else {
                 // Create new record
@@ -52,6 +63,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     date, // Storing as YYYY-MM-DD string
                     subject,
                     status: newStatus,
+                    remarks: newRemark || "",
                 });
             }
         }

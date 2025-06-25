@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { CheckSquare, CalendarIcon, Save, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -30,6 +31,7 @@ export default function AdminManageAttendancePage() {
   const [selectedBatchId, setSelectedBatchId] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [attendanceRecords, setAttendanceRecords] = useState<Record<string, AttendanceStatus>>({});
+  const [remarksRecords, setRemarksRecords] = useState<Record<string, string>>({});
   
   const selectedBatch = useMemo(() => batches.find(b => b.id === selectedBatchId), [selectedBatchId, batches]);
 
@@ -56,30 +58,31 @@ export default function AdminManageAttendancePage() {
     if (!selectedBatchId || !selectedDate) {
       setStudents([]);
       setAttendanceRecords({});
+      setRemarksRecords({});
       return;
     };
 
     const fetchDataForBatchAndDate = async () => {
       setIsLoadingStudents(true);
       try {
-        // Fetch all students in the system, then filter client-side.
-        // For larger scale, an API endpoint /api/students?batchId=... would be better.
         const studentsRes = await fetch('/api/students');
         if (!studentsRes.ok) throw new Error("Failed to fetch students");
         const allStudents: Student[] = await studentsRes.json();
         const studentsInBatch = allStudents.filter(s => s.batchId === selectedBatchId);
         setStudents(studentsInBatch);
 
-        // Fetch existing attendance records for this batch and date
         const attendanceRes = await fetch(`/api/attendance?batchId=${selectedBatchId}&date=${format(selectedDate, 'yyyy-MM-dd')}`);
         if (!attendanceRes.ok) throw new Error("Failed to fetch attendance records");
         const existingRecords: AttendanceRecord[] = await attendanceRes.json();
         
         const recordsMap: Record<string, AttendanceStatus> = {};
+        const remarksMap: Record<string, string> = {};
         existingRecords.forEach(rec => {
           recordsMap[rec.studentId] = rec.status;
+          remarksMap[rec.studentId] = rec.remarks || "";
         });
         setAttendanceRecords(recordsMap);
+        setRemarksRecords(remarksMap);
 
       } catch (error: any) {
         toast({ title: "Error", description: `Failed to load data for batch: ${error.message}`, variant: "destructive" });
@@ -95,6 +98,10 @@ export default function AdminManageAttendancePage() {
 
   const handleAttendanceChange = (studentId: string, status: AttendanceStatus) => {
     setAttendanceRecords(prev => ({ ...prev, [studentId]: status }));
+  };
+  
+  const handleRemarkChange = (studentId: string, remark: string) => {
+    setRemarksRecords(prev => ({ ...prev, [studentId]: remark }));
   };
 
   const handleSaveAttendance = async () => {
@@ -118,6 +125,7 @@ export default function AdminManageAttendancePage() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 records: attendanceRecords,
+                remarks: remarksRecords,
                 batchId: selectedBatch.id,
                 date: format(selectedDate, 'yyyy-MM-dd'),
                 subject: selectedBatch.topic,
@@ -206,6 +214,7 @@ export default function AdminManageAttendancePage() {
                       <TableHead>Student Name</TableHead>
                       <TableHead>Section</TableHead>
                       <TableHead className="text-center">Status</TableHead>
+                      <TableHead>Remarks</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -233,6 +242,14 @@ export default function AdminManageAttendancePage() {
                               <Label htmlFor={`${student.id}-late`} className="text-yellow-600 cursor-pointer">Late</Label>
                             </div>
                           </RadioGroup>
+                        </TableCell>
+                        <TableCell>
+                          <Input
+                            placeholder="Add a remark..."
+                            value={remarksRecords[student.id] || ""}
+                            onChange={(e) => handleRemarkChange(student.id, e.target.value)}
+                            className="w-48"
+                          />
                         </TableCell>
                       </TableRow>
                     ))}
