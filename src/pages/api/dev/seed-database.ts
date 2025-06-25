@@ -40,7 +40,7 @@ const sampleStudents: Omit<Student, 'id' | 'uid'>[] = [
 ];
 
 const sampleBatchDefinitions: Omit<Batch, 'id' | 'teacherId' | 'studentIds'>[] = [
-  { name: 'FSP-CSE-2024-A', department: 'cse', topic: 'Advanced Python', startDate: new Date('2024-08-01').toISOString(), daysOfWeek: ['Monday', 'Wednesday', 'Friday'], startTime: '10:00', endTime: '11:00', roomNumber: 'R301', status: 'Scheduled' },
+  { name: 'FSP-CSE-JAVA-A', department: 'cse', topic: 'Core Java', startDate: new Date('2024-08-01').toISOString(), daysOfWeek: ['Monday', 'Wednesday', 'Friday'], startTime: '09:30', endTime: '12:30', roomNumber: 'R301', status: 'Scheduled' },
   { name: 'FSP-IT-2024-B', department: 'it', topic: 'Cloud Computing', startDate: new Date('2024-08-01').toISOString(), daysOfWeek: ['Tuesday', 'Thursday'], startTime: '14:00', endTime: '15:30', roomNumber: 'R302', status: 'Scheduled' },
 ];
 

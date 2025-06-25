@@ -223,28 +223,23 @@ export default function StudentDashboardPage() {
           <CardTitle>My Assigned Batch</CardTitle>
           <CardDescription>Details about your current Finishing School Program batch.</CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-2 text-sm">
+        <CardContent className="grid grid-cols-[150px_1fr] gap-x-4 gap-y-3 text-sm">
           {dashboardData.batch ? (
             <>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Batch Name:</span>
-                <span className="font-medium">{dashboardData.batch.name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Topic:</span>
-                <span className="font-medium">{dashboardData.batch.topic}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Timetable:</span>
-                <span className="font-medium">{formatTimetable(dashboardData.batch)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Assigned Teacher:</span>
-                <span className="font-medium">{dashboardData.batch.teacherName || "N/A"}</span>
-              </div>
+              <span className="text-muted-foreground">Batch Name:</span>
+              <span className="font-medium">{dashboardData.batch.name}</span>
+
+              <span className="text-muted-foreground">Topic:</span>
+              <span className="font-medium">{dashboardData.batch.topic}</span>
+              
+              <span className="text-muted-foreground">Timetable:</span>
+              <span className="font-medium">{formatTimetable(dashboardData.batch)}</span>
+              
+              <span className="text-muted-foreground">Assigned Teacher:</span>
+              <span className="font-medium">{dashboardData.batch.teacherName || "N/A"}</span>
             </>
           ) : (
-            <Alert>
+            <Alert className="col-span-2">
                 <Info className="h-4 w-4" />
                 <AlertTitle>No Batch Assigned</AlertTitle>
                 <AlertDescription>You are not currently assigned to any batch. Please contact administration if this is an error.</AlertDescription>
