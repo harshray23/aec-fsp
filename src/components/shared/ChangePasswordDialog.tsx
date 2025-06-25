@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useState } from "react";
@@ -20,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { getAuth, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from "firebase/auth";
 import { Loader2 } from "lucide-react";
+import { app as firebaseApp } from "@/firebase";
 
 interface ChangePasswordDialogProps {
   isOpen: boolean;
@@ -41,7 +41,7 @@ type PasswordFormValues = z.infer<typeof passwordSchema>;
 export function ChangePasswordDialog({ isOpen, onClose, userEmail }: ChangePasswordDialogProps) {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const auth = getAuth();
+  const auth = getAuth(firebaseApp);
 
   const form = useForm<PasswordFormValues>({
     resolver: zodResolver(passwordSchema),
