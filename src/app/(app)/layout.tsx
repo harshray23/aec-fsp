@@ -5,9 +5,8 @@ import { DashboardLayout } from "@/components/shared/DashboardLayout";
 import type { NavItem, User, Host } from "@/lib/types";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Users, UserPlus, BookUser, CalendarDays, BarChart3, Settings, GraduationCap, ShieldAlert, Briefcase, UserCog, UserCircle, CheckSquare, MonitorPlay, ServerCog, FileCog, UserCheck, CalendarCheck2, Megaphone, PlusCircle } from "lucide-react"; 
-import React from "react";
-import { admins, teachers, students, hosts } from "@/lib/mockData"; 
-import { USER_ROLES, SECTIONS } from "@/lib/constants";
+import React, { useState, useEffect } from "react";
+import { USER_ROLES } from "@/lib/constants";
 
 const getNavItems = (role: "student" | "teacher" | "admin" | "host" | "guest"): NavItem[] => {
   switch (role) {
@@ -79,44 +78,23 @@ const getNavItems = (role: "student" | "teacher" | "admin" | "host" | "guest"): 
   }
 };
 
-
-// Refined getMockCurrentUser function
-const getMockCurrentUser = (pathname: string): User & { department?: string; username?: string; status?: string; studentId?: string; rollNumber?: string; registrationNumber?: string; section?: string; phoneNumber?: string; isEmailVerified?: boolean; isPhoneVerified?: boolean; avatarUrl?: string; } => {
-  if (typeof window !== 'undefined') {
-    const storedUserString = localStorage.getItem("currentUser");
-    if (storedUserString) {
-      try {
-        const storedUser = JSON.parse(storedUserString) as User & { department?: string; username?: string; status?: string; studentId?: string; rollNumber?: string; registrationNumber?: string; section?: string; phoneNumber?: string; isEmailVerified?: boolean; isPhoneVerified?: boolean; avatarUrl?: string;};
-        
-        if (storedUser && storedUser.id && storedUser.role) {
-          // This function now primarily relies on localStorage.
-          // The mockData arrays are only for the initial seeding process.
-          // We can simplify this by just trusting the storedUser object.
-          return storedUser;
-        }
-      } catch (e) {
-        console.error("Error parsing currentUser from localStorage:", e);
-        localStorage.removeItem("currentUser"); // Clear corrupted data
-      }
-    }
-  }
-
-  // Fallback to path-based determination if localStorage is empty or invalid
+const getServerSideUser = (pathname: string): User & { department?: string; username?: string; status?: string; studentId?: string; rollNumber?: string; registrationNumber?: string; section?: string; phoneNumber?: string; isEmailVerified?: boolean; isPhoneVerified?: boolean; avatarUrl?: string; } => {
+  // This function ONLY contains server-safe logic (path-based determination)
+  // and is used for the initial render on both server and client to avoid hydration mismatch.
   if (pathname.startsWith("/admin")) {
-    return admins.find(a => a.email === "harshray2007@gmail.com") || 
-           { id: "default-admin-fallback", name: "Admin User", email: "admin@example.com", role: USER_ROLES.ADMIN, status: "active", username: "default_admin_fallback" };
+    return { id: "server-admin-fallback", name: "Admin", email: "admin@example.com", role: USER_ROLES.ADMIN, status: "active", username: "server_admin_fallback" };
   } else if (pathname.startsWith("/teacher")) {
-    return teachers[0] || { id: "default-teacher-fallback", name: "Teacher User", email: "teacher@example.com", role: USER_ROLES.TEACHER, department: "N/A", status: "active", username: "default_teacher_fallback" };
+    return { id: "server-teacher-fallback", name: "Teacher", email: "teacher@example.com", role: USER_ROLES.TEACHER, department: "N/A", status: "active", username: "server_teacher_fallback" };
   } else if (pathname.startsWith("/student")) {
-    return students[0] || { 
-        id: "default-student-fallback", name: "Student User", email: "student@example.com", role: USER_ROLES.STUDENT, 
+    return { 
+        id: "server-student-fallback", name: "Student", email: "student@example.com", role: USER_ROLES.STUDENT, 
         studentId: "S000F", rollNumber: "N/AF", registrationNumber: "N/AF", department: "N/AF", section: undefined, 
         phoneNumber: "N/AF", isEmailVerified: true, isPhoneVerified: true
     };
   } else if (pathname.startsWith("/host")) {
-    return hosts[0] || { id: "default-host-fallback", name: "Harsh Ray", email: "elvishray007@gmail.com", role: USER_ROLES.HOST };
+    return { id: "server-host-fallback", name: "Management", email: "host@example.com", role: USER_ROLES.HOST };
   }
-  return { id: "guest-user-fallback", name: "User", email: "user@example.com", role: "guest" as any };
+  return { id: "server-guest-fallback", name: "User", email: "user@example.com", role: "guest" as any };
 };
 
 
@@ -126,8 +104,27 @@ export default function AppPagesLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const currentUser = getMockCurrentUser(pathname); 
   
+  // Initialize state with a server-side determined user. This prevents hydration mismatch.
+  const [currentUser, setCurrentUser] = useState(() => getServerSideUser(pathname)); 
+
+  useEffect(() => {
+    // This effect runs only on the client, after the initial render.
+    const storedUserString = localStorage.getItem("currentUser");
+    if (storedUserString) {
+      try {
+        const storedUser = JSON.parse(storedUserString);
+        if (storedUser && storedUser.id && storedUser.role) {
+          // Safely update the state on the client after hydration.
+          setCurrentUser(storedUser);
+        }
+      } catch (e) {
+        console.error("Error parsing currentUser from localStorage:", e);
+        localStorage.removeItem("currentUser"); // Clear corrupted data
+      }
+    }
+  }, [pathname]); // Re-run if path changes to support client-side navigation.
+
   let displayUserRole = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
   if (currentUser.role === USER_ROLES.HOST) {
     displayUserRole = "Management";
