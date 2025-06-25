@@ -23,7 +23,7 @@ import {
 
 export default function HostDashboardPage() {
   const { toast } = useToast();
-  const [stats, setStats] = useState({ teachers: 0, admins: 0, batches: 0, students: 0 });
+  const [stats, setStats] = useState({ teachers: 0, admins: 0, batches: 0, students: 0, hosts: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [isSeedDialogOpen, setIsSeedDialogOpen] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
@@ -32,14 +32,15 @@ export default function HostDashboardPage() {
     const fetchStats = async () => {
       setIsLoading(true);
       try {
-        const [teachersRes, adminsRes, batchesRes, studentsRes] = await Promise.all([
+        const [teachersRes, adminsRes, batchesRes, studentsRes, hostsRes] = await Promise.all([
           fetch('/api/teachers'),
           fetch('/api/admins'),
           fetch('/api/batches'),
-          fetch('/api/students')
+          fetch('/api/students'),
+          fetch('/api/hosts')
         ]);
 
-        if (!teachersRes.ok || !adminsRes.ok || !batchesRes.ok || !studentsRes.ok) {
+        if (!teachersRes.ok || !adminsRes.ok || !batchesRes.ok || !studentsRes.ok || !hostsRes.ok) {
           throw new Error("Failed to fetch dashboard statistics.");
         }
 
@@ -47,7 +48,8 @@ export default function HostDashboardPage() {
           teachers: (await teachersRes.json()).length,
           admins: (await adminsRes.json()).length,
           batches: (await batchesRes.json()).length,
-          students: (await studentsRes.json()).length
+          students: (await studentsRes.json()).length,
+          hosts: (await hostsRes.json()).length
         });
 
       } catch (error: any) {
@@ -60,6 +62,7 @@ export default function HostDashboardPage() {
   }, [toast]);
 
   const hostStats = [
+    { title: "Management Users", value: stats.hosts.toString(), icon: ServerCog, color: "text-orange-500", href: "/host/monitoring/hosts" },
     { title: "Total Teachers", value: stats.teachers.toString(), icon: Briefcase, color: "text-green-500", href: "/host/monitoring/teachers" },
     { title: "Total Admins", value: stats.admins.toString(), icon: ShieldAlert, color: "text-red-500", href: "/host/monitoring/admins" },
     { title: "Total Batches", value: stats.batches.toString(), icon: BookUser, color: "text-purple-500", href: "/host/monitoring/batches" },
@@ -126,7 +129,7 @@ export default function HostDashboardPage() {
         icon={ServerCog}
       />
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
         {hostStats.map((stat) => (
           <Card key={stat.title} className="shadow-lg hover:shadow-xl transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

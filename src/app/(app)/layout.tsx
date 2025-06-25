@@ -70,6 +70,7 @@ const getNavItems = (role: "student" | "teacher" | "admin" | "host" | "guest"): 
             { href: "/host/monitoring/timetables", label: "Timetable Monitor", icon: CalendarDays, tooltip: "Monitor timetables" },
             { href: "/host/monitoring/teachers", label: "Teacher Monitor", icon: Users, tooltip: "Monitor teachers" }, 
             { href: "/host/monitoring/admins", label: "Admin Monitor", icon: ShieldAlert, tooltip: "Monitor admins" },
+            { href: "/host/monitoring/hosts", label: "Management Monitor", icon: ServerCog, tooltip: "Monitor management users" },
           ],
         },
       ];

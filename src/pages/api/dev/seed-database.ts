@@ -59,7 +59,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const teachersCollection = db.collection('teachers');
     const batchesCollection = db.collection('batches');
     const adminsCollection = db.collection('admins');
-    const hostsCollection = db.collection('host');
+    const hostsCollection = db.collection('hosts');
 
     // Check if the default admin already exists to prevent re-seeding
     try {

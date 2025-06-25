@@ -14,7 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ message: 'Host ID must be a string.' });
   }
   
-  const hostRef = db.collection('host').doc(hostId); // Changed 'hosts' to 'host'
+  const hostRef = db.collection('hosts').doc(hostId);
 
   switch (req.method) {
     case 'GET':
