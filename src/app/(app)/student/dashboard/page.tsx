@@ -272,7 +272,7 @@ export default function StudentDashboardPage() {
               <TableBody>
                 {dashboardData.attendance.map((record, index) => (
                   <TableRow key={record.id || index}>
-                    <TableCell>{new Date(record.date).toLocaleDateString()}</TableCell>
+                    <TableCell>{new Date(record.date).toLocaleDateString(undefined, { timeZone: 'UTC' })}</TableCell>
                     <TableCell>{record.subject}</TableCell>
                     <TableCell className="text-right">
                       <Badge 
@@ -306,4 +306,3 @@ export default function StudentDashboardPage() {
     </div>
   );
 }
-

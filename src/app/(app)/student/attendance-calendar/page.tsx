@@ -79,14 +79,19 @@ export default function StudentAttendanceCalendarPage() {
   const modifierDates = useMemo(() => {
     const modifiers: ModifierDates = { present: [], absent: [], late: [] };
     attendanceRecords.forEach(record => {
-      const recordDate = new Date(record.date);
-      const utcDate = new Date(Date.UTC(recordDate.getUTCFullYear(), recordDate.getUTCMonth(), recordDate.getUTCDate()));
+      // record.date is a "YYYY-MM-DD" string.
+      // Create a Date object in the user's local timezone to avoid off-by-one errors
+      // caused by UTC conversion when the calendar component renders the date.
+      const [year, month, day] = record.date.split('-').map(Number);
+      const localDate = new Date(year, month - 1, day);
+  
       if (modifiers[record.status]) {
-        modifiers[record.status].push(utcDate);
+        modifiers[record.status].push(localDate);
       }
     });
     return modifiers;
   }, [attendanceRecords]);
+
 
   const modifiersClassNames = {
     present: "day-present",
@@ -179,4 +184,3 @@ export default function StudentAttendanceCalendarPage() {
     </div>
   );
 }
-
