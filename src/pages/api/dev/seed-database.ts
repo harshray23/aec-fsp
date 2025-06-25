@@ -17,10 +17,10 @@ const superAdmin: Omit<Admin, 'id' | 'uid'> & {password: string} = {
 };
 
 const superHost: Omit<Host, 'id' | 'uid'> & {password: string} = {
-  name: "Harsh Ray",
-  email: "elvishray007@gmail.com",
+  name: "Sanjay",
+  email: "sanjay041024@gmail.com",
   role: "host",
-  password: "harsh@123"
+  password: "Sanjay@9851"
 };
 
 
