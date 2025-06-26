@@ -51,11 +51,13 @@ export default function AdminTimetableOverviewPage() {
           .filter(batch => batch.daysOfWeek?.length > 0 && batch.startTime && batch.endTime)
           .map(batch => {
             const departmentInfo = DEPARTMENTS.find(d => d.value === batch.department);
+            const teacherNames = batch.teacherIds.map(id => teachersMap.get(id)).filter(Boolean).join(', ');
+            
             return {
               batchId: batch.id,
               batchName: batch.name,
               departmentName: departmentInfo ? departmentInfo.label : batch.department,
-              teacherName: teachersMap.get(batch.teacherId) || "N/A",
+              teacherName: teacherNames || "N/A",
               roomNumber: batch.roomNumber,
               schedule: [{
                 days: batch.daysOfWeek.join(', '),

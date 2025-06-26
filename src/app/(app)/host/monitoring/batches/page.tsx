@@ -39,9 +39,10 @@ export default function HostMonitorBatchesPage() {
     fetchData();
   }, [toast]);
 
-  const getTeacherName = (teacherId: string) => {
-    const teacher = teachers.find(t => t.id === teacherId);
-    return teacher ? teacher.name : "N/A";
+  const getTeacherNames = (teacherIds: string[]) => {
+    if (!teacherIds || teacherIds.length === 0) return "N/A";
+    const teachersMap = new Map(teachers.map(t => [t.id, t.name]));
+    return teacherIds.map(id => teachersMap.get(id)).filter(Boolean).join(', ') || "N/A";
   };
 
   const getDepartmentLabel = (deptValue: string) => {
@@ -83,7 +84,7 @@ export default function HostMonitorBatchesPage() {
                 <TableHead>Batch Name</TableHead>
                 <TableHead>Department</TableHead>
                 <TableHead>Topic</TableHead>
-                <TableHead>Teacher</TableHead>
+                <TableHead>Teachers</TableHead>
                 <TableHead>Room</TableHead>
                 <TableHead>Students</TableHead>
                 <TableHead>Status</TableHead>
@@ -97,7 +98,7 @@ export default function HostMonitorBatchesPage() {
                   <TableCell className="font-medium">{batch.name}</TableCell>
                   <TableCell>{getDepartmentLabel(batch.department)}</TableCell>
                   <TableCell>{batch.topic}</TableCell>
-                  <TableCell>{getTeacherName(batch.teacherId)}</TableCell>
+                  <TableCell>{getTeacherNames(batch.teacherIds)}</TableCell>
                   <TableCell>{batch.roomNumber || "N/A"}</TableCell>
                   <TableCell>{batch.studentIds.length}</TableCell>
                   <TableCell>

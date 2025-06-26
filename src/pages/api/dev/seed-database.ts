@@ -39,7 +39,7 @@ const sampleStudents: Omit<Student, 'id' | 'uid'>[] = [
   { name: 'Arjun Verma', email: 'arjun.v@example.com', studentId: 'S005', rollNumber: 'ECE/20/01', registrationNumber: 'REG-ECE-01', department: 'ece', section: 'C', phoneNumber: '9876543214', isEmailVerified: true, isPhoneVerified: true, role: 'student' },
 ];
 
-const sampleBatchDefinitions: Omit<Batch, 'id' | 'teacherId' | 'studentIds'>[] = [
+const sampleBatchDefinitions: Omit<Batch, 'id' | 'teacherIds' | 'studentIds'>[] = [
   { name: 'FSP-CSE-JAVA-A', department: 'cse', topic: 'Core Java', startDate: new Date('2024-08-01').toISOString(), daysOfWeek: ['Monday', 'Wednesday', 'Friday'], startTime: '09:30', endTime: '12:30', roomNumber: 'R301', status: 'Scheduled' },
   { name: 'FSP-IT-2024-B', department: 'it', topic: 'Cloud Computing', startDate: new Date('2024-08-01').toISOString(), daysOfWeek: ['Tuesday', 'Thursday'], startTime: '14:00', endTime: '15:30', roomNumber: 'R302', status: 'Scheduled' },
 ];
@@ -110,8 +110,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
 
     // Create batches and update students in the same batch write
-    const cseBatch = { ...sampleBatchDefinitions[0], teacherId: teacherDocIds[0], studentIds: studentDocIdsByDept['cse'] || [] };
-    const itBatch = { ...sampleBatchDefinitions[1], teacherId: teacherDocIds[1], studentIds: studentDocIdsByDept['it'] || [] };
+    const cseBatch = { ...sampleBatchDefinitions[0], teacherIds: [teacherDocIds[0]], studentIds: studentDocIdsByDept['cse'] || [] };
+    const itBatch = { ...sampleBatchDefinitions[1], teacherIds: [teacherDocIds[1]], studentIds: studentDocIdsByDept['it'] || [] };
     
     // Add CSE batch and update its students
     const cseBatchRef = batchesCollection.doc();

@@ -41,7 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           name,
           department,
           topic: "", // Default to empty, to be filled in step 2
-          teacherId: "", // Default to empty
+          teacherIds: [], // Correctly initialize as an empty array
           startDate: new Date().toISOString(), // Default to today
           daysOfWeek: [],
           startTime: "",

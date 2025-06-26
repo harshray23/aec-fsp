@@ -52,7 +52,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         
         await batchRef.update(updateData);
         
-        res.status(200).json({ message: `Batch ${batchId} updated successfully.`, batch: { id: batchId, ...updateData } });
+        const updatedDoc = await batchRef.get();
+        const batchWithId = { id: batchId, ...updatedDoc.data() };
+        
+        res.status(200).json({ message: `Batch ${batchId} updated successfully.`, batch: batchWithId });
+
       } catch (error) {
         console.error(`Error updating batch ${batchId}:`, error);
         res.status(500).json({ message: 'Internal server error while updating batch.' });

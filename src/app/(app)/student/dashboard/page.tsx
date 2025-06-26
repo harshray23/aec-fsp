@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface StudentDashboardData {
   student?: Student;
-  batch?: Batch & { teacherName?: string };
+  batch?: Batch & { teacherNames?: string };
   attendance?: AttendanceRecord[];
 }
 
@@ -54,7 +54,7 @@ export default function StudentDashboardPage() {
         if (storedUserJSON) {
             const user = JSON.parse(storedUserJSON);
             if (user && user.role === USER_ROLES.STUDENT && (user.studentId || user.id)) {
-                studentIdFromStorage = user.studentId || user.id;
+                studentIdFromStorage = user.id || user.studentId;
             } else {
                 console.warn("Stored user in localStorage is not a valid student or is missing ID fields:", user);
                 localStorage.removeItem("currentUser"); // Clear invalid/corrupted item
@@ -108,24 +108,27 @@ export default function StudentDashboardPage() {
           throw new Error("Received malformed data from the server for student profile.");
         }
         
-        let batchData: (Batch & { teacherName?: string }) | undefined = undefined;
+        let batchData: (Batch & { teacherNames?: string }) | undefined = undefined;
         let attendanceData: AttendanceRecord[] = [];
 
         if (student && student.batchId) {
           const batchRes = await fetch(`/api/batches/${student.batchId}`);
           if (batchRes.ok) {
             const batch: Batch = await batchRes.json();
-            let teacherName = "N/A";
-            if (batch.teacherId) {
-              const teacherRes = await fetch(`/api/teachers/${batch.teacherId}`);
-              if (teacherRes.ok) {
-                const teacher: Teacher = await teacherRes.json();
-                teacherName = teacher.name;
+            let teacherNames = "N/A";
+            if (batch.teacherIds && batch.teacherIds.length > 0) {
+              const teachersRes = await fetch(`/api/teachers`);
+              if (teachersRes.ok) {
+                const allTeachers: Teacher[] = await teachersRes.json();
+                const assignedTeachers = allTeachers.filter(t => batch.teacherIds.includes(t.id));
+                if (assignedTeachers.length > 0) {
+                  teacherNames = assignedTeachers.map(t => t.name).join(', ');
+                }
               } else {
-                console.warn(`Failed to fetch teacher details for ID ${batch.teacherId}: ${teacherRes.status}`);
+                 console.warn(`Failed to fetch teachers list: ${teachersRes.status}`);
               }
             }
-            batchData = { ...batch, teacherName };
+            batchData = { ...batch, teacherNames };
 
             const attendanceRes = await fetch(`/api/attendance?studentId=${student.id}&batchId=${student.batchId}`);
             if (attendanceRes.ok) {
@@ -235,8 +238,8 @@ export default function StudentDashboardPage() {
               <span className="text-muted-foreground">Timetable:</span>
               <span className="font-medium">{formatTimetable(dashboardData.batch)}</span>
               
-              <span className="text-muted-foreground">Assigned Teacher:</span>
-              <span className="font-medium">{dashboardData.batch.teacherName || "N/A"}</span>
+              <span className="text-muted-foreground">Assigned Teachers:</span>
+              <span className="font-medium">{dashboardData.batch.teacherNames || "N/A"}</span>
             </>
           ) : (
             <Alert className="col-span-2">
