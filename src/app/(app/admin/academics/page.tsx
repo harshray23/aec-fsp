@@ -193,21 +193,34 @@ export default function ManageAcademicsPage() {
   
   const handleDownload = () => {
     const dataForExcel = filteredStudents.flatMap(student => {
+        const baseStudentData = {
+            'Student Name': student.name,
+            'Student ID': student.studentId,
+            'Department': DEPARTMENTS.find(d => d.value === student.department)?.label || student.department,
+            'Class 10 %': student.academics?.class10?.percentage || 'N/A',
+            'Class 12 %': student.academics?.class12?.percentage || 'N/A',
+            'Sem 1 SGPA': student.academics?.semesters?.sem1 || 'N/A',
+            'Sem 2 SGPA': student.academics?.semesters?.sem2 || 'N/A',
+            'Sem 3 SGPA': student.academics?.semesters?.sem3 || 'N/A',
+            'Sem 4 SGPA': student.academics?.semesters?.sem4 || 'N/A',
+            'Sem 5 SGPA': student.academics?.semesters?.sem5 || 'N/A',
+            'Sem 6 SGPA': student.academics?.semesters?.sem6 || 'N/A',
+            'Sem 7 SGPA': student.academics?.semesters?.sem7 || 'N/A',
+            'Sem 8 SGPA': student.academics?.semesters?.sem8 || 'N/A',
+        };
+
         if (!student.academics?.tests || student.academics.tests.length === 0) {
             return [{
-                'Student Name': student.name,
-                'Student ID': student.studentId,
-                'Department': DEPARTMENTS.find(d => d.value === student.department)?.label || student.department,
+                ...baseStudentData,
                 'Test Name': 'N/A',
                 'Test Date': 'N/A',
                 'Marks Obtained': 'N/A',
                 'Max Marks': 'N/A',
             }];
         }
+
         return student.academics.tests.map(test => ({
-            'Student Name': student.name,
-            'Student ID': student.studentId,
-            'Department': DEPARTMENTS.find(d => d.value === student.department)?.label || student.department,
+            ...baseStudentData,
             'Test Name': test.testName,
             'Test Date': format(parseISO(test.testDate), "PPP"),
             'Marks Obtained': test.marksObtained,
