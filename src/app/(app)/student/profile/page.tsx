@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GraduationCap, Edit3, Mail, Phone, UserSquare2, Hash, Building, ImagePlus, ClipboardList, Loader2, BookCopy } from "lucide-react";
+import { GraduationCap, Edit3, Mail, Phone, UserSquare2, Hash, Building, ImagePlus, ClipboardList, Loader2, BookCopy, MapPin } from "lucide-react";
 import type { Student, AcademicDetails } from "@/lib/types";
 import React, { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -135,6 +135,14 @@ export default function StudentProfilePage() {
   const avatarText = fallbackName.split(' ').map(n => n[0]).join('').toUpperCase() || 'S';
   const departmentLabel = DEPARTMENTS.find(d => d.value === studentProfile?.department)?.label || studentProfile?.department || "N/A";
 
+  const fullAddress = [
+    studentProfile.address?.street,
+    studentProfile.address?.city,
+    studentProfile.address?.state,
+    studentProfile.address?.pincode,
+    studentProfile.address?.country,
+  ].filter(Boolean).join(', ');
+
   if (isLoading) {
     return (
        <div className="space-y-8">
@@ -257,6 +265,17 @@ export default function StudentProfilePage() {
                   <Input id="phoneVerified" value={studentProfile.isPhoneVerified ? "Yes" : "No"} readOnly className="mt-1 bg-muted/30" />
                 </div>
               </div>
+
+              <Card className="bg-secondary/50 mt-6">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2"><MapPin/>Mailing Address</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm text-muted-foreground">
+                        {fullAddress || "No address added yet."}
+                    </p>
+                </CardContent>
+              </Card>
               
               <Card className="bg-secondary/50 mt-6">
                 <CardHeader>

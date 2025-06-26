@@ -26,7 +26,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return res.status(404).json({ message: 'Student not found to update.' });
         }
 
-        const { academics, phoneNumber, whatsappNumber } = req.body;
+        const { academics, phoneNumber, whatsappNumber, address } = req.body;
         const updateData: Partial<Student> = {};
 
         if (academics !== undefined) {
@@ -37,6 +37,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
         if (whatsappNumber !== undefined) {
           updateData.whatsappNumber = whatsappNumber;
+        }
+        if (address !== undefined) {
+          updateData.address = address;
         }
         
         if (Object.keys(updateData).length === 0) {

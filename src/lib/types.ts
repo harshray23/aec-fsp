@@ -58,6 +58,13 @@ export interface Student extends User {
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
   academics?: AcademicDetails;
+  address?: {
+    street?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+    country?: string;
+  };
 }
 
 export type UserApprovalStatus = "pending_approval" | "active" | "rejected";

@@ -16,9 +16,9 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import type { Student } from "@/lib/types";
-import { Mail, Phone, Building, UserSquare2, Hash, ClipboardList } from "lucide-react";
+import { Mail, Phone, Building, UserSquare2, Hash, ClipboardList, MapPin } from "lucide-react";
 import { DEPARTMENTS } from "@/lib/constants";
 
 const editStudentProfileSchema = z.object({
@@ -28,6 +28,13 @@ const editStudentProfileSchema = z.object({
   whatsappNumber: z.string().optional().or(z.literal('')).refine(val => !val || /^\d{10,15}$/.test(val), {
     message: "WhatsApp number must be 10-15 digits if provided.",
   }),
+  address: z.object({
+    street: z.string().optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
+    pincode: z.string().optional().or(z.literal("")).refine(val => !val || /^\d{4,10}$/.test(val), { message: "Invalid pincode format."}),
+    country: z.string().optional(),
+  }).optional(),
 });
 
 export type EditStudentProfileFormValues = z.infer<typeof editStudentProfileSchema>;
@@ -45,6 +52,13 @@ export default function StudentEditProfileForm({ studentData, onSave, onCancel, 
     defaultValues: {
       phoneNumber: studentData.phoneNumber || "",
       whatsappNumber: studentData.whatsappNumber || "",
+      address: {
+        street: studentData.address?.street || "",
+        city: studentData.address?.city || "",
+        state: studentData.address?.state || "",
+        pincode: studentData.address?.pincode || "",
+        country: studentData.address?.country || "",
+      }
     },
   });
 
@@ -102,6 +116,24 @@ export default function StudentEditProfileForm({ studentData, onSave, onCancel, 
                     <Input value={studentData.rollNumber || 'N/A'} readOnly className="mt-1 bg-muted/30" />
                 </div>
             </div>
+
+            <Card className="bg-muted/50">
+                <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2"><MapPin/>Mailing Address</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                     <FormField control={form.control} name="address.street" render={({ field }) => (<FormItem><FormLabel>Street Address</FormLabel><FormControl><Input placeholder="123 Main St" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField control={form.control} name="address.city" render={({ field }) => (<FormItem><FormLabel>City</FormLabel><FormControl><Input placeholder="Anytown" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="address.state" render={({ field }) => (<FormItem><FormLabel>State / Province</FormLabel><FormControl><Input placeholder="State" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                     </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField control={form.control} name="address.pincode" render={({ field }) => (<FormItem><FormLabel>Pincode / ZIP</FormLabel><FormControl><Input placeholder="12345" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="address.country" render={({ field }) => (<FormItem><FormLabel>Country</FormLabel><FormControl><Input placeholder="Country" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                     </div>
+                </CardContent>
+            </Card>
+
 
             <div className="flex justify-end gap-2 pt-4">
                 <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving}>
