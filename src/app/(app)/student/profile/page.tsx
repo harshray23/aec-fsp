@@ -17,6 +17,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ChangePasswordDialog } from "@/components/shared/ChangePasswordDialog";
 import AcademicDetailsForm, { type AcademicFormValues } from "@/components/student/AcademicDetailsForm";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { format, parseISO } from "date-fns";
 
 export default function StudentProfilePage() {
   const [studentProfile, setStudentProfile] = useState<Partial<Student>>({});
@@ -79,10 +81,14 @@ export default function StudentProfilePage() {
     if (!studentProfile.id) return;
     setIsSavingAcademics(true);
     try {
+        const payload = {
+            ...studentProfile.academics,
+            ...values,
+        };
         const response = await fetch(`/api/students/${studentProfile.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ academics: values }),
+            body: JSON.stringify({ academics: payload }),
         });
         const result = await response.json();
         if (!response.ok) {
@@ -231,24 +237,55 @@ export default function StudentProfilePage() {
               </div>
             </CardHeader>
             <CardContent>
-              {studentProfile.academics ? (
+              {(studentProfile.academics?.class10 || studentProfile.academics?.class12 || studentProfile.academics?.semesters || studentProfile.academics?.tests) ? (
                  <div className="space-y-4">
-                    <div>
-                        <h4 className="font-semibold">Class 12th</h4>
-                        <p className="text-sm text-muted-foreground">Board: {studentProfile.academics.class12?.board || 'N/A'}, Percentage: {studentProfile.academics.class12?.percentage || 'N/A'}%</p>
-                    </div>
-                     <div>
-                        <h4 className="font-semibold">Class 10th</h4>
-                        <p className="text-sm text-muted-foreground">Board: {studentProfile.academics.class10?.board || 'N/A'}, Percentage: {studentProfile.academics.class10?.percentage || 'N/A'}%</p>
-                    </div>
-                    <div>
-                        <h4 className="font-semibold">Semester SGPA</h4>
-                        <ul className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-sm list-inside text-muted-foreground">
-                        {Object.entries(studentProfile.academics.semesters || {}).map(([sem, sgpa]) => (
-                            sgpa ? <li key={sem}>Sem {sem.replace('sem', '')}: <span className="font-mono">{sgpa.toFixed(2)}</span></li> : null
-                        ))}
-                        </ul>
-                    </div>
+                    {studentProfile.academics?.class12 && (
+                        <div>
+                            <h4 className="font-semibold">Class 12th</h4>
+                            <p className="text-sm text-muted-foreground">Board: {studentProfile.academics.class12?.board || 'N/A'}, Percentage: {studentProfile.academics.class12?.percentage || 'N/A'}%</p>
+                        </div>
+                    )}
+                     {studentProfile.academics?.class10 && (
+                        <div>
+                            <h4 className="font-semibold">Class 10th</h4>
+                            <p className="text-sm text-muted-foreground">Board: {studentProfile.academics.class10?.board || 'N/A'}, Percentage: {studentProfile.academics.class10?.percentage || 'N/A'}%</p>
+                        </div>
+                    )}
+                    {studentProfile.academics?.semesters && Object.values(studentProfile.academics.semesters).some(sgpa => sgpa) && (
+                        <div>
+                            <h4 className="font-semibold">Semester SGPA</h4>
+                            <ul className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-1 text-sm list-inside text-muted-foreground">
+                            {Object.entries(studentProfile.academics.semesters).map(([sem, sgpa]) => (
+                                sgpa ? <li key={sem}>Sem {sem.replace('sem', '')}: <span className="font-mono">{sgpa.toFixed(2)}</span></li> : null
+                            ))}
+                            </ul>
+                        </div>
+                    )}
+                    {studentProfile.academics?.tests && studentProfile.academics.tests.length > 0 ? (
+                        <div className="mt-4">
+                            <h4 className="font-semibold">Test Performances</h4>
+                            <Table>
+                            <TableHeader>
+                                <TableRow>
+                                <TableHead>Test Name</TableHead>
+                                <TableHead>Date</TableHead>
+                                <TableHead>Score</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {studentProfile.academics.tests.map(test => (
+                                <TableRow key={test.id}>
+                                    <TableCell>{test.testName}</TableCell>
+                                    <TableCell>{format(parseISO(test.testDate), "PPP")}</TableCell>
+                                    <TableCell>{test.marksObtained} / {test.maxMarks}</TableCell>
+                                </TableRow>
+                                ))}
+                            </TableBody>
+                            </Table>
+                        </div>
+                        ) : (
+                        <p className="text-muted-foreground text-sm mt-4">No test records added yet.</p>
+                        )}
                  </div>
               ) : (
                 <p className="text-muted-foreground text-sm">No academic details added yet.</p>

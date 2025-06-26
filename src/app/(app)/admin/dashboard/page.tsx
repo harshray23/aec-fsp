@@ -5,9 +5,9 @@ import React, { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ShieldAlert, Users, UserPlus, BookUser, Settings, Briefcase, GraduationCap, CheckSquare, Loader2 } from "lucide-react"; 
+import { ShieldAlert, Users, UserPlus, BookUser, Settings, Briefcase, GraduationCap, CheckSquare, Loader2, BookCopy } from "lucide-react"; 
 import Link from "next/link";
-import type { Announcement } from "@/lib/types";
+import type { Announcement, Student } from "@/lib/types";
 import { AnnouncementDialog } from "@/components/shared/AnnouncementDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,7 +17,7 @@ const LOCAL_STORAGE_ANNOUNCEMENT_KEY = "aecFspAnnouncements";
 export default function AdminDashboardPage() {
   const [latestAnnouncement, setLatestAnnouncement] = useState<Announcement | null>(null);
   const [isAnnouncementDialogOpen, setIsAnnouncementDialogOpen] = useState(false);
-  const [stats, setStats] = useState({ students: 0, teachers: 0, batches: 0, admins: 0 });
+  const [stats, setStats] = useState({ students: 0, teachers: 0, batches: 0, admins: 0, testsConducted: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
 
@@ -37,16 +37,21 @@ export default function AdminDashboardPage() {
             throw new Error("Failed to fetch all dashboard statistics.");
         }
         
-        const studentsData = await studentsRes.json();
+        const studentsData: Student[] = await studentsRes.json();
         const teachersData = await teachersRes.json();
         const batchesData = await batchesRes.json();
         const adminsData = await adminsRes.json();
+
+        const testsConducted = studentsData.reduce((acc, student) => {
+          return acc + (student.academics?.tests?.length || 0);
+        }, 0);
 
         setStats({
           students: studentsData.length,
           teachers: teachersData.length,
           batches: batchesData.length,
           admins: adminsData.length,
+          testsConducted: testsConducted,
         });
 
       } catch (error: any) {
@@ -85,6 +90,7 @@ export default function AdminDashboardPage() {
     { title: "Total Students", value: stats.students.toString(), icon: GraduationCap, color: "text-blue-500" },
     { title: "Active Teachers", value: stats.teachers.toString(), icon: Briefcase, color: "text-green-500" },
     { title: "Total Batches", value: stats.batches.toString(), icon: BookUser, color: "text-purple-500" },
+    { title: "Tests Recorded", value: stats.testsConducted.toString(), icon: BookCopy, color: "text-orange-500" },
     { title: "Active Admins", value: stats.admins.toString(), icon: ShieldAlert, color: "text-red-500" },
   ];
 
@@ -93,6 +99,7 @@ export default function AdminDashboardPage() {
     { href: "/admin/users/admins", label: "Manage Admins", icon: ShieldAlert, description: "Manage other administrator accounts." },
     { href: "/admin/batches", label: "View Batches & Timetables", icon: BookUser, description: "Oversee all program batches and their schedules." },
     { href: "/admin/attendance", label: "Manage Attendance", icon: CheckSquare, description: "Mark and manage student attendance." },
+    { href: "/admin/academics", label: "Manage Academics", icon: BookCopy, description: "Track and manage student test scores." },
     { href: "/admin/settings", label: "System Settings", icon: Settings, description: "Configure overall system settings." },
   ];
 
@@ -116,7 +123,7 @@ export default function AdminDashboardPage() {
         }
       />
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-5">
         {adminStats.map((stat) => (
           <Card key={stat.title} className="shadow-lg hover:shadow-xl transition-shadow">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

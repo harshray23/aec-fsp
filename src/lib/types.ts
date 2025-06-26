@@ -13,6 +13,14 @@ export interface Host extends User {
   uid?: string; // Firebase Authentication User ID
 }
 
+export interface AcademicTest {
+  id: string;
+  testName: string;
+  testDate: string; // ISO string
+  maxMarks: number;
+  marksObtained: number;
+}
+
 export interface AcademicDetails {
   class10?: {
     board?: string;
@@ -32,6 +40,7 @@ export interface AcademicDetails {
     sem7?: number;
     sem8?: number;
   };
+  tests?: AcademicTest[];
 }
 
 

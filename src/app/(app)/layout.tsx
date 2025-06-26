@@ -4,7 +4,7 @@
 import { DashboardLayout } from "@/components/shared/DashboardLayout";
 import type { NavItem, User, Host } from "@/lib/types";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, UserPlus, BookUser, CalendarDays, BarChart3, Settings, GraduationCap, ShieldAlert, Briefcase, UserCog, UserCircle, CheckSquare, MonitorPlay, ServerCog, FileCog, UserCheck, CalendarCheck2, Megaphone, PlusCircle } from "lucide-react"; 
+import { LayoutDashboard, Users, UserPlus, BookUser, CalendarDays, BarChart3, Settings, GraduationCap, ShieldAlert, Briefcase, UserCog, UserCircle, CheckSquare, MonitorPlay, ServerCog, FileCog, UserCheck, CalendarCheck2, Megaphone, PlusCircle, BookCopy } from "lucide-react"; 
 import React, { useState, useEffect } from "react";
 import { USER_ROLES } from "@/lib/constants";
 
@@ -50,6 +50,7 @@ const getNavItems = (role: "student" | "teacher" | "admin" | "host" | "guest"): 
           ]
         },
         { href: "/admin/attendance", label: "Attendance Management", icon: CheckSquare, tooltip: "Mark and manage student attendance" },
+        { href: "/admin/academics", label: "Manage Academics", icon: BookCopy, tooltip: "Manage student test scores" },
         { href: "/admin/timetables", label: "Timetable Overview", icon: CalendarDays, tooltip: "View all timetables" },
         { href: "/admin/reports", label: "View Reports", icon: BarChart3, tooltip: "View system-wide reports" }, 
         { href: "/admin/settings", label: "System Settings", icon: Settings, tooltip: "Configure system settings" },

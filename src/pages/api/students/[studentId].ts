@@ -28,7 +28,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         const { academics } = req.body;
         
-        if (!academics) {
+        if (academics === undefined) { // Check for undefined instead of !academics
             return res.status(400).json({ message: 'Academics data is required.' });
         }
 
