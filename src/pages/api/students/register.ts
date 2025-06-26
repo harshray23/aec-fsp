@@ -61,10 +61,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       registrationNumber,
       department,
       phoneNumber,
-      whatsappNumber: whatsappNumber || undefined,
       isEmailVerified: true, 
       isPhoneVerified: true, 
     };
+    
+    if (whatsappNumber) {
+        newStudentData.whatsappNumber = whatsappNumber;
+    }
+
 
     await studentsRef.doc(uid).set(newStudentData);
     

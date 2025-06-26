@@ -84,25 +84,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (role === USER_ROLES.TEACHER) {
       collectionName = 'teachers';
-      userData = {
+      const teacherData: Omit<Teacher, 'id'> = {
         uid,
         name,
         email,
         role: USER_ROLES.TEACHER,
         department,
         status: bypassApproval ? "active" : "pending_approval",
-        username: bypassApproval ? username : undefined,
       };
+      if (bypassApproval && username) {
+        teacherData.username = username;
+      }
+      userData = teacherData;
+
     } else if (role === USER_ROLES.ADMIN) {
       collectionName = 'admins';
-      userData = {
+       const adminData: Omit<Admin, 'id'> = {
         uid,
         name,
         email,
         role: USER_ROLES.ADMIN,
         status: bypassApproval ? "active" : "pending_approval",
-        username: bypassApproval ? username : undefined,
       };
+      if (bypassApproval && username) {
+        adminData.username = username;
+      }
+      userData = adminData;
+
     } else {
       await adminAuth.deleteUser(uid);
       return res.status(400).json({ message: 'Invalid user role specified.' });
