@@ -31,7 +31,6 @@ const userRegistrationSchema = z.object({
   department: z.string().optional(),
   password: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string(),
-  bypassApproval: z.boolean().default(false),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
@@ -59,12 +58,10 @@ export default function UserRegistrationForm({ onSuccess }: UserRegistrationForm
       department: "",
       password: "",
       confirmPassword: "",
-      bypassApproval: false,
     },
   });
 
   const selectedRole = form.watch("role");
-  const isBypassingApproval = form.watch("bypassApproval");
 
   const onSubmit = async (values: UserRegistrationFormValues) => {
     try {
@@ -203,36 +200,9 @@ export default function UserRegistrationForm({ onSuccess }: UserRegistrationForm
             </FormItem>
           )}
         />
-
-        <FormField
-          control={form.control}
-          name="bypassApproval"
-          render={({ field }) => (
-            <FormItem className="flex flex-row items-center space-x-3 space-y-0 rounded-md border p-3 shadow-sm bg-muted/50">
-              <FormControl>
-                <Checkbox
-                  checked={field.value}
-                  onCheckedChange={field.onChange}
-                  id="bypassApproval"
-                />
-              </FormControl>
-              <div className="space-y-1 leading-none">
-                <label
-                  htmlFor="bypassApproval"
-                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                >
-                  Activate user immediately
-                </label>
-                <p className="text-xs text-muted-foreground">
-                  Bypasses management approval. An automatic username will be generated.
-                </p>
-              </div>
-            </FormItem>
-          )}
-        />
         
         <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? "Submitting..." : (isBypassingApproval ? "Register and Activate" : "Submit for Approval")}
+          {form.formState.isSubmitting ? "Submitting..." : "Submit for Approval"}
         </Button>
       </form>
     </Form>

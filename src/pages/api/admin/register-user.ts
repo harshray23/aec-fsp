@@ -14,7 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ message: 'Firebase Admin SDK not initialized.' });
   }
 
-  const { name, email, role, department, password, bypassApproval } = req.body;
+  const { name, email, role, department, password } = req.body;
 
   if (!name || !email || !role || !password) {
     return res.status(400).json({ message: 'Missing required fields: name, email, role, password.' });
@@ -43,32 +43,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
     }
 
-    // Step 2: If bypassing approval, generate and check username uniqueness
-    let username: string | undefined;
-    if (bypassApproval) {
-      const baseUsername = email.split('@')[0].replace(/[.\+]/g, '_').toLowerCase();
-      let finalUsername = baseUsername;
-      let isUsernameTaken = true;
-      let attempts = 0;
-      
-      while (isUsernameTaken && attempts < 10) {
-        const teacherUsernameQuery = await db.collection('teachers').where('username', '==', finalUsername).limit(1).get();
-        const adminUsernameQuery = await db.collection('admins').where('username', '==', finalUsername).limit(1).get();
-        if (teacherUsernameQuery.empty && adminUsernameQuery.empty) {
-          isUsernameTaken = false;
-        } else {
-          attempts++;
-          finalUsername = `${baseUsername}_${attempts}`;
-        }
-      }
-      
-      if (isUsernameTaken) {
-        return res.status(409).json({ message: `Could not generate a unique username for ${email}. Please try registering without bypassing approval.` });
-      }
-      username = finalUsername;
-    }
-
-    // Step 3: Create user in Firebase Authentication
+    // Step 2: Create user in Firebase Authentication
     const userRecord = await adminAuth.createUser({
       email: email,
       password: password,
@@ -78,7 +53,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     const uid = userRecord.uid;
 
-    // Step 4: Create user profile in Firestore
+    // Step 3: Create user profile in Firestore with "pending_approval" status
     let collectionName: string;
     let userData: Omit<Admin, 'id'> | Omit<Teacher, 'id'>;
 
@@ -90,11 +65,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         email,
         role: USER_ROLES.TEACHER,
         department,
-        status: bypassApproval ? "active" : "pending_approval",
+        status: "pending_approval",
       };
-      if (bypassApproval && username) {
-        teacherData.username = username;
-      }
       userData = teacherData;
 
     } else if (role === USER_ROLES.ADMIN) {
@@ -104,11 +76,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         name,
         email,
         role: USER_ROLES.ADMIN,
-        status: bypassApproval ? "active" : "pending_approval",
+        status: "pending_approval",
       };
-      if (bypassApproval && username) {
-        adminData.username = username;
-      }
       userData = adminData;
 
     } else {
@@ -119,10 +88,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     await db.collection(collectionName).doc(uid).set(userData);
     
     const createdUser = { id: uid, ...userData };
-
-    const message = bypassApproval 
-      ? `${role} registered and activated successfully.`
-      : `${role} registered successfully and awaiting approval.`;
+    const message = `${role} registered successfully and awaiting approval.`;
       
     return res.status(201).json({ message, user: createdUser });
 
