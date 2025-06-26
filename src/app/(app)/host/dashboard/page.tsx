@@ -9,24 +9,11 @@ import Link from "next/link";
 import { ServerCog, UserPlus, MonitorPlay, Users, BookUser, CalendarDays, ShieldAlert, FileCog, Briefcase, GraduationCap, UserCheck, Megaphone, Trash2, Database, Loader2 } from "lucide-react"; 
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-
 
 export default function HostDashboardPage() {
   const { toast } = useToast();
   const [stats, setStats] = useState({ teachers: 0, admins: 0, batches: 0, students: 0, hosts: 0 });
   const [isLoading, setIsLoading] = useState(true);
-  const [isSeedDialogOpen, setIsSeedDialogOpen] = useState(false);
-  const [isSeeding, setIsSeeding] = useState(false);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -71,6 +58,7 @@ export default function HostDashboardPage() {
 
   const hostActions = [
     { href: "/host/user-approval", label: "Approve User Registrations", icon: UserCheck, description: "Review and approve new Admin/Teacher accounts." },
+    { href: "/host/add-host", label: "Add New Host", icon: UserPlus, description: "Create accounts for new management users." },
     { href: "/host/announcements", label: "Send Announcements", icon: Megaphone, description: "Broadcast messages to all users." },
     { href: "/host/monitoring/website", label: "Monitor Website Status", icon: FileCog, description: "View overall website health and status." },
     { href: "/host/monitoring/batches", label: "Monitor Batches", icon: BookUser, description: "Oversee all program batches." },
@@ -93,33 +81,6 @@ export default function HostDashboardPage() {
       });
     }
   };
-  
-  const handleSeedDatabase = async () => {
-    setIsSeeding(true);
-    try {
-        const response = await fetch('/api/dev/seed-database', { method: 'POST' });
-        const result = await response.json();
-        if (!response.ok) {
-            throw new Error(result.message || 'Failed to seed database.');
-        }
-        toast({
-            title: "Database Seeded!",
-            description: result.message,
-        });
-        // Optionally, refresh stats or the page
-        window.location.reload();
-    } catch (error: any) {
-        toast({
-            title: "Seeding Failed",
-            description: error.message,
-            variant: "destructive",
-        });
-    } finally {
-        setIsSeeding(false);
-        setIsSeedDialogOpen(false);
-    }
-  };
-
 
   return (
     <div className="space-y-8">
@@ -186,41 +147,6 @@ export default function HostDashboardPage() {
             </p>
         </CardContent>
       </Card>
-
-      <Card className="shadow-lg border-yellow-500/50">
-        <CardHeader>
-          <CardTitle>Developer Tools</CardTitle>
-          <CardDescription>Actions for populating and testing the application.</CardDescription>
-        </CardHeader>
-        <CardContent>
-           <Button variant="outline" onClick={() => setIsSeedDialogOpen(true)}>
-                <Database className="mr-2 h-4 w-4" /> Seed Database with Sample Data
-            </Button>
-            <p className="text-xs text-muted-foreground mt-2">
-                This will populate the database with sample students, teachers, and batches. It will not overwrite existing data.
-            </p>
-        </CardContent>
-      </Card>
-      
-      <AlertDialog open={isSeedDialogOpen} onOpenChange={setIsSeedDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to seed the database?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will add sample data (students, teachers, batches) to your Firestore collections.
-              This action is designed to not overwrite existing data, but it cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSeeding}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleSeedDatabase} disabled={isSeeding}>
-              {isSeeding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isSeeding ? "Seeding..." : "Confirm & Seed"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
     </div>
   );
 }

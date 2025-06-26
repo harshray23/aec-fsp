@@ -11,16 +11,6 @@ import type { Announcement, Student } from "@/lib/types";
 import { AnnouncementDialog } from "@/components/shared/AnnouncementDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 const LOCAL_STORAGE_ANNOUNCEMENT_KEY = "aecFspAnnouncements";
 
@@ -30,10 +20,6 @@ export default function AdminDashboardPage() {
   const [stats, setStats] = useState({ students: 0, teachers: 0, batches: 0, admins: 0, testsConducted: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-  
-  const [isSeedDialogOpen, setIsSeedDialogOpen] = useState(false);
-  const [isSeeding, setIsSeeding] = useState(false);
-
 
   useEffect(() => {
     // Fetch dashboard stats
@@ -99,33 +85,6 @@ export default function AdminDashboardPage() {
     setIsAnnouncementDialogOpen(false);
     setLatestAnnouncement(null);
   };
-  
-  const handleSeedDatabase = async () => {
-    setIsSeeding(true);
-    try {
-        const response = await fetch('/api/dev/seed-database', { method: 'POST' });
-        const result = await response.json();
-        if (!response.ok) {
-            throw new Error(result.message || 'Failed to seed database.');
-        }
-        toast({
-            title: "Database Seeded!",
-            description: result.message,
-        });
-        // Optionally, refresh stats or the page
-        window.location.reload();
-    } catch (error: any) {
-        toast({
-            title: "Seeding Failed",
-            description: error.message,
-            variant: "destructive",
-        });
-    } finally {
-        setIsSeeding(false);
-        setIsSeedDialogOpen(false);
-    }
-  };
-
 
   const adminStats = [
     { title: "Total Students", value: stats.students.toString(), icon: GraduationCap, color: "text-blue-500" },
@@ -212,41 +171,6 @@ export default function AdminDashboardPage() {
           <p className="text-muted-foreground">System is operating normally.</p>
         </CardContent>
       </Card>
-      
-      <Card className="shadow-lg border-yellow-500/50">
-        <CardHeader>
-          <CardTitle>Developer Tools</CardTitle>
-          <CardDescription>Actions for populating and testing the application.</CardDescription>
-        </CardHeader>
-        <CardContent>
-           <Button variant="outline" onClick={() => setIsSeedDialogOpen(true)}>
-                <Database className="mr-2 h-4 w-4" /> Seed Database with Sample Data
-            </Button>
-            <p className="text-xs text-muted-foreground mt-2">
-                This will populate the database with sample students, teachers, and batches. It will not overwrite existing data.
-            </p>
-        </CardContent>
-      </Card>
-      
-      <AlertDialog open={isSeedDialogOpen} onOpenChange={setIsSeedDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to seed the database?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will add sample data (students, teachers, batches) to your Firestore collections.
-              This action is designed to not overwrite existing data, but it cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSeeding}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleSeedDatabase} disabled={isSeeding}>
-              {isSeeding && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isSeeding ? "Seeding..." : "Confirm & Seed"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
     </div>
   );
 }
