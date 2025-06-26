@@ -86,7 +86,7 @@ export function DashboardLayout({
       <Sidebar>
         <SidebarHeader className="p-4 border-b border-sidebar-border">
           <div className="flex items-center gap-2">
-            <AppLogo className="h-8 w-8" />
+            <AppLogo width="32" height="32" />
             <div className="flex flex-col">
               <h2 className="text-lg font-semibold text-sidebar-foreground">AEC FSP</h2>
               <span className="text-xs text-sidebar-foreground/80">{userRole} Panel</span>
@@ -210,4 +210,3 @@ export function DashboardLayout({
     </SidebarProvider>
   );
 }
-
