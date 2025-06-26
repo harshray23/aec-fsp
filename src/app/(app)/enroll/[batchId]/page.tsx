@@ -27,43 +27,59 @@ export default function EnrollInBatchPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // 1. Check if student is logged in
-    const storedUser = localStorage.getItem("currentUser");
-    if (storedUser) {
-      const parsedUser = JSON.parse(storedUser);
-      if (parsedUser.role === USER_ROLES.STUDENT) {
-        setStudent(parsedUser);
-      }
-    }
-
-    // 2. Fetch batch details
-    const fetchBatchDetails = async () => {
+    const fetchData = async () => {
       setIsLoading(true);
       setError(null);
-      try {
-        const batchRes = await fetch(`/api/batches/${batchId}`);
-        if (!batchRes.ok) throw new Error("Batch not found or invalid link.");
-        const batchData: Batch = await batchRes.json();
-        setBatch(batchData);
 
-        if (batchData.teacherIds && batchData.teacherIds.length > 0) {
-            // Fetch all teachers and filter
+      // 1. Check for logged-in user and fetch their fresh profile to avoid stale data
+      const storedUser = localStorage.getItem("currentUser");
+      if (storedUser) {
+        const parsedUser = JSON.parse(storedUser);
+        if (parsedUser.role === USER_ROLES.STUDENT && parsedUser.id) {
+          try {
+            const studentRes = await fetch(`/api/students/profile?studentId=${parsedUser.id}`);
+            if (studentRes.ok) {
+              const freshStudent: Student = await studentRes.json();
+              setStudent(freshStudent);
+            } else {
+              console.warn("Could not fetch fresh student profile, using localStorage data.", await studentRes.text());
+              setStudent(parsedUser); // Fallback to localStorage data
+            }
+          } catch (e) {
+            console.error("Error fetching fresh student profile, using localStorage data:", e);
+            setStudent(parsedUser); // Fallback on network error
+          }
+        }
+      }
+
+      // 2. Fetch batch details
+      if (batchId) {
+        try {
+          const batchRes = await fetch(`/api/batches/${batchId}`);
+          if (!batchRes.ok) throw new Error("Batch not found or invalid link.");
+          const batchData: Batch = await batchRes.json();
+          setBatch(batchData);
+
+          if (batchData.teacherIds && batchData.teacherIds.length > 0) {
             const teachersRes = await fetch('/api/teachers');
             if(teachersRes.ok) {
                 const allTeachers: Teacher[] = await teachersRes.json();
                 const assignedTeachers = allTeachers.filter(t => batchData.teacherIds.includes(t.id));
                 setTeachers(assignedTeachers);
             }
+          }
+        } catch (err: any) {
+          setError(err.message);
         }
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setIsLoading(false);
       }
+      setIsLoading(false);
     };
 
     if (batchId) {
-      fetchBatchDetails();
+        fetchData();
+    } else {
+        setIsLoading(false);
+        setError("No Batch ID provided in the link.");
     }
   }, [batchId]);
 
