@@ -1,12 +1,12 @@
 
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { db } from '@/lib/firebaseAdmin';
+import { db, auth as adminAuth } from '@/lib/firebaseAdmin';
 import type { Admin } from '@/lib/types';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { adminId } = req.query; // This can be the Firestore Doc ID or the Firebase UID
 
-  if (!db) {
+  if (!db || !adminAuth) {
     return res.status(500).json({ message: 'Database connection not initialized.' });
   }
 
@@ -16,24 +16,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   
   // A helper function to get the document reference, whether by UID or Doc ID
   async function getAdminDocRef(id: string) {
-    // A simple check to see if the ID looks like a Firebase UID (28 chars, alphanumeric)
-    // This isn't foolproof but helps distinguish. A better way might be a query param `?findBy=uid`.
-    if (id.length === 28) {
-        const querySnapshot = await db.collection('admins').where('uid', '==', id).limit(1).get();
-        if (!querySnapshot.empty) {
-            return querySnapshot.docs[0].ref;
-        }
+    // Prefer querying by the UID field, as it's the most stable identifier from Auth.
+    const querySnapshot = await db.collection('admins').where('uid', '==', id).limit(1).get();
+    if (!querySnapshot.empty) {
+        return querySnapshot.docs[0].ref;
     }
-    // Fallback or default is to treat it as a document ID
+    
+    // As a fallback, try treating the ID as a document ID.
     const docRef = db.collection('admins').doc(id);
     const doc = await docRef.get();
     if (doc.exists) {
         return docRef;
     }
-    // Final fallback: Maybe the UID was passed as the doc ID
-    const uidAsDocIdRef = db.collection('admins').doc(id);
-    const uidAsDocId = await uidAsDocIdRef.get();
-    if(uidAsDocId.exists) return uidAsDocIdRef;
 
     return null; // Not found by any method
   }
@@ -88,9 +82,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     case 'DELETE':
       try {
+        const doc = await adminRef.get();
+        if (!doc.exists) {
+            return res.status(404).json({ message: 'Admin not found.' });
+        }
+        const adminData = doc.data() as Admin;
+        const uid = adminData.uid;
+
         await adminRef.delete();
-        // Also delete from Firebase Auth if needed
-        // await admin.auth().deleteUser(adminId); // Assuming adminId is UID
+        
+        if (uid) {
+            try {
+                await adminAuth.deleteUser(uid);
+            } catch (authError: any) {
+                if (authError.code !== 'auth/user-not-found') {
+                    console.error(`Failed to delete Firebase Auth user ${uid}, but Firestore document was deleted. Manual cleanup may be required. Error: ${authError.message}`);
+                }
+            }
+        }
+        
         res.status(200).json({ message: `Admin ${adminId} deleted successfully.` });
       } catch (error) {
         console.error(`Error deleting admin ${adminId}:`, error);

@@ -6,19 +6,39 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Briefcase, MoreHorizontal, Users, Loader2 } from "lucide-react";
+import { Briefcase, MoreHorizontal, Users, Loader2, Trash2, UserCheck, UserX } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { DEPARTMENTS } from "@/lib/constants";
 import type { Teacher } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function HostMonitorTeachersPage() {
   const { toast } = useToast();
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchTeachers = async () => {
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isSuspendDialogOpen, setIsSuspendDialogOpen] = useState(false);
+  const [userToAction, setUserToAction] = useState<Teacher | null>(null);
+
+  const fetchTeachers = async () => {
       setIsLoading(true);
       try {
         const res = await fetch('/api/teachers');
@@ -30,8 +50,61 @@ export default function HostMonitorTeachersPage() {
         setIsLoading(false);
       }
     };
+
+  useEffect(() => {
     fetchTeachers();
   }, [toast]);
+
+  const openDeleteDialog = (teacher: Teacher) => {
+    setUserToAction(teacher);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  const openSuspendDialog = (teacher: Teacher) => {
+    setUserToAction(teacher);
+    setIsSuspendDialogOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!userToAction) return;
+    try {
+      const response = await fetch(`/api/teachers/${userToAction.id}`, { method: 'DELETE' });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Failed to delete teacher.");
+      }
+      toast({ title: "Success", description: `Teacher ${userToAction.name} deleted.` });
+      fetchTeachers(); // Refresh data
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setUserToAction(null);
+    }
+  };
+
+  const handleToggleSuspend = async () => {
+    if (!userToAction) return;
+    const newStatus = userToAction.status === 'active' ? 'suspended' : 'active';
+    try {
+      const response = await fetch(`/api/teachers/${userToAction.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || `Failed to ${newStatus === 'active' ? 'activate' : 'suspend'} teacher.`);
+      }
+      toast({ title: "Success", description: `Teacher ${userToAction.name} has been ${newStatus}.` });
+      fetchTeachers();
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsSuspendDialogOpen(false);
+      setUserToAction(null);
+    }
+  }
 
   const getDepartmentLabel = (deptValue?: string) => {
     if (!deptValue) return "N/A";
@@ -43,6 +116,7 @@ export default function HostMonitorTeachersPage() {
     switch (status) {
       case "active": return "default";
       case "pending_approval": return "secondary";
+      case "suspended": return "outline";
       case "rejected": return "destructive";
       default: return "outline";
     }
@@ -90,9 +164,23 @@ export default function HostMonitorTeachersPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" disabled>
-                      <MoreHorizontal className="h-4 w-4" />
-                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => openSuspendDialog(teacher)} className="cursor-pointer">
+                                {teacher.status === 'active' ? <UserX className="mr-2 h-4 w-4" /> : <UserCheck className="mr-2 h-4 w-4" />}
+                                {teacher.status === 'active' ? 'Suspend' : 'Activate'}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => openDeleteDialog(teacher)} className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer">
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))}
@@ -108,6 +196,35 @@ export default function HostMonitorTeachersPage() {
           )}
         </CardContent>
       </Card>
+      
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>This will permanently delete the teacher "{userToAction?.name}" and their authentication account. This action cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setUserToAction(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete Teacher</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={isSuspendDialogOpen} onOpenChange={setIsSuspendDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm Action</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to {userToAction?.status === 'active' ? 'suspend' : 'activate'} the teacher "{userToAction?.name}"? 
+              {userToAction?.status === 'active' ? ' Suspending will prevent them from logging in.' : ' Activating will restore their login access.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setUserToAction(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleToggleSuspend}>Confirm</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

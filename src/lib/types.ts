@@ -11,6 +11,7 @@ export interface User {
 export interface Host extends User {
   role: "host";
   uid?: string; // Firebase Authentication User ID
+  status: UserApprovalStatus;
 }
 
 export interface AcademicTest {
@@ -67,7 +68,7 @@ export interface Student extends User {
   };
 }
 
-export type UserApprovalStatus = "pending_approval" | "active" | "rejected";
+export type UserApprovalStatus = "pending_approval" | "active" | "rejected" | "suspended";
 
 export interface Teacher extends User {
   role: "teacher";

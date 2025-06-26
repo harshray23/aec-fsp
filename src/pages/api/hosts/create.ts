@@ -51,6 +51,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       name,
       email,
       role: USER_ROLES.HOST,
+      status: 'active',
     };
     
     // Use the UID as the document ID for consistency

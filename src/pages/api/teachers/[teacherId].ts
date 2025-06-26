@@ -2,6 +2,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { db, auth as adminAuth } from '@/lib/firebaseAdmin';
 import type { Teacher } from '@/lib/types';
+import { FieldValue } from 'firebase-admin/firestore';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { teacherId } = req.query; // Can be doc ID or UID
@@ -15,11 +16,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   // Helper to find the teacher document by UID or Doc ID
   async function getTeacherDocRef(id: string) {
-     if (id.length === 28) { // Likely a UID
-        const querySnapshot = await db.collection('teachers').where('uid', '==', id).limit(1).get();
-        if (!querySnapshot.empty) {
-            return querySnapshot.docs[0].ref;
-        }
+    const querySnapshot = await db.collection('teachers').where('uid', '==', id).limit(1).get();
+    if (!querySnapshot.empty) {
+        return querySnapshot.docs[0].ref;
     }
     const docRef = db.collection('teachers').doc(id);
     const doc = await docRef.get();
@@ -76,18 +75,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     case 'DELETE':
       try {
-        const batchWrite = db.batch();
+        const doc = await teacherRef.get();
+        if (!doc.exists) {
+            return res.status(404).json({ message: 'Teacher not found.' });
+        }
+        const teacherData = doc.data() as Teacher;
+        const uid = teacherData.uid;
 
-        const batchesAssignedQuery = db.collection('batches').where('teacherId', '==', teacherId);
+        const batchWrite = db.batch();
+        
+        // Find all batches the teacher is assigned to and remove them
+        const batchesAssignedQuery = db.collection('batches').where('teacherIds', 'array-contains', teacherRef.id);
         const batchesSnapshot = await batchesAssignedQuery.get();
         batchesSnapshot.forEach(batchDoc => {
-          batchWrite.update(batchDoc.ref, { teacherId: null });
+          batchWrite.update(batchDoc.ref, { teacherIds: FieldValue.arrayRemove(teacherRef.id) });
         });
         
         batchWrite.delete(teacherRef);
         await batchWrite.commit();
         
-        await adminAuth.deleteUser(teacherId); // Assumes teacherId is UID
+        if (uid) {
+            try {
+                 await adminAuth.deleteUser(uid); 
+            } catch (authError: any) {
+                 if (authError.code !== 'auth/user-not-found') {
+                    console.error(`Failed to delete Firebase Auth user ${uid}, but Firestore document was deleted. Manual cleanup may be required. Error: ${authError.message}`);
+                }
+            }
+        }
         
         res.status(200).json({ message: `Teacher ${teacherId} deleted successfully.` });
       } catch (error) {
