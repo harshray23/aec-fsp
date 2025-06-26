@@ -158,7 +158,7 @@ export default function ManageAcademicsPage() {
         academics: {
             ...selectedStudent.academics,
             tests: updatedTests
-        }
+        },
     };
     setSelectedStudent(updatedStudent);
   }
@@ -192,7 +192,7 @@ export default function ManageAcademicsPage() {
   }
   
   const handleDownload = () => {
-    const dataForExcel = filteredStudents.flatMap(student => {
+    const dataForExcel = filteredStudents.flatMap((student) => {
         const baseStudentData = {
             'Student Name': student.name,
             'Student ID': student.studentId,
@@ -210,7 +210,7 @@ export default function ManageAcademicsPage() {
         };
 
         if (!student.academics?.tests || student.academics.tests.length === 0) {
-            return [{
+            return [ {
                 ...baseStudentData,
                 'Test Name': 'N/A',
                 'Test Date': 'N/A',
@@ -219,7 +219,7 @@ export default function ManageAcademicsPage() {
             }];
         }
 
-        return student.academics.tests.map(test => ({
+        return student.academics.tests.map((test) => ({
             ...baseStudentData,
             'Test Name': test.testName,
             'Test Date': format(parseISO(test.testDate), "PPP"),
