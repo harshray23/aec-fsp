@@ -15,12 +15,14 @@ import { useRouter } from "next/navigation";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import AdminEditProfileForm, { type EditAdminProfileFormValues } from "@/components/admin/AdminEditProfileForm";
+import { ChangePasswordDialog } from "@/components/shared/ChangePasswordDialog";
 
 export default function AdminProfilePage() {
   const [adminProfile, setAdminProfile] = useState<Admin | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isChangePasswordDialogOpen, setIsChangePasswordDialogOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const router = useRouter();
@@ -165,7 +167,7 @@ export default function AdminProfilePage() {
         }
       />
 
-      <Card className="shadow-lg max-w-3xl mx-auto">
+      <Card className="shadow-lg max-w-3xl mx-auto p-6">
         {isEditing ? (
           <AdminEditProfileForm 
             adminData={adminProfile} 
@@ -175,7 +177,7 @@ export default function AdminProfilePage() {
           />
         ) : (
           <>
-            <CardHeader className="items-center text-center border-b pb-6">
+            <CardHeader className="items-center text-center border-b pb-6 p-0">
               <Avatar className="h-24 w-24 mb-4 ring-2 ring-primary ring-offset-2">
                 <AvatarImage src={adminProfile.avatarUrl || `https://placehold.co/150x150.png?text=${avatarText}`} alt={adminProfile.name} data-ai-hint="admin avatar" />
                 <AvatarFallback>{avatarText}</AvatarFallback>
@@ -189,7 +191,7 @@ export default function AdminProfilePage() {
                 <ImagePlus className="mr-2 h-4 w-4" /> Change Photo (Not Implemented)
               </Button>
             </CardHeader>
-            <CardContent className="p-6 space-y-6">
+            <CardContent className="p-0 pt-6 space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <Label htmlFor="usernameDisplay" className="flex items-center text-muted-foreground"><BadgePercent className="mr-2 h-4 w-4" />Username</Label>
@@ -222,13 +224,19 @@ export default function AdminProfilePage() {
                   <CardTitle className="text-base">Account Security</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <Button variant="outline" disabled>Change Password (Not Implemented)</Button>
+                    <Button variant="outline" onClick={() => setIsChangePasswordDialogOpen(true)}>Change Password</Button>
                 </CardContent>
               </Card>
             </CardContent>
           </>
         )}
       </Card>
+
+       <ChangePasswordDialog 
+        isOpen={isChangePasswordDialogOpen}
+        onClose={() => setIsChangePasswordDialogOpen(false)}
+        userEmail={adminProfile?.email || ""}
+      />
     </div>
   );
 }

@@ -26,24 +26,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return res.status(404).json({ message: 'Student not found to update.' });
         }
 
-        const { academics } = req.body;
-        
-        if (academics === undefined) { // Check for undefined instead of !academics
-            return res.status(400).json({ message: 'Academics data is required.' });
+        const { academics, phoneNumber, whatsappNumber } = req.body;
+        const updateData: Partial<Student> = {};
+
+        if (academics !== undefined) {
+          updateData.academics = academics;
         }
-
-        // We can add validation here for the 'academics' object structure if needed
-
-        await studentRef.update({ academics });
+        if (phoneNumber !== undefined) {
+          updateData.phoneNumber = phoneNumber;
+        }
+        if (whatsappNumber !== undefined) {
+          updateData.whatsappNumber = whatsappNumber;
+        }
+        
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({ message: 'No fields provided for update.' });
+        }
+        
+        await studentRef.update(updateData);
 
         const updatedDoc = await studentRef.get();
         const updatedStudent = { id: updatedDoc.id, ...updatedDoc.data() };
         
-        return res.status(200).json({ message: 'Academic details updated successfully.', student: updatedStudent });
+        return res.status(200).json({ message: 'Student profile updated successfully.', student: updatedStudent });
 
       } catch (error) {
-        console.error(`Error updating student academics for ${studentId}:`, error);
-        return res.status(500).json({ message: 'Internal server error while updating academic details.' });
+        console.error(`Error updating student for ${studentId}:`, error);
+        return res.status(500).json({ message: 'Internal server error while updating student details.' });
       }
       break;
     
