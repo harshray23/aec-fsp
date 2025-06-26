@@ -2,11 +2,15 @@
 "use client"; 
 
 import { DashboardLayout } from "@/components/shared/DashboardLayout";
-import type { NavItem, User, Host } from "@/lib/types";
+import type { NavItem, User, Student, Teacher, Admin, Host } from "@/lib/types";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Users, UserPlus, BookUser, CalendarDays, BarChart3, Settings, GraduationCap, ShieldAlert, Briefcase, UserCog, UserCircle, CheckSquare, MonitorPlay, ServerCog, FileCog, UserCheck, CalendarCheck2, Megaphone, PlusCircle, BookCopy } from "lucide-react"; 
 import React, { useState, useEffect } from "react";
 import { USER_ROLES } from "@/lib/constants";
+
+// A comprehensive type for the current user, covering all possible roles and properties.
+type CurrentUserType = User & Partial<Student> & Partial<Teacher> & Partial<Admin> & Partial<Host>;
+
 
 const getNavItems = (role: "student" | "teacher" | "admin" | "host" | "guest"): NavItem[] => {
   switch (role) {
@@ -80,7 +84,7 @@ const getNavItems = (role: "student" | "teacher" | "admin" | "host" | "guest"): 
   }
 };
 
-const getServerSideUser = (pathname: string): User & { department?: string; username?: string; status?: string; studentId?: string; rollNumber?: string; registrationNumber?: string; section?: string; phoneNumber?: string; isEmailVerified?: boolean; isPhoneVerified?: boolean; avatarUrl?: string; } => {
+const getServerSideUser = (pathname: string): CurrentUserType => {
   // This function ONLY contains server-safe logic (path-based determination)
   // and is used for the initial render on both server and client to avoid hydration mismatch.
   if (pathname.startsWith("/admin")) {
@@ -108,7 +112,7 @@ export default function AppPagesLayout({
   const pathname = usePathname();
   
   // Initialize state with a server-side determined user. This prevents hydration mismatch.
-  const [currentUser, setCurrentUser] = useState(() => getServerSideUser(pathname)); 
+  const [currentUser, setCurrentUser] = useState<CurrentUserType>(() => getServerSideUser(pathname)); 
 
   useEffect(() => {
     // This effect runs only on the client, after the initial render.
@@ -116,9 +120,13 @@ export default function AppPagesLayout({
     if (storedUserString) {
       try {
         const storedUser = JSON.parse(storedUserString);
-        if (storedUser && storedUser.id && storedUser.role) {
+        // More robust check to prevent crashes from corrupted localStorage data
+        if (storedUser && storedUser.id && storedUser.role && storedUser.name && storedUser.email) {
           // Safely update the state on the client after hydration.
           setCurrentUser(storedUser);
+        } else {
+            // Clear corrupted or incomplete data
+            localStorage.removeItem("currentUser");
         }
       } catch (e) {
         console.error("Error parsing currentUser from localStorage:", e);
