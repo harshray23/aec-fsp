@@ -14,12 +14,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ message: 'Host ID must be a string.' });
   }
   
-  const hostRef = db.collection('hosts').doc(hostId);
+  // A more robust lookup function, similar to other user type endpoints
+  async function getHostDocRef(id: string) {
+    // Prefer querying by the UID field, as it's the most stable identifier from Auth.
+    const query = db.collection('hosts').where('uid', '==', id).limit(1);
+    const snapshot = await query.get();
+    if (!snapshot.empty) {
+        return snapshot.docs[0].ref;
+    }
+    
+    // As a fallback, try treating the ID as a document ID.
+    // This is useful if the seeder correctly aligns UID and Doc ID.
+    const docRef = db.collection('hosts').doc(id);
+    const doc = await docRef.get();
+    if (doc.exists) {
+        return docRef;
+    }
+
+    return null; // Not found by any method
+  }
+
 
   switch (req.method) {
     case 'GET':
       try {
+        const hostRef = await getHostDocRef(hostId);
+
+        if (!hostRef) {
+             return res.status(404).json({ message: 'Host not found.' });
+        }
+
         const doc = await hostRef.get();
+        // This check is slightly redundant because getHostDocRef ensures it, but it's safe.
         if (!doc.exists) {
           return res.status(404).json({ message: 'Host not found.' });
         }
