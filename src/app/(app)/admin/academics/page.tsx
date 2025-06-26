@@ -158,7 +158,7 @@ export default function ManageAcademicsPage() {
         academics: {
             ...selectedStudent.academics,
             tests: updatedTests
-        }
+        },
     };
     setSelectedStudent(updatedStudent);
   }
@@ -192,40 +192,51 @@ export default function ManageAcademicsPage() {
   }
   
   const handleDownload = () => {
-    const dataForExcel = filteredStudents.flatMap(student => {
-        const baseStudentData = {
-            'Student Name': student.name,
-            'Student ID': student.studentId,
-            'Department': DEPARTMENTS.find(d => d.value === student.department)?.label || student.department,
-            'Class 10 %': student.academics?.class10?.percentage || 'N/A',
-            'Class 12 %': student.academics?.class12?.percentage || 'N/A',
-            'Sem 1 SGPA': student.academics?.semesters?.sem1 || 'N/A',
-            'Sem 2 SGPA': student.academics?.semesters?.sem2 || 'N/A',
-            'Sem 3 SGPA': student.academics?.semesters?.sem3 || 'N/A',
-            'Sem 4 SGPA': student.academics?.semesters?.sem4 || 'N/A',
-            'Sem 5 SGPA': student.academics?.semesters?.sem5 || 'N/A',
-            'Sem 6 SGPA': student.academics?.semesters?.sem6 || 'N/A',
-            'Sem 7 SGPA': student.academics?.semesters?.sem7 || 'N/A',
-            'Sem 8 SGPA': student.academics?.semesters?.sem8 || 'N/A',
-        };
+    const dataForExcel = filteredStudents.flatMap((student) => {
+      const baseStudentData = {
+        'Student Name': student.name,
+        'Student ID': student.studentId,
+        'Department': DEPARTMENTS.find(d => d.value === student.department)?.label || student.department,
+        'Class 10 %': student.academics?.class10?.percentage?.toFixed(2) || 'N/A',
+        'Class 12 %': student.academics?.class12?.percentage?.toFixed(2) || 'N/A',
+        'Sem 1 SGPA': student.academics?.semesters?.sem1?.toFixed(2) || 'N/A',
+        'Sem 2 SGPA': student.academics?.semesters?.sem2?.toFixed(2) || 'N/A',
+        'Sem 3 SGPA': student.academics?.semesters?.sem3?.toFixed(2) || 'N/A',
+        'Sem 4 SGPA': student.academics?.semesters?.sem4?.toFixed(2) || 'N/A',
+        'Sem 5 SGPA': student.academics?.semesters?.sem5?.toFixed(2) || 'N/A',
+        'Sem 6 SGPA': student.academics?.semesters?.sem6?.toFixed(2) || 'N/A',
+        'Sem 7 SGPA': student.academics?.semesters?.sem7?.toFixed(2) || 'N/A',
+        'Sem 8 SGPA': student.academics?.semesters?.sem8?.toFixed(2) || 'N/A',
+      };
 
-        if (!student.academics?.tests || student.academics.tests.length === 0) {
-            return [{
-                ...baseStudentData,
-                'Test Name': 'N/A',
-                'Test Date': 'N/A',
-                'Marks Obtained': 'N/A',
-                'Max Marks': 'N/A',
-            }];
+      if (!student.academics?.tests || student.academics.tests.length === 0) {
+        return [{
+          ...baseStudentData,
+          'Test Name': 'N/A',
+          'Test Date': 'N/A',
+          'Marks Obtained': 'N/A',
+          'Max Marks': 'N/A',
+        }];
+      }
+
+      return student.academics.tests.map((test) => {
+        let formattedDate = 'N/A';
+        try {
+          if (test.testDate) {
+            formattedDate = format(parseISO(test.testDate), "PPP");
+          }
+        } catch (e) {
+          console.error("Invalid date format for test:", test, e);
         }
-
-        return student.academics.tests.map(test => ({
-            ...baseStudentData,
-            'Test Name': test.testName,
-            'Test Date': format(parseISO(test.testDate), "PPP"),
-            'Marks Obtained': test.marksObtained,
-            'Max Marks': test.maxMarks,
-        }));
+        
+        return {
+          ...baseStudentData,
+          'Test Name': test.testName,
+          'Test Date': formattedDate,
+          'Marks Obtained': test.marksObtained,
+          'Max Marks': test.maxMarks,
+        };
+      });
     });
 
     if (dataForExcel.length === 0) {
@@ -393,5 +404,3 @@ export default function ManageAcademicsPage() {
     </div>
   );
 }
-
-    
