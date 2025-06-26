@@ -268,7 +268,7 @@ export default function StudentProfilePage() {
 
               <Card className="bg-secondary/50 mt-6">
                 <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2"><MapPin/>Mailing Address</CardTitle>
+                  <CardTitle className="text-base flex items-center gap-2"><MapPin/>Home Address</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <p className="text-sm text-muted-foreground">

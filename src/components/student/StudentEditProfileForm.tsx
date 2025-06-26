@@ -119,7 +119,7 @@ export default function StudentEditProfileForm({ studentData, onSave, onCancel, 
 
             <Card className="bg-muted/50">
                 <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2"><MapPin/>Mailing Address</CardTitle>
+                    <CardTitle className="text-base flex items-center gap-2"><MapPin/>Home Address</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                      <FormField control={form.control} name="address.street" render={({ field }) => (<FormItem><FormLabel>Street Address</FormLabel><FormControl><Input placeholder="123 Main St" {...field} /></FormControl><FormMessage /></FormItem>)} />
