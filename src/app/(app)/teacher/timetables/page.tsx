@@ -39,7 +39,7 @@ export default function ViewTimetablesPage() {
         const allBatches: Batch[] = await res.json();
         
         const teacherBatches = allBatches.filter(
-            batch => batch.teacherId === teacherId && batch.daysOfWeek?.length > 0 && batch.startTime && batch.endTime
+            batch => batch.teacherIds?.includes(teacherId) && batch.daysOfWeek?.length > 0 && batch.startTime && batch.endTime
         );
         setScheduledBatches(teacherBatches);
         

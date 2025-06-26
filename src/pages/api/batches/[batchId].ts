@@ -44,45 +44,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           return res.status(404).json({ message: 'Batch not found to update.' });
         }
 
-        const updateData = req.body;
-        // Ensure studentIds is an array, even if it's empty or not provided in updateData
-        if (updateData.studentIds && !Array.isArray(updateData.studentIds)) {
-            return res.status(400).json({ message: 'studentIds must be an array.' });
-        }
-
-        // Handle student assignments/unassignments if studentIds are changing
-        const oldStudentIds = (currentDoc.data()?.studentIds || []) as string[];
-        const newStudentIds = (updateData.studentIds || []) as string[];
-
-        const studentsToUnassign = oldStudentIds.filter(id => !newStudentIds.includes(id));
-        const studentsToAssign = newStudentIds.filter(id => !oldStudentIds.includes(id));
+        const { studentIds, ...updateData } = req.body;
         
-        const batchWrite = db.batch();
-
-        // Unassign students
-        for (const studentDocId of studentsToUnassign) {
-          // Assuming studentDocId is the Firestore document ID of the student
-          const studentRef = db.collection('students').doc(studentDocId);
-          batchWrite.update(studentRef, { batchId: null }); // or FieldValue.delete()
-        }
-
-        // Assign new students
-        for (const studentDocId of studentsToAssign) {
-           const studentRef = db.collection('students').doc(studentDocId);
-           batchWrite.update(studentRef, { batchId: batchId });
-        }
+        // This endpoint no longer manages student assignments directly.
+        // It only updates the batch's own properties.
+        // The studentIds are managed via the /enroll API.
         
-        // Perform the batch update for student assignments
-        if (studentsToUnassign.length > 0 || studentsToAssign.length > 0) {
-            await batchWrite.commit();
-        }
+        await batchRef.update(updateData);
         
-        // Update the batch document itself
-        const batchUpdatePayload = { ...updateData };
-        
-        await batchRef.update(batchUpdatePayload);
-        
-        res.status(200).json({ message: `Batch ${batchId} updated successfully.`, batch: { id: batchId, ...batchUpdatePayload } });
+        res.status(200).json({ message: `Batch ${batchId} updated successfully.`, batch: { id: batchId, ...updateData } });
       } catch (error) {
         console.error(`Error updating batch ${batchId}:`, error);
         res.status(500).json({ message: 'Internal server error while updating batch.' });
@@ -101,7 +71,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (!studentsToUpdateSnapshot.empty) {
           const studentBatchWrite = db.batch();
           studentsToUpdateSnapshot.docs.forEach(studentDoc => {
-            studentBatchWrite.update(studentDoc.ref, { batchId: null }); // or FieldValue.delete()
+            studentBatchWrite.update(studentDoc.ref, { batchId: null });
           });
           await studentBatchWrite.commit();
         }

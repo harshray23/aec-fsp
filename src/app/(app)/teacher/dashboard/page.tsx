@@ -51,7 +51,7 @@ export default function TeacherDashboardPage() {
         if (!res.ok) throw new Error("Failed to fetch batches.");
         
         const allBatches: Batch[] = await res.json();
-        const assignedBatches = allBatches.filter(b => b.teacherId === teacherId);
+        const assignedBatches = allBatches.filter(b => b.teacherIds?.includes(teacherId));
         
         const studentsEnrolled = assignedBatches.reduce((acc, batch) => acc + batch.studentIds.length, 0);
         

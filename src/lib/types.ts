@@ -91,7 +91,7 @@ export interface Batch {
   daysOfWeek: string[];
   startTime: string;
   endTime: string;
-  teacherId: string;
+  teacherIds: string[];
   studentIds: string[];
   status: "Scheduled" | "Ongoing" | "Completed";
   roomNumber?: string;

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BookUser, Users, MoreHorizontal, Trash2, Edit, Home, Loader2 } from "lucide-react"; 
+import { BookUser, Users, MoreHorizontal, Trash2, Edit, Home, Loader2, Link as LinkIcon, Clipboard } from "lucide-react"; 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -66,11 +66,15 @@ export default function AdminBatchOverviewPage() {
   }, [toast]);
 
 
-  const getTeacherName = (teacherId: string) => {
-    const teacher = teachers.find(t => t.id === teacherId);
-    if (teacher) return teacher.name;
-    if (teacherId?.startsWith("ADMIN_")) return "Admin (Self-Assigned)"; // Kept for legacy if any
-    return "N/A";
+  const getTeacherNames = (teacherIds: string[]) => {
+    if (!teacherIds || teacherIds.length === 0) return "N/A";
+    const names = teacherIds.map(id => {
+        const teacher = teachers.find(t => t.id === id);
+        return teacher ? teacher.name : null;
+    }).filter(Boolean);
+
+    if (names.length === 0) return "N/A";
+    return names.join(", ");
   };
 
   const getDepartmentLabel = (deptValue: string) => {
@@ -114,6 +118,13 @@ export default function AdminBatchOverviewPage() {
     }
   };
   
+  const handleCopyLink = (batchId: string) => {
+    const link = `${window.location.origin}/enroll/${batchId}`;
+    navigator.clipboard.writeText(link).then(() => {
+        toast({ title: "Copied!", description: "Enrollment link copied to clipboard." });
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="space-y-8">
@@ -144,12 +155,10 @@ export default function AdminBatchOverviewPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Batch ID</TableHead>
                 <TableHead>Batch Name</TableHead>
                 <TableHead>Department</TableHead>
                 <TableHead>Topic</TableHead>
-                <TableHead>Teacher</TableHead>
-                <TableHead>Room</TableHead>
+                <TableHead>Teachers</TableHead>
                 <TableHead>Students</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -158,12 +167,10 @@ export default function AdminBatchOverviewPage() {
             <TableBody>
               {batches.map((batch) => (
                 <TableRow key={batch.id}>
-                  <TableCell className="truncate max-w-[100px]">{batch.id}</TableCell>
                   <TableCell className="font-medium">{batch.name}</TableCell>
                   <TableCell>{getDepartmentLabel(batch.department)}</TableCell>
                   <TableCell>{batch.topic}</TableCell>
-                  <TableCell>{getTeacherName(batch.teacherId)}</TableCell>
-                  <TableCell>{batch.roomNumber || "N/A"}</TableCell>
+                  <TableCell>{getTeacherNames(batch.teacherIds)}</TableCell>
                   <TableCell>{batch.studentIds.length}</TableCell>
                   <TableCell>
                     <Badge variant={batch.status === "Ongoing" ? "default" : batch.status === "Scheduled" ? "outline" : "secondary"}>
@@ -183,6 +190,9 @@ export default function AdminBatchOverviewPage() {
                             <Edit className="mr-2 h-4 w-4" /> Configure Batch
                           </Link>
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleCopyLink(batch.id)} className="cursor-pointer">
+                          <LinkIcon className="mr-2 h-4 w-4" /> Copy Enrollment Link
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={() => openDeleteDialog(batch.id)}
@@ -197,7 +207,7 @@ export default function AdminBatchOverviewPage() {
               ))}
               {batches.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground h-24">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground h-24">
                     No batches found.
                   </TableCell>
                 </TableRow>

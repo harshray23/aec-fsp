@@ -40,7 +40,7 @@ export default function TeacherMyAssignedBatchesPage() {
         const res = await fetch('/api/batches');
         if (!res.ok) throw new Error("Failed to fetch batches.");
         const allBatches: Batch[] = await res.json();
-        setAssignedBatches(allBatches.filter(b => b.teacherId === teacherId));
+        setAssignedBatches(allBatches.filter(b => b.teacherIds?.includes(teacherId)));
       } catch (error: any) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       } finally {
