@@ -57,54 +57,6 @@ export default function LoginForm() {
       return;
     }
 
-    // --- MOCK/BYPASS FLOW ---
-    // This is a temporary bypass for development and will be removed.
-    const bypassCredentials = {
-      admin: { email: "harshray2007@gmail.com", password: "Password@123" },
-      host: { email: "sanjay041024@gmail.com", password: "Sanjay@9851" },
-    };
-
-    const isBypassAttempt =
-        (role === USER_ROLES.ADMIN && values.email === bypassCredentials.admin.email && values.password === bypassCredentials.admin.password) ||
-        (role === USER_ROLES.HOST && values.email === bypassCredentials.host.email && values.password === bypassCredentials.host.password);
-
-
-    if (isBypassAttempt) {
-        let userData: Host | Admin;
-        let redirectPath: string;
-
-        if (role === USER_ROLES.HOST) {
-            userData = {
-                id: "host_bypass_user",
-                uid: "host_bypass_uid",
-                name: "Sanjay",
-                email: bypassCredentials.host.email,
-                role: USER_ROLES.HOST,
-            };
-            redirectPath = "/host/dashboard";
-        } else { // Admin
-             userData = {
-                id: "admin_bypass_user",
-                uid: "admin_bypass_uid",
-                name: "Harsh Ray",
-                email: bypassCredentials.admin.email,
-                role: USER_ROLES.ADMIN,
-                status: "active",
-                username: "harsh_admin",
-            };
-            redirectPath = "/admin/dashboard";
-        }
-        
-        localStorage.setItem("currentUser", JSON.stringify(userData));
-        toast({
-            title: "Bypass Successful",
-            description: `Logged in as ${role}. Redirecting...`,
-        });
-        router.push(redirectPath);
-        return;
-    }
-
-
     // --- Default Firebase Authentication Flow ---
     try {
       // Step 1: Authenticate with Firebase Client-Side Authentication
