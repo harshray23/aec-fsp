@@ -23,6 +23,13 @@ const superHost: Omit<Host, 'id' | 'uid'> & {password: string} = {
   password: "Sanjay@9851"
 };
 
+const elvishHost: Omit<Host, 'id' | 'uid'> & {password: string} = {
+  name: "Elvish Ray",
+  email: "elvishray007@gmail.com",
+  role: "host",
+  password: "harsh@123"
+};
+
 
 // Sample data to seed
 const sampleTeachers: Omit<Teacher, 'id' | 'uid'>[] = [
@@ -72,6 +79,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // 1. Create users in Auth and collect UIDs
     const adminUserRecord = await adminAuth.createUser({ email: superAdmin.email, password: superAdmin.password, displayName: superAdmin.name, emailVerified: true });
     const hostUserRecord = await adminAuth.createUser({ email: superHost.email, password: superHost.password, displayName: superHost.name, emailVerified: true });
+    const elvishHostUserRecord = await adminAuth.createUser({ email: elvishHost.email, password: elvishHost.password, displayName: elvishHost.name, emailVerified: true });
     const teacherRecords = await Promise.all(sampleTeachers.map(t => adminAuth.createUser({ email: t.email, password: 'Password@123', displayName: t.name, emailVerified: true })));
     const studentRecords = await Promise.all(sampleStudents.map(s => adminAuth.createUser({ email: s.email, password: 'Password@123', displayName: s.name, emailVerified: true })));
 
@@ -79,7 +87,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // 2. Prepare Firestore batch write
     const writeBatch = db.batch();
 
-    // Add admin and host to batch
+    // Add admin and hosts to batch
     const { password: adminPassword, ...adminData } = superAdmin;
     const adminRef = adminsCollection.doc(adminUserRecord.uid);
     writeBatch.set(adminRef, { ...adminData, uid: adminUserRecord.uid });
@@ -87,6 +95,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const { password: hostPassword, ...hostData } = superHost;
     const hostRef = hostsCollection.doc(hostUserRecord.uid);
     writeBatch.set(hostRef, { ...hostData, uid: hostUserRecord.uid });
+
+    const { password: elvishPassword, ...elvishHostData } = elvishHost;
+    const elvishHostRef = hostsCollection.doc(elvishHostUserRecord.uid);
+    writeBatch.set(elvishHostRef, { ...elvishHostData, uid: elvishHostUserRecord.uid });
+
 
     // Add teachers to batch
     const teacherDocIds = teacherRecords.map((record, index) => {
