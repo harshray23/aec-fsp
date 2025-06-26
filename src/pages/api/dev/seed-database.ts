@@ -1,6 +1,7 @@
 
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { db, auth as adminAuth } from '@/lib/firebaseAdmin';
+import type { UserRecord } from 'firebase-admin/auth';
 import { USER_ROLES, DEPARTMENTS } from '@/lib/constants';
 import type { Teacher, Student, Batch, Host, Admin } from '@/lib/types';
 
@@ -32,24 +33,49 @@ const elvishHost: Omit<Host, 'id' | 'uid'> & {password: string} = {
 
 
 // Sample data to seed
-const sampleTeachers: Omit<Teacher, 'id' | 'uid'>[] = [
-  { name: 'Dr. Evelyn Reed', email: 'e.reed@example.com', role: 'teacher', department: 'cse', status: 'active', username: 'evelyn_reed' },
-  { name: 'Mr. Samuel Chen', email: 's.chen@example.com', role: 'teacher', department: 'it', status: 'active', username: 'samuel_chen' },
-  { name: 'Ms. Priya Kaur', email: 'p.kaur@example.com', role: 'teacher', department: 'ece', status: 'active', username: 'priya_kaur' },
+const sampleTeachers: (Omit<Teacher, 'id' | 'uid'> & {password: string})[] = [
+  { name: 'Dr. Evelyn Reed', email: 'e.reed@example.com', role: 'teacher', department: 'cse', status: 'active', username: 'evelyn_reed', password: 'Password@123' },
+  { name: 'Mr. Samuel Chen', email: 's.chen@example.com', role: 'teacher', department: 'it', status: 'active', username: 'samuel_chen', password: 'Password@123' },
+  { name: 'Ms. Priya Kaur', email: 'p.kaur@example.com', role: 'teacher', department: 'ece', status: 'active', username: 'priya_kaur', password: 'Password@123' },
 ];
 
-const sampleStudents: Omit<Student, 'id' | 'uid'>[] = [
-  { name: 'Aarav Sharma', email: 'aarav.s@example.com', studentId: 'S001', rollNumber: 'CSE/20/01', registrationNumber: 'REG-CSE-01', department: 'cse', section: 'A', phoneNumber: '9876543210', isEmailVerified: true, isPhoneVerified: true, role: 'student' },
-  { name: 'Diya Patel', email: 'diya.p@example.com', studentId: 'S002', rollNumber: 'CSE/20/02', registrationNumber: 'REG-CSE-02', department: 'cse', section: 'A', phoneNumber: '9876543211', isEmailVerified: true, isPhoneVerified: true, role: 'student' },
-  { name: 'Rohan Mehta', email: 'rohan.m@example.com', studentId: 'S003', rollNumber: 'IT/20/01', registrationNumber: 'REG-IT-01', department: 'it', section: 'B', phoneNumber: '9876543212', isEmailVerified: true, isPhoneVerified: true, role: 'student' },
-  { name: 'Isha Singh', email: 'isha.s@example.com', studentId: 'S004', rollNumber: 'IT/20/02', registrationNumber: 'REG-IT-02', department: 'it', section: 'B', phoneNumber: '9876543213', isEmailVerified: true, isPhoneVerified: true, role: 'student' },
-  { name: 'Arjun Verma', email: 'arjun.v@example.com', studentId: 'S005', rollNumber: 'ECE/20/01', registrationNumber: 'REG-ECE-01', department: 'ece', section: 'C', phoneNumber: '9876543214', isEmailVerified: true, isPhoneVerified: true, role: 'student' },
+const sampleStudents: (Omit<Student, 'id' | 'uid'> & {password: string})[] = [
+  { name: 'Aarav Sharma', email: 'aarav.s@example.com', studentId: 'S001', rollNumber: 'CSE/20/01', registrationNumber: 'REG-CSE-01', department: 'cse', section: 'A', phoneNumber: '9876543210', isEmailVerified: true, isPhoneVerified: true, role: 'student', password: 'Password@123' },
+  { name: 'Diya Patel', email: 'diya.p@example.com', studentId: 'S002', rollNumber: 'CSE/20/02', registrationNumber: 'REG-CSE-02', department: 'cse', section: 'A', phoneNumber: '9876543211', isEmailVerified: true, isPhoneVerified: true, role: 'student', password: 'Password@123' },
+  { name: 'Rohan Mehta', email: 'rohan.m@example.com', studentId: 'S003', rollNumber: 'IT/20/01', registrationNumber: 'REG-IT-01', department: 'it', section: 'B', phoneNumber: '9876543212', isEmailVerified: true, isPhoneVerified: true, role: 'student', password: 'Password@123' },
+  { name: 'Isha Singh', email: 'isha.s@example.com', studentId: 'S004', rollNumber: 'IT/20/02', registrationNumber: 'REG-IT-02', department: 'it', section: 'B', phoneNumber: '9876543213', isEmailVerified: true, isPhoneVerified: true, role: 'student', password: 'Password@123' },
+  { name: 'Arjun Verma', email: 'arjun.v@example.com', studentId: 'S005', rollNumber: 'ECE/20/01', registrationNumber: 'REG-ECE-01', department: 'ece', section: 'C', phoneNumber: '9876543214', isEmailVerified: true, isPhoneVerified: true, role: 'student', password: 'Password@123' },
 ];
 
 const sampleBatchDefinitions: Omit<Batch, 'id' | 'teacherIds' | 'studentIds'>[] = [
   { name: 'FSP-CSE-JAVA-A', department: 'cse', topic: 'Core Java', startDate: new Date('2024-08-01').toISOString(), daysOfWeek: ['Monday', 'Wednesday', 'Friday'], startTime: '09:30', endTime: '12:30', roomNumber: 'R301', status: 'Scheduled' },
   { name: 'FSP-IT-2024-B', department: 'it', topic: 'Cloud Computing', startDate: new Date('2024-08-01').toISOString(), daysOfWeek: ['Tuesday', 'Thursday'], startTime: '14:00', endTime: '15:30', roomNumber: 'R302', status: 'Scheduled' },
 ];
+
+
+// Helper function to create a user in Auth if they don't exist
+const ensureAuthUser = async (user: { email: string; password?: string; name: string; }): Promise<UserRecord> => {
+  try {
+    // User exists, return their record
+    return await adminAuth.getUserByEmail(user.email);
+  } catch (error: any) {
+    if (error.code === 'auth/user-not-found') {
+      // User does not exist, create them
+      if (!user.password) {
+        throw new Error(`Password missing for new user: ${user.email}`);
+      }
+      console.log(`Creating auth user for ${user.email}`);
+      return await adminAuth.createUser({
+        email: user.email,
+        password: user.password,
+        displayName: user.name,
+        emailVerified: true,
+      });
+    }
+    // Other error
+    throw error;
+  }
+};
 
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -62,96 +88,80 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const studentsCollection = db.collection('students');
-    const teachersCollection = db.collection('teachers');
-    const batchesCollection = db.collection('batches');
-    const adminsCollection = db.collection('admins');
-    const hostsCollection = db.collection('hosts');
-
-    // Check if the default admin already exists to prevent re-seeding
-    try {
-        await adminAuth.getUserByEmail(superAdmin.email);
-        return res.status(409).json({ message: 'Database has already been seeded. Please clear Auth and Firestore before seeding again.' });
-    } catch (error: any) {
-        if (error.code !== 'auth/user-not-found') throw error;
-    }
-
-    // 1. Create users in Auth and collect UIDs
-    const adminUserRecord = await adminAuth.createUser({ email: superAdmin.email, password: superAdmin.password, displayName: superAdmin.name, emailVerified: true });
-    const hostUserRecord = await adminAuth.createUser({ email: superHost.email, password: superHost.password, displayName: superHost.name, emailVerified: true });
-    const elvishHostUserRecord = await adminAuth.createUser({ email: elvishHost.email, password: elvishHost.password, displayName: elvishHost.name, emailVerified: true });
-    const teacherRecords = await Promise.all(sampleTeachers.map(t => adminAuth.createUser({ email: t.email, password: 'Password@123', displayName: t.name, emailVerified: true })));
-    const studentRecords = await Promise.all(sampleStudents.map(s => adminAuth.createUser({ email: s.email, password: 'Password@123', displayName: s.name, emailVerified: true })));
-
-
-    // 2. Prepare Firestore batch write
     const writeBatch = db.batch();
-
-    // Add admin and hosts to batch
-    const { password: adminPassword, ...adminData } = superAdmin;
-    const adminRef = adminsCollection.doc(adminUserRecord.uid);
-    writeBatch.set(adminRef, { ...adminData, uid: adminUserRecord.uid });
     
+    // Process Admins
+    const { password: adminPassword, ...adminData } = superAdmin;
+    const adminUserRecord = await ensureAuthUser({ email: adminData.email, password: adminPassword, name: adminData.name });
+    const adminRef = db.collection('admins').doc(adminUserRecord.uid);
+    writeBatch.set(adminRef, { ...adminData, uid: adminUserRecord.uid }, { merge: true });
+
+    // Process Hosts
     const { password: hostPassword, ...hostData } = superHost;
-    const hostRef = hostsCollection.doc(hostUserRecord.uid);
-    writeBatch.set(hostRef, { ...hostData, uid: hostUserRecord.uid });
+    const hostUserRecord = await ensureAuthUser({ email: hostData.email, password: hostPassword, name: hostData.name });
+    const hostRef = db.collection('hosts').doc(hostUserRecord.uid);
+    writeBatch.set(hostRef, { ...hostData, uid: hostUserRecord.uid }, { merge: true });
 
     const { password: elvishPassword, ...elvishHostData } = elvishHost;
-    const elvishHostRef = hostsCollection.doc(elvishHostUserRecord.uid);
-    writeBatch.set(elvishHostRef, { ...elvishHostData, uid: elvishHostUserRecord.uid });
+    const elvishHostUserRecord = await ensureAuthUser({ email: elvishHostData.email, password: elvishPassword, name: elvishHostData.name });
+    const elvishHostRef = db.collection('hosts').doc(elvishHostUserRecord.uid);
+    writeBatch.set(elvishHostRef, { ...elvishHostData, uid: elvishHostUserRecord.uid }, { merge: true });
 
+    // Process Teachers
+    const teacherDocIds = await Promise.all(sampleTeachers.map(async (teacher) => {
+      const { password: teacherPassword, ...teacherData } = teacher;
+      const teacherRecord = await ensureAuthUser({ email: teacherData.email, password: teacherPassword, name: teacherData.name });
+      const teacherRef = db.collection('teachers').doc(teacherRecord.uid);
+      writeBatch.set(teacherRef, { ...teacherData, uid: teacherRecord.uid }, { merge: true });
+      return teacherRecord.uid;
+    }));
 
-    // Add teachers to batch
-    const teacherDocIds = teacherRecords.map((record, index) => {
-        const teacherRef = teachersCollection.doc(record.uid);
-        writeBatch.set(teacherRef, { ...sampleTeachers[index], uid: record.uid });
-        return record.uid;
-    });
-
-    // Group student UIDs by department
+    // Process Students
     const studentDocIdsByDept: { [key: string]: string[] } = {};
-    studentRecords.forEach((record, index) => {
-        const studentData = sampleStudents[index];
+    await Promise.all(sampleStudents.map(async (student) => {
+        const { password: studentPassword, ...studentData } = student;
+        const studentRecord = await ensureAuthUser({ email: studentData.email, password: studentPassword, name: studentData.name });
+        const studentRef = db.collection('students').doc(studentRecord.uid);
+        writeBatch.set(studentRef, { ...studentData, uid: studentRecord.uid }, { merge: true });
+        
         if (!studentDocIdsByDept[studentData.department]) {
             studentDocIdsByDept[studentData.department] = [];
         }
-        studentDocIdsByDept[studentData.department].push(record.uid);
-        
-        const studentRef = studentsCollection.doc(record.uid);
-        // Initially set student without batchId
-        writeBatch.set(studentRef, { ...studentData, uid: record.uid });
-    });
+        studentDocIdsByDept[studentData.department].push(studentRecord.uid);
+    }));
 
-    // Create batches and update students in the same batch write
-    const cseBatch = { ...sampleBatchDefinitions[0], teacherIds: [teacherDocIds[0]], studentIds: studentDocIdsByDept['cse'] || [] };
-    const itBatch = { ...sampleBatchDefinitions[1], teacherIds: [teacherDocIds[1]], studentIds: studentDocIdsByDept['it'] || [] };
+    // Process Batches - only create if they don't exist
+    const cseBatchData = { ...sampleBatchDefinitions[0], teacherIds: [teacherDocIds[0]], studentIds: studentDocIdsByDept['cse'] || [] };
+    const itBatchData = { ...sampleBatchDefinitions[1], teacherIds: [teacherDocIds[1]], studentIds: studentDocIdsByDept['it'] || [] };
     
-    // Add CSE batch and update its students
-    const cseBatchRef = batchesCollection.doc();
-    writeBatch.set(cseBatchRef, cseBatch);
-    for (const studentId of cseBatch.studentIds) {
-        const studentRef = studentsCollection.doc(studentId);
-        writeBatch.update(studentRef, { batchId: cseBatchRef.id });
+    const cseBatchQuery = await db.collection('batches').where('name', '==', cseBatchData.name).limit(1).get();
+    if (cseBatchQuery.empty) {
+        console.log(`Creating batch: ${cseBatchData.name}`);
+        const cseBatchRef = db.collection('batches').doc();
+        writeBatch.set(cseBatchRef, cseBatchData);
+        for (const studentId of cseBatchData.studentIds) {
+            const studentRef = db.collection('students').doc(studentId);
+            writeBatch.update(studentRef, { batchId: cseBatchRef.id });
+        }
     }
 
-    // Add IT batch and update its students
-    const itBatchRef = batchesCollection.doc();
-    writeBatch.set(itBatchRef, itBatch);
-    for (const studentId of itBatch.studentIds) {
-        const studentRef = studentsCollection.doc(studentId);
-        writeBatch.update(studentRef, { batchId: itBatchRef.id });
+    const itBatchQuery = await db.collection('batches').where('name', '==', itBatchData.name).limit(1).get();
+    if (itBatchQuery.empty) {
+        console.log(`Creating batch: ${itBatchData.name}`);
+        const itBatchRef = db.collection('batches').doc();
+        writeBatch.set(itBatchRef, itBatchData);
+        for (const studentId of itBatchData.studentIds) {
+            const studentRef = db.collection('students').doc(studentId);
+            writeBatch.update(studentRef, { batchId: itBatchRef.id });
+        }
     }
-    
-    // Commit all writes
+
     await writeBatch.commit();
     
-    return res.status(200).json({ message: `Successfully seeded and assigned users to batches.` });
+    return res.status(200).json({ message: "Database seeding/update complete. Existing users were not overwritten." });
 
   } catch (error: any) {
     console.error('Error seeding database:', error);
-    if (error.code === 'auth/email-already-exists') {
-        return res.status(409).json({ message: `Seeding failed: An email from the sample data already exists. Please clear existing users before seeding.` });
-    }
     return res.status(500).json({ message: error.message || 'Internal server error during seeding.' });
   }
 }
