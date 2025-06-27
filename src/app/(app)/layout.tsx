@@ -8,8 +8,15 @@ import { LayoutDashboard, Users, UserPlus, BookUser, CalendarDays, BarChart3, Se
 import React, { useState, useEffect } from "react";
 import { USER_ROLES } from "@/lib/constants";
 
+interface GuestUser {
+  id: string;
+  name: string;
+  email: string;
+  role: 'guest';
+}
+
 // A comprehensive type for the current user, covering all possible roles and properties.
-type CurrentUserType = User & Partial<Student> & Partial<Teacher> & Partial<Admin> & Partial<Host>;
+type CurrentUserType = Student | Teacher | Admin | Host | GuestUser;
 
 
 const getNavItems = (role: "student" | "teacher" | "admin" | "host" | "guest"): NavItem[] => {
@@ -101,7 +108,7 @@ const getServerSideUser = (pathname: string): CurrentUserType => {
   } else if (pathname.startsWith("/host")) {
     return { id: "server-host-fallback", name: "Management", email: "host@example.com", role: USER_ROLES.HOST, status: "active" };
   }
-  return { id: "server-guest-fallback", name: "User", email: "user@example.com", role: "guest" as any };
+  return { id: "server-guest-fallback", name: "User", email: "user@example.com", role: "guest" };
 };
 
 
@@ -136,12 +143,12 @@ export default function AppPagesLayout({
     }
   }, [pathname]); // Re-run if path changes to support client-side navigation.
 
-  let displayUserRole = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
+  let displayUserRole = currentUser.role === 'guest' ? 'Guest' : currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
   if (currentUser.role === USER_ROLES.HOST) {
     displayUserRole = "Management";
   }
   
-  const navItems = getNavItems(currentUser.role as "student" | "teacher" | "admin" | "host" | "guest");
+  const navItems = getNavItems(currentUser.role);
 
 
   return (
