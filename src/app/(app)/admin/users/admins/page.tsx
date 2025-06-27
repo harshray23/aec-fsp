@@ -140,7 +140,7 @@ export default function ManageAdminsPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle>Administrator List</CardTitle>
-          <CardDescription>A list of all registered administrators in the system.</CardDescription>
+          <CardDescription>A list of all registered administrators. Pending accounts must be approved by Management.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>

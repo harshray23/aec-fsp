@@ -99,7 +99,7 @@ const getServerSideUser = (pathname: string): CurrentUserType => {
         phoneNumber: "N/AF", isEmailVerified: true, isPhoneVerified: true
     };
   } else if (pathname.startsWith("/host")) {
-    return { id: "server-host-fallback", name: "Management", email: "host@example.com", role: USER_ROLES.HOST };
+    return { id: "server-host-fallback", name: "Management", email: "host@example.com", role: USER_ROLES.HOST, status: "active" };
   }
   return { id: "server-guest-fallback", name: "User", email: "user@example.com", role: "guest" as any };
 };

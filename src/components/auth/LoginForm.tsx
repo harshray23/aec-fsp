@@ -23,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { USER_ROLES, type UserRole } from "@/lib/constants";
-import type { Host, Admin } from "@/lib/types";
+import type { Host, Admin, Teacher } from "@/lib/types";
 
 
 const loginFormSchema = z.object({
@@ -102,18 +102,20 @@ export default function LoginForm() {
         throw new Error(errorData.message);
       }
       
-      const firestoreProfile = await profileRes.json();
+      const firestoreProfile: Teacher | Admin | Host = await profileRes.json();
       
       // Step 3: Check if the user's account is active (for roles that have a status field)
       if (firestoreProfile.status && firestoreProfile.status !== 'active') {
         await auth.signOut();
-        throw new Error(`Your account status is '${firestoreProfile.status}'. You cannot log in.`);
+        const statusMessage = firestoreProfile.status.replace("_", " ");
+        throw new Error(`Your account status is '${statusMessage}'. You cannot log in.`);
       }
 
       // Step 4: Combine Firebase Auth data with Firestore profile and store in localStorage
       const finalUserData = {
         ...firestoreProfile, // Contains name, role, department, etc. from Firestore
         uid: firebaseUser.uid,
+        id: firebaseUser.uid, // Use UID as the primary ID
         email: firebaseUser.email, // Ensures email is from the source of truth (Firebase Auth)
         isEmailVerified: firebaseUser.emailVerified,
       };

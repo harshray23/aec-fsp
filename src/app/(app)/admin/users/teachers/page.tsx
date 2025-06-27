@@ -149,7 +149,7 @@ export default function ManageTeachersPage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle>Teacher List</CardTitle>
-          <CardDescription>A list of all registered teachers in the system. Pending users are approved by Hosts.</CardDescription>
+          <CardDescription>A list of all registered teachers in the system. Pending users must be approved by Management.</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
