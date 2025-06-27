@@ -2,6 +2,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { db, Timestamp } from '@/lib/firebaseAdmin';
 import type { Batch } from '@/lib/types';
+import { FieldValue } from 'firebase-admin/firestore';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { batchId } = req.query;
@@ -71,11 +72,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
 
         // Unassign students from this batch
-        const studentsToUpdateSnapshot = await db.collection('students').where('batchId', '==', batchId).get();
+        const studentsToUpdateSnapshot = await db.collection('students').where('batchIds', 'array-contains', batchId).get();
         if (!studentsToUpdateSnapshot.empty) {
           const studentBatchWrite = db.batch();
           studentsToUpdateSnapshot.docs.forEach(studentDoc => {
-            studentBatchWrite.update(studentDoc.ref, { batchId: null });
+            studentBatchWrite.update(studentDoc.ref, { batchIds: FieldValue.arrayRemove(batchId) });
           });
           await studentBatchWrite.commit();
         }

@@ -104,7 +104,7 @@ export default function EnrollInBatchPage() {
         });
 
         // Update student in local storage
-        const updatedStudent = { ...student, batchId: batch.id };
+        const updatedStudent = { ...student, batchIds: [...(student.batchIds || []), batch.id] };
         localStorage.setItem("currentUser", JSON.stringify(updatedStudent));
 
         router.push('/student/dashboard');
@@ -157,17 +157,15 @@ export default function EnrollInBatchPage() {
       );
     }
     
-    if (student.batchId) {
+    if (student.batchIds?.includes(batch.id)) {
        return (
-        <Alert variant={student.batchId === batch.id ? "default" : "destructive"}>
-          {student.batchId === batch.id ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+        <Alert variant="default">
+          <CheckCircle className="h-4 w-4" />
           <AlertTitle>
-            {student.batchId === batch.id ? "Already Enrolled" : "Already in a Batch"}
+            Already Enrolled
           </AlertTitle>
           <AlertDescription>
-            {student.batchId === batch.id 
-                ? "You are already enrolled in this batch." 
-                : "You are already enrolled in another batch. You must leave your current batch before joining a new one."}
+            You are already enrolled in this batch.
           </AlertDescription>
            <div className="mt-4">
              <Button asChild variant="outline">

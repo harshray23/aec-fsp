@@ -68,7 +68,7 @@ export default function AdminManageAttendancePage() {
         const studentsRes = await fetch('/api/students');
         if (!studentsRes.ok) throw new Error("Failed to fetch students");
         const allStudents: Student[] = await studentsRes.json();
-        const studentsInBatch = allStudents.filter(s => s.batchId === selectedBatchId);
+        const studentsInBatch = allStudents.filter(s => s.batchIds?.includes(selectedBatchId));
         setStudents(studentsInBatch);
 
         const attendanceRes = await fetch(`/api/attendance?batchId=${selectedBatchId}&date=${format(selectedDate, 'yyyy-MM-dd')}`);

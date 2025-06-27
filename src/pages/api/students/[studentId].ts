@@ -68,16 +68,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
         const studentData = studentDoc.data() as Student;
         const uid = studentData.uid;
-        const batchId = studentData.batchId;
+        const batchIds = studentData.batchIds;
 
         const writeBatch = db.batch();
 
-        // 1. Remove student from their batch if they are in one
-        if (batchId) {
-          const batchRef = db.collection('batches').doc(batchId);
-          writeBatch.update(batchRef, {
-            studentIds: FieldValue.arrayRemove(studentId)
-          });
+        // 1. Remove student from all their batches
+        if (batchIds && batchIds.length > 0) {
+            batchIds.forEach(batchId => {
+                const batchRef = db.collection('batches').doc(batchId);
+                writeBatch.update(batchRef, {
+                    studentIds: FieldValue.arrayRemove(studentId)
+                });
+            });
         }
 
         // 2. Delete the student's Firestore document

@@ -100,10 +100,13 @@ export default function ViewStudentsPage() {
     fetchStudents();
   }, [debouncedSearchTerm, selectedDepartment, toast]);
   
-  const getBatchName = (batchId?: string) => {
-    if (!batchId) return <Badge variant="outline">N/A</Badge>;
-    const batchName = batches.find(b => b.id === batchId)?.name;
-    return batchName ? <Badge variant="secondary">{batchName}</Badge> : <Badge variant="outline">{batchId.substring(0,8)}...</Badge>;
+  const getBatchInfo = (batchIds?: string[]) => {
+    if (!batchIds || batchIds.length === 0) return <Badge variant="outline">N/A</Badge>;
+    if (batchIds.length === 1) {
+        const batchName = batches.find(b => b.id === batchIds[0])?.name;
+        return batchName ? <Badge variant="secondary">{batchName}</Badge> : <Badge variant="outline">1 Batch</Badge>;
+    }
+    return <Badge variant="secondary">{batchIds.length} Batches</Badge>;
   };
   
   const openDeleteDialog = (student: Student) => {
@@ -186,7 +189,7 @@ export default function ViewStudentsPage() {
                 <TableHead>Department</TableHead>
                 <TableHead>Section</TableHead>
                 <TableHead>Roll No.</TableHead>
-                <TableHead>Batch</TableHead>
+                <TableHead>Batch(es)</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -199,7 +202,7 @@ export default function ViewStudentsPage() {
                   <TableCell>{DEPARTMENTS.find(d => d.value === student.department)?.label || student.department}</TableCell>
                   <TableCell>{student.section || "N/A"}</TableCell>
                   <TableCell>{student.rollNumber}</TableCell>
-                  <TableCell>{getBatchName(student.batchId)}</TableCell> 
+                  <TableCell>{getBatchInfo(student.batchIds)}</TableCell> 
                   <TableCell className="text-right">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>

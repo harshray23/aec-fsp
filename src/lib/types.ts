@@ -55,7 +55,7 @@ export interface Student extends User {
   section?: Section; // Made section optional
   phoneNumber: string;
   whatsappNumber?: string;
-  batchId?: string; // ID of the batch the student is assigned to
+  batchIds?: string[]; // IDs of the batches the student is assigned to
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
   academics?: AcademicDetails;

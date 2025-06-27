@@ -35,12 +35,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       
       const studentData = studentDoc.data();
-      if (studentData?.batchId) {
-        throw new Error('Student is already enrolled in a batch.');
+      if (studentData?.batchIds?.includes(batchId)) {
+        throw new Error('Student is already enrolled in this batch.');
       }
 
       // Perform the updates
-      transaction.update(studentRef, { batchId: batchId });
+      transaction.update(studentRef, { batchIds: FieldValue.arrayUnion(batchId) });
       transaction.update(batchRef, { studentIds: FieldValue.arrayUnion(studentId) });
       
       return true;

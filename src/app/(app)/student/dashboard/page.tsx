@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { GraduationCap, CheckCircle, XCircle, AlertTriangle, Info, Loader2 } from "lucide-react";
+import { GraduationCap, CheckCircle, XCircle, AlertTriangle, Info, Loader2, Clock } from "lucide-react";
 import type { Student, Batch, Teacher, AttendanceRecord, Announcement } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AnnouncementDialog } from "@/components/shared/AnnouncementDialog";
@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface StudentDashboardData {
   student?: Student;
-  batch?: Batch & { teacherNames?: string };
+  batches?: (Batch & { teacherNames?: string })[];
   attendance?: AttendanceRecord[];
 }
 
@@ -108,41 +108,35 @@ export default function StudentDashboardPage() {
           throw new Error("Received malformed data from the server for student profile.");
         }
         
-        let batchData: (Batch & { teacherNames?: string }) | undefined = undefined;
+        let batchesData: (Batch & { teacherNames?: string })[] = [];
         let attendanceData: AttendanceRecord[] = [];
 
-        if (student && student.batchId) {
-          const batchRes = await fetch(`/api/batches/${student.batchId}`);
-          if (batchRes.ok) {
-            const batch: Batch = await batchRes.json();
-            let teacherNames = "N/A";
-            if (batch.teacherIds && batch.teacherIds.length > 0) {
-              const teachersRes = await fetch(`/api/teachers`);
-              if (teachersRes.ok) {
-                const allTeachers: Teacher[] = await teachersRes.json();
-                const assignedTeachers = allTeachers.filter(t => batch.teacherIds.includes(t.id));
-                if (assignedTeachers.length > 0) {
-                  teacherNames = assignedTeachers.map(t => t.name).join(', ');
-                }
-              } else {
-                 console.warn(`Failed to fetch teachers list: ${teachersRes.status}`);
-              }
-            }
-            batchData = { ...batch, teacherNames };
+        if (student && student.batchIds && student.batchIds.length > 0) {
+            const [allBatchesRes, allTeachersRes, allAttendanceRes] = await Promise.all([
+                fetch('/api/batches'),
+                fetch('/api/teachers'),
+                fetch(`/api/attendance?studentId=${student.id}`)
+            ]);
 
-            const attendanceRes = await fetch(`/api/attendance?studentId=${student.id}&batchId=${student.batchId}`);
-            if (attendanceRes.ok) {
-              attendanceData = await attendanceRes.json();
+            if (allBatchesRes.ok && allTeachersRes.ok && allAttendanceRes.ok) {
+                const allBatches: Batch[] = await allBatchesRes.json();
+                const allTeachers: Teacher[] = await allTeachersRes.json();
+                const teachersMap = new Map(allTeachers.map(t => [t.id, t.name]));
+
+                batchesData = allBatches
+                    .filter(b => student.batchIds?.includes(b.id))
+                    .map(b => ({
+                        ...b,
+                        teacherNames: b.teacherIds?.map(id => teachersMap.get(id)).filter(Boolean).join(', ') || 'N/A'
+                    }));
+
+                attendanceData = await allAttendanceRes.json();
             } else {
-              console.warn(`Failed to fetch attendance for student ${student.id}, batch ${student.batchId}: ${attendanceRes.status}`);
+                 console.warn(`Failed to fetch all required data for dashboard.`);
             }
-
-          } else {
-             console.warn(`Failed to fetch batch details for ID ${student.batchId}: ${batchRes.status}`);
-          }
         }
         
-        setDashboardData({ student, batch: batchData, attendance: attendanceData });
+        setDashboardData({ student, batches: batchesData, attendance: attendanceData });
 
       } catch (err: any) {
         console.error("Full error fetching student dashboard data:", err);
@@ -223,24 +217,21 @@ export default function StudentDashboardPage() {
 
       <Card className="shadow-lg">
         <CardHeader>
-          <CardTitle>My Assigned Batch</CardTitle>
-          <CardDescription>Details about your current Finishing School Program batch.</CardDescription>
+          <CardTitle>My Assigned Batches</CardTitle>
+          <CardDescription>Details about your current Finishing School Program batches.</CardDescription>
         </CardHeader>
-        <CardContent className="grid grid-cols-[150px_1fr] gap-x-4 gap-y-3 text-sm">
-          {dashboardData.batch ? (
-            <>
-              <span className="text-muted-foreground">Batch Name:</span>
-              <span className="font-medium">{dashboardData.batch.name}</span>
-
-              <span className="text-muted-foreground">Topic:</span>
-              <span className="font-medium">{dashboardData.batch.topic}</span>
-              
-              <span className="text-muted-foreground">Timetable:</span>
-              <span className="font-medium">{formatTimetable(dashboardData.batch)}</span>
-              
-              <span className="text-muted-foreground">Assigned Teachers:</span>
-              <span className="font-medium">{dashboardData.batch.teacherNames || "N/A"}</span>
-            </>
+        <CardContent className="space-y-4">
+          {dashboardData.batches && dashboardData.batches.length > 0 ? (
+            dashboardData.batches.map(batch => (
+                <Card key={batch.id} className="bg-muted/50 p-4">
+                    <CardTitle className="text-lg">{batch.name}</CardTitle>
+                    <CardDescription>{batch.topic}</CardDescription>
+                    <div className="mt-2 text-sm space-y-1">
+                        <p><strong>Teachers:</strong> {batch.teacherNames || "N/A"}</p>
+                        <p className="flex items-center gap-2"><Clock className="h-4 w-4" /> {formatTimetable(batch)}</p>
+                    </div>
+                </Card>
+            ))
           ) : (
             <Alert className="col-span-2">
                 <Info className="h-4 w-4" />
@@ -257,7 +248,7 @@ export default function StudentDashboardPage() {
           <CardDescription>Your attendance for recent FSP sessions in your current batch.</CardDescription>
         </CardHeader>
         <CardContent>
-          {dashboardData.batch ? (
+          {dashboardData.batches && dashboardData.batches.length > 0 ? (
             dashboardData.attendance && dashboardData.attendance.length > 0 ? (
             <Table>
               <TableHeader>
@@ -289,7 +280,7 @@ export default function StudentDashboardPage() {
                 <Alert>
                     <Info className="h-4 w-4" />
                     <AlertTitle>No Attendance Records</AlertTitle>
-                    <AlertDescription>No attendance records found for you in this batch yet.</AlertDescription>
+                    <AlertDescription>No attendance records found for you in any of your batches yet.</AlertDescription>
                 </Alert>
             )
           ) : (
