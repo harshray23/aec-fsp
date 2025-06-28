@@ -30,7 +30,6 @@ export interface AcademicDetails {
   class12?: {
     board?: string;
     percentage?: number;
-    schoolName?: string;
   };
   semesters?: {
     sem1?: number;
@@ -82,6 +81,7 @@ export interface Student extends User {
     fatherOccupation?: string;
     motherOccupation?: string;
     bloodGroup?: string;
+    schoolName?: string;
   };
 }
 

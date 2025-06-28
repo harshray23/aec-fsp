@@ -140,7 +140,7 @@ export default function ViewStudentsPage() {
       "Blood Group": student.personalDetails?.bloodGroup || "N/A",
       "Present Address": [student.address?.street, student.address?.city, student.address?.state, student.address?.pincode, student.address?.country].filter(Boolean).join(', ') || "N/A",
       "Permanent Address": [student.permanentAddress?.street, student.permanentAddress?.city, student.permanentAddress?.state, student.permanentAddress?.pincode, student.permanentAddress?.country].filter(Boolean).join(', ') || "N/A",
-      "12th School Name": student.academics?.class12?.schoolName || "N/A",
+      "12th School Name": student.personalDetails?.schoolName || "N/A",
       "12th Board": student.academics?.class12?.board || "N/A",
       "12th Percentage": student.academics?.class12?.percentage || "N/A",
       "10th Board": student.academics?.class10?.board || "N/A",

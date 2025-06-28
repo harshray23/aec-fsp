@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import type { Student } from "@/lib/types";
-import { Mail, Phone, Building, UserSquare2, Hash, ClipboardList, MapPin, User, HeartPulse } from "lucide-react";
+import { Mail, Phone, Building, UserSquare2, Hash, ClipboardList, MapPin, User, HeartPulse, School } from "lucide-react";
 import { DEPARTMENTS } from "@/lib/constants";
 
 const editStudentProfileSchema = z.object({
@@ -50,6 +50,7 @@ const editStudentProfileSchema = z.object({
     fatherOccupation: z.string().optional(),
     motherOccupation: z.string().optional(),
     bloodGroup: z.string().optional(),
+    schoolName: z.string().optional(),
   }).optional(),
 });
 
@@ -90,6 +91,7 @@ export default function StudentEditProfileForm({ studentData, onSave, onCancel, 
           fatherOccupation: studentData.personalDetails?.fatherOccupation || "",
           motherOccupation: studentData.personalDetails?.motherOccupation || "",
           bloodGroup: studentData.personalDetails?.bloodGroup || "",
+          schoolName: studentData.personalDetails?.schoolName || "",
       }
     },
   });
@@ -161,8 +163,9 @@ export default function StudentEditProfileForm({ studentData, onSave, onCancel, 
                         <FormField control={form.control} name="personalDetails.motherPhone" render={({ field }) => (<FormItem><FormLabel>Mother's Phone</FormLabel><FormControl><Input placeholder="Mother's Phone Number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="personalDetails.fatherOccupation" render={({ field }) => (<FormItem><FormLabel>Father's Occupation</FormLabel><FormControl><Input placeholder="Father's Occupation" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="personalDetails.motherOccupation" render={({ field }) => (<FormItem><FormLabel>Mother's Occupation</FormLabel><FormControl><Input placeholder="Mother's Occupation" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="personalDetails.bloodGroup" render={({ field }) => (<FormItem><FormLabel className="flex items-center"><HeartPulse className="mr-2 h-4 w-4"/>Blood Group</FormLabel><FormControl><Input placeholder="e.g., O+" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="personalDetails.schoolName" render={({ field }) => (<FormItem><FormLabel className="flex items-center"><School className="mr-2 h-4 w-4"/>Last School Name (12th)</FormLabel><FormControl><Input placeholder="e.g., St. Patrick's H.S. School" {...field} /></FormControl><FormMessage /></FormItem>)} />
                     </div>
-                    <FormField control={form.control} name="personalDetails.bloodGroup" render={({ field }) => (<FormItem><FormLabel className="flex items-center"><HeartPulse className="mr-2 h-4 w-4"/>Blood Group</FormLabel><FormControl><Input placeholder="e.g., O+" {...field} /></FormControl><FormMessage /></FormItem>)} />
                 
                     <div className="pt-4 mt-4 border-t">
                         <h4 className="text-md font-semibold flex items-center gap-2 mb-4"><MapPin/>Present Address</h4>

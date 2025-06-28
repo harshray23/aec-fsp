@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GraduationCap, Edit3, Mail, Phone, UserSquare2, Hash, Building, ImagePlus, ClipboardList, Loader2, BookCopy, MapPin, User, HeartPulse } from "lucide-react";
+import { GraduationCap, Edit3, Mail, Phone, UserSquare2, Hash, Building, ImagePlus, ClipboardList, Loader2, BookCopy, MapPin, User, HeartPulse, School } from "lucide-react";
 import type { Student, AcademicDetails } from "@/lib/types";
 import React, { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -289,6 +289,7 @@ export default function StudentProfilePage() {
                             <p><strong>Father's Occupation:</strong> {studentProfile.personalDetails.fatherOccupation || 'N/A'}</p>
                             <p><strong>Mother's Occupation:</strong> {studentProfile.personalDetails.motherOccupation || 'N/A'}</p>
                             <p className="flex items-center gap-2"><strong><HeartPulse className="h-4 w-4"/>Blood Group:</strong> {studentProfile.personalDetails.bloodGroup || 'N/A'}</p>
+                            <p className="flex items-center gap-2"><strong><School className="h-4 w-4"/>Last School:</strong> {studentProfile.personalDetails.schoolName || 'N/A'}</p>
                         </div>
                     ) : (
                         <p className="text-sm text-muted-foreground">No parent/guardian details added yet.</p>
@@ -332,7 +333,6 @@ export default function StudentProfilePage() {
                         {studentProfile.academics?.class12 && (
                             <div>
                                 <h4 className="font-semibold">Class 12th</h4>
-                                <p className="text-sm text-muted-foreground">School: {studentProfile.academics.class12?.schoolName || 'N/A'}</p>
                                 <p className="text-sm text-muted-foreground">Board: {studentProfile.academics.class12?.board || 'N/A'}, Percentage: {studentProfile.academics.class12?.percentage || 'N/A'}%</p>
                             </div>
                         )}
