@@ -26,21 +26,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             return res.status(404).json({ message: 'Student not found to update.' });
         }
 
-        const { academics, phoneNumber, whatsappNumber, address } = req.body;
-        const updateData: Partial<Student> = {};
+        const { academics, phoneNumber, whatsappNumber, address, personalDetails, permanentAddress } = req.body;
+        const updateData: { [key: string]: any } = {};
 
-        if (academics !== undefined) {
-          updateData.academics = academics;
-        }
-        if (phoneNumber !== undefined) {
-          updateData.phoneNumber = phoneNumber;
-        }
-        if (whatsappNumber !== undefined) {
-          updateData.whatsappNumber = whatsappNumber;
-        }
-        if (address !== undefined) {
-          updateData.address = address;
-        }
+        if (academics !== undefined) updateData.academics = academics;
+        if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
+        if (whatsappNumber !== undefined) updateData.whatsappNumber = whatsappNumber;
+        if (address !== undefined) updateData.address = address;
+        if (personalDetails !== undefined) updateData.personalDetails = personalDetails;
+        if (permanentAddress !== undefined) updateData.permanentAddress = permanentAddress;
         
         if (Object.keys(updateData).length === 0) {
             return res.status(400).json({ message: 'No fields provided for update.' });

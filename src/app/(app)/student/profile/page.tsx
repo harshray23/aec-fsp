@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { GraduationCap, Edit3, Mail, Phone, UserSquare2, Hash, Building, ImagePlus, ClipboardList, Loader2, BookCopy, MapPin } from "lucide-react";
+import { GraduationCap, Edit3, Mail, Phone, UserSquare2, Hash, Building, ImagePlus, ClipboardList, Loader2, BookCopy, MapPin, User, HeartPulse } from "lucide-react";
 import type { Student, AcademicDetails } from "@/lib/types";
 import React, { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
@@ -33,50 +33,51 @@ export default function StudentProfilePage() {
   const { toast } = useToast();
   const router = useRouter();
 
-  useEffect(() => {
-    async function fetchProfile() {
-      setIsLoading(true);
-      setError(null);
-      let studentIdFromStorage: string | null = null;
-      const storedUserJSON = localStorage.getItem("currentUser");
-      
-      if (storedUserJSON) {
-          const user = JSON.parse(storedUserJSON);
-          if (user && user.role === USER_ROLES.STUDENT && (user.studentId || user.id)) {
-              studentIdFromStorage = user.studentId || user.id;
-          }
-      }
-
-      if (!studentIdFromStorage) {
-          toast({
-              title: "Error",
-              description: "Could not identify student. Please log in again.",
-              variant: "destructive",
-          });
-          router.push("/login?role=student");
-          setIsLoading(false);
-          return;
-      }
-
-      try {
-        const res = await fetch(`/api/students/profile?studentId=${studentIdFromStorage}`);
-        if (!res.ok) {
-          const errorData = await res.json().catch(() => ({ message: `Failed to fetch profile (${res.status})` }));
-          throw new Error(errorData.message || `Error: ${res.status}`);
+  const fetchProfile = async () => {
+    setIsLoading(true);
+    setError(null);
+    let studentIdFromStorage: string | null = null;
+    const storedUserJSON = localStorage.getItem("currentUser");
+    
+    if (storedUserJSON) {
+        const user = JSON.parse(storedUserJSON);
+        if (user && user.role === USER_ROLES.STUDENT && (user.studentId || user.id)) {
+            studentIdFromStorage = user.studentId || user.id;
         }
-        const data: Student = await res.json();
-        setStudentProfile(data);
-      } catch (error: any) {
-        setError(error.message || "Failed to load profile.");
-        toast({
-          title: "Failed to load profile",
-          description: error.message,
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
     }
+
+    if (!studentIdFromStorage) {
+        toast({
+            title: "Error",
+            description: "Could not identify student. Please log in again.",
+            variant: "destructive",
+        });
+        router.push("/login?role=student");
+        setIsLoading(false);
+        return;
+    }
+
+    try {
+      const res = await fetch(`/api/students/profile?studentId=${studentIdFromStorage}`);
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: `Failed to fetch profile (${res.status})` }));
+        throw new Error(errorData.message || `Error: ${res.status}`);
+      }
+      const data: Student = await res.json();
+      setStudentProfile(data);
+    } catch (error: any) {
+      setError(error.message || "Failed to load profile.");
+      toast({
+        title: "Failed to load profile",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchProfile();
   }, [router, toast]);
   
@@ -135,12 +136,20 @@ export default function StudentProfilePage() {
   const avatarText = fallbackName.split(' ').map(n => n[0]).join('').toUpperCase() || 'S';
   const departmentLabel = DEPARTMENTS.find(d => d.value === studentProfile?.department)?.label || studentProfile?.department || "N/A";
 
-  const fullAddress = [
+  const presentAddress = [
     studentProfile.address?.street,
     studentProfile.address?.city,
     studentProfile.address?.state,
     studentProfile.address?.pincode,
     studentProfile.address?.country,
+  ].filter(Boolean).join(', ');
+
+  const permanentAddress = [
+    studentProfile.permanentAddress?.street,
+    studentProfile.permanentAddress?.city,
+    studentProfile.permanentAddress?.state,
+    studentProfile.permanentAddress?.pincode,
+    studentProfile.permanentAddress?.country,
   ].filter(Boolean).join(', ');
 
   if (isLoading) {
@@ -268,11 +277,43 @@ export default function StudentProfilePage() {
 
               <Card className="bg-secondary/50 mt-6">
                 <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2"><MapPin/>Home Address</CardTitle>
+                    <CardTitle className="text-base flex items-center gap-2"><User/>Personal Details</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    {studentProfile.personalDetails ? (
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                            <p><strong>Father's Name:</strong> {studentProfile.personalDetails.fatherName || 'N/A'}</p>
+                            <p><strong>Mother's Name:</strong> {studentProfile.personalDetails.motherName || 'N/A'}</p>
+                            <p><strong>Father's Phone:</strong> {studentProfile.personalDetails.fatherPhone || 'N/A'}</p>
+                            <p><strong>Mother's Phone:</strong> {studentProfile.personalDetails.motherPhone || 'N/A'}</p>
+                            <p><strong>Father's Occupation:</strong> {studentProfile.personalDetails.fatherOccupation || 'N/A'}</p>
+                            <p><strong>Mother's Occupation:</strong> {studentProfile.personalDetails.motherOccupation || 'N/A'}</p>
+                            <p className="flex items-center gap-2"><strong><HeartPulse className="h-4 w-4"/>Blood Group:</strong> {studentProfile.personalDetails.bloodGroup || 'N/A'}</p>
+                        </div>
+                    ) : (
+                        <p className="text-sm text-muted-foreground">No personal details added yet.</p>
+                    )}
+                </CardContent>
+              </Card>
+
+              <Card className="bg-secondary/50 mt-6">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2"><MapPin/>Present Address</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <p className="text-sm text-muted-foreground">
-                        {fullAddress || "No address added yet."}
+                        {presentAddress || "No present address added yet."}
+                    </p>
+                </CardContent>
+              </Card>
+
+               <Card className="bg-secondary/50 mt-6">
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center gap-2"><MapPin/>Permanent Address</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm text-muted-foreground">
+                        {permanentAddress || "No permanent address added yet."}
                     </p>
                 </CardContent>
               </Card>
@@ -299,6 +340,7 @@ export default function StudentProfilePage() {
                         {studentProfile.academics?.class12 && (
                             <div>
                                 <h4 className="font-semibold">Class 12th</h4>
+                                <p className="text-sm text-muted-foreground">School: {studentProfile.academics.class12?.schoolName || 'N/A'}</p>
                                 <p className="text-sm text-muted-foreground">Board: {studentProfile.academics.class12?.board || 'N/A'}, Percentage: {studentProfile.academics.class12?.percentage || 'N/A'}%</p>
                             </div>
                         )}

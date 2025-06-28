@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { GraduationCap, Loader2, MoreHorizontal, Trash2 } from "lucide-react"; 
+import { GraduationCap, Loader2, MoreHorizontal, Trash2, Download } from "lucide-react"; 
 import { DEPARTMENTS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -29,6 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import * as XLSX from "xlsx";
 
 // A simple debounce hook
 function useDebounce(value: string, delay: number) {
@@ -114,6 +115,45 @@ export default function ViewStudentsPage() {
     setIsDeleteDialogOpen(true);
   };
 
+  const handleDownload = () => {
+    if (students.length === 0) {
+      toast({ title: "No Data", description: "No students to export with the current filters.", variant: "destructive" });
+      return;
+    }
+
+    const dataForExcel = students.map(student => ({
+      "Student ID": student.studentId,
+      "Name": student.name,
+      "Email": student.email,
+      "Roll Number": student.rollNumber,
+      "Registration Number": student.registrationNumber,
+      "Department": DEPARTMENTS.find(d => d.value === student.department)?.label || student.department,
+      "Section": student.section || "N/A",
+      "Phone Number": student.phoneNumber,
+      "WhatsApp Number": student.whatsappNumber || "N/A",
+      "Father's Name": student.personalDetails?.fatherName || "N/A",
+      "Mother's Name": student.personalDetails?.motherName || "N/A",
+      "Father's Phone": student.personalDetails?.fatherPhone || "N/A",
+      "Mother's Phone": student.personalDetails?.motherPhone || "N/A",
+      "Father's Occupation": student.personalDetails?.fatherOccupation || "N/A",
+      "Mother's Occupation": student.personalDetails?.motherOccupation || "N/A",
+      "Blood Group": student.personalDetails?.bloodGroup || "N/A",
+      "Present Address": [student.address?.street, student.address?.city, student.address?.state, student.address?.pincode, student.address?.country].filter(Boolean).join(', ') || "N/A",
+      "Permanent Address": [student.permanentAddress?.street, student.permanentAddress?.city, student.permanentAddress?.state, student.permanentAddress?.pincode, student.permanentAddress?.country].filter(Boolean).join(', ') || "N/A",
+      "12th School Name": student.academics?.class12?.schoolName || "N/A",
+      "12th Board": student.academics?.class12?.board || "N/A",
+      "12th Percentage": student.academics?.class12?.percentage || "N/A",
+      "10th Board": student.academics?.class10?.board || "N/A",
+      "10th Percentage": student.academics?.class10?.percentage || "N/A",
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(dataForExcel);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
+    XLSX.writeFile(workbook, "student_records.xlsx");
+    toast({ title: "Export Successful", description: "Student records have been downloaded." });
+  };
+
   const handleDeleteStudent = async () => {
     if (!studentToDelete) return;
     try {
@@ -154,9 +194,9 @@ export default function ViewStudentsPage() {
         <CardHeader>
           <CardTitle>Student Directory</CardTitle>
           <CardDescription>A comprehensive list of all students enrolled in the FSP.</CardDescription>
-          <div className="mt-4 flex flex-wrap gap-4">
+          <div className="mt-4 flex flex-wrap gap-4 items-center">
             <Input 
-              placeholder="Search by name..." 
+              placeholder="Search by name, roll no, email..." 
               className="max-w-sm" 
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -172,6 +212,10 @@ export default function ViewStudentsPage() {
                 ))}
               </SelectContent>
             </Select>
+            <Button onClick={handleDownload} variant="outline">
+              <Download className="mr-2 h-4 w-4" />
+              Download Data
+            </Button>
           </div>
         </CardHeader>
         <CardContent>

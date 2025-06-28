@@ -30,6 +30,7 @@ export interface AcademicDetails {
   class12?: {
     board?: string;
     percentage?: number;
+    schoolName?: string;
   };
   semesters?: {
     sem1?: number;
@@ -59,12 +60,28 @@ export interface Student extends User {
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
   academics?: AcademicDetails;
-  address?: {
+  address?: { // Present Address
     street?: string;
     city?: string;
     state?: string;
     pincode?: string;
     country?: string;
+  };
+  permanentAddress?: { // Home Address
+    street?: string;
+    city?: string;
+    state?: string;
+    pincode?: string;
+    country?: string;
+  };
+  personalDetails?: {
+    fatherName?: string;
+    motherName?: string;
+    fatherPhone?: string;
+    motherPhone?: string;
+    fatherOccupation?: string;
+    motherOccupation?: string;
+    bloodGroup?: string;
   };
 }
 

@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import type { Student } from "@/lib/types";
-import { Mail, Phone, Building, UserSquare2, Hash, ClipboardList, MapPin } from "lucide-react";
+import { Mail, Phone, Building, UserSquare2, Hash, ClipboardList, MapPin, User, HeartPulse } from "lucide-react";
 import { DEPARTMENTS } from "@/lib/constants";
 
 const editStudentProfileSchema = z.object({
@@ -34,6 +34,22 @@ const editStudentProfileSchema = z.object({
     state: z.string().optional(),
     pincode: z.string().optional().or(z.literal("")).refine(val => !val || /^\d{4,10}$/.test(val), { message: "Invalid pincode format."}),
     country: z.string().optional(),
+  }).optional(),
+  permanentAddress: z.object({
+    street: z.string().optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
+    pincode: z.string().optional().or(z.literal("")).refine(val => !val || /^\d{4,10}$/.test(val), { message: "Invalid pincode format."}),
+    country: z.string().optional(),
+  }).optional(),
+  personalDetails: z.object({
+    fatherName: z.string().optional(),
+    motherName: z.string().optional(),
+    fatherPhone: z.string().optional().or(z.literal('')).refine(val => !val || /^\d{10,15}$/.test(val), { message: "Phone number must be 10-15 digits if provided."}),
+    motherPhone: z.string().optional().or(z.literal('')).refine(val => !val || /^\d{10,15}$/.test(val), { message: "Phone number must be 10-15 digits if provided."}),
+    fatherOccupation: z.string().optional(),
+    motherOccupation: z.string().optional(),
+    bloodGroup: z.string().optional(),
   }).optional(),
 });
 
@@ -58,6 +74,22 @@ export default function StudentEditProfileForm({ studentData, onSave, onCancel, 
         state: studentData.address?.state || "",
         pincode: studentData.address?.pincode || "",
         country: studentData.address?.country || "",
+      },
+      permanentAddress: {
+        street: studentData.permanentAddress?.street || "",
+        city: studentData.permanentAddress?.city || "",
+        state: studentData.permanentAddress?.state || "",
+        pincode: studentData.permanentAddress?.pincode || "",
+        country: studentData.permanentAddress?.country || "",
+      },
+      personalDetails: {
+          fatherName: studentData.personalDetails?.fatherName || "",
+          motherName: studentData.personalDetails?.motherName || "",
+          fatherPhone: studentData.personalDetails?.fatherPhone || "",
+          motherPhone: studentData.personalDetails?.motherPhone || "",
+          fatherOccupation: studentData.personalDetails?.fatherOccupation || "",
+          motherOccupation: studentData.personalDetails?.motherOccupation || "",
+          bloodGroup: studentData.personalDetails?.bloodGroup || "",
       }
     },
   });
@@ -69,7 +101,7 @@ export default function StudentEditProfileForm({ studentData, onSave, onCancel, 
       <form onSubmit={form.handleSubmit(onSave)}>
         <CardHeader className="p-0 mb-6">
             <CardTitle>Edit Your Profile</CardTitle>
-            <CardDescription>Update your contact information below. Other details are read-only.</CardDescription>
+            <CardDescription>Update your personal and contact information below. Other details are read-only.</CardDescription>
         </CardHeader>
         <CardContent className="p-0 space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -119,7 +151,24 @@ export default function StudentEditProfileForm({ studentData, onSave, onCancel, 
 
             <Card className="bg-muted/50">
                 <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2"><MapPin/>Home Address</CardTitle>
+                    <CardTitle className="text-base flex items-center gap-2"><User/>Personal Details</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField control={form.control} name="personalDetails.fatherName" render={({ field }) => (<FormItem><FormLabel>Father's Name</FormLabel><FormControl><Input placeholder="Father's Name" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="personalDetails.motherName" render={({ field }) => (<FormItem><FormLabel>Mother's Name</FormLabel><FormControl><Input placeholder="Mother's Name" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="personalDetails.fatherPhone" render={({ field }) => (<FormItem><FormLabel>Father's Phone</FormLabel><FormControl><Input placeholder="Father's Phone Number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="personalDetails.motherPhone" render={({ field }) => (<FormItem><FormLabel>Mother's Phone</FormLabel><FormControl><Input placeholder="Mother's Phone Number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="personalDetails.fatherOccupation" render={({ field }) => (<FormItem><FormLabel>Father's Occupation</FormLabel><FormControl><Input placeholder="Father's Occupation" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="personalDetails.motherOccupation" render={({ field }) => (<FormItem><FormLabel>Mother's Occupation</FormLabel><FormControl><Input placeholder="Mother's Occupation" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                    </div>
+                    <FormField control={form.control} name="personalDetails.bloodGroup" render={({ field }) => (<FormItem><FormLabel className="flex items-center"><HeartPulse className="mr-2 h-4 w-4"/>Blood Group</FormLabel><FormControl><Input placeholder="e.g., O+" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                </CardContent>
+            </Card>
+
+            <Card className="bg-muted/50">
+                <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2"><MapPin/>Present Address</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                      <FormField control={form.control} name="address.street" render={({ field }) => (<FormItem><FormLabel>Street Address</FormLabel><FormControl><Input placeholder="123 Main St" {...field} /></FormControl><FormMessage /></FormItem>)} />
@@ -130,6 +179,23 @@ export default function StudentEditProfileForm({ studentData, onSave, onCancel, 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <FormField control={form.control} name="address.pincode" render={({ field }) => (<FormItem><FormLabel>Pincode / ZIP</FormLabel><FormControl><Input placeholder="12345" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="address.country" render={({ field }) => (<FormItem><FormLabel>Country</FormLabel><FormControl><Input placeholder="Country" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                     </div>
+                </CardContent>
+            </Card>
+
+            <Card className="bg-muted/50">
+                <CardHeader>
+                    <CardTitle className="text-base flex items-center gap-2"><MapPin/>Permanent Address</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                     <FormField control={form.control} name="permanentAddress.street" render={({ field }) => (<FormItem><FormLabel>Street Address</FormLabel><FormControl><Input placeholder="123 Main St" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField control={form.control} name="permanentAddress.city" render={({ field }) => (<FormItem><FormLabel>City</FormLabel><FormControl><Input placeholder="Anytown" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="permanentAddress.state" render={({ field }) => (<FormItem><FormLabel>State / Province</FormLabel><FormControl><Input placeholder="State" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                     </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField control={form.control} name="permanentAddress.pincode" render={({ field }) => (<FormItem><FormLabel>Pincode / ZIP</FormLabel><FormControl><Input placeholder="12345" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="permanentAddress.country" render={({ field }) => (<FormItem><FormLabel>Country</FormLabel><FormControl><Input placeholder="Country" {...field} /></FormControl><FormMessage /></FormItem>)} />
                      </div>
                 </CardContent>
             </Card>

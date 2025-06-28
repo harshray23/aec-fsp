@@ -36,6 +36,7 @@ const academicSchema = z.object({
   class12: z.object({
     board: z.string().optional(),
     percentage: z.coerce.number().min(0).max(100, "Must be between 0 and 100").optional().or(z.literal("")),
+    schoolName: z.string().optional(),
   }).optional(),
   semesters: z.object({
     sem1: z.coerce.number().min(0).max(10, "Must be between 0 and 10").optional().or(z.literal("")),
@@ -64,7 +65,7 @@ export default function AcademicDetailsForm({ isOpen, onClose, onSave, isSaving,
     resolver: zodResolver(academicSchema),
     defaultValues: {
       class10: { board: initialData?.class10?.board || "", percentage: initialData?.class10?.percentage || "" },
-      class12: { board: initialData?.class12?.board || "", percentage: initialData?.class12?.percentage || "" },
+      class12: { board: initialData?.class12?.board || "", percentage: initialData?.class12?.percentage || "", schoolName: initialData?.class12?.schoolName || "" },
       semesters: {
         sem1: initialData?.semesters?.sem1 || "",
         sem2: initialData?.semesters?.sem2 || "",
@@ -110,9 +111,12 @@ export default function AcademicDetailsForm({ isOpen, onClose, onSave, isSaving,
 
                 <Card>
                   <CardHeader><CardTitle>Class 12th</CardTitle></CardHeader>
-                  <CardContent className="grid grid-cols-2 gap-4">
+                  <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField control={form.control} name="class12.board" render={({ field }) => ( <FormItem><FormLabel>Board</FormLabel><FormControl><Input placeholder="e.g., WBCHSE" {...field} /></FormControl><FormMessage /></FormItem> )} />
                     <FormField control={form.control} name="class12.percentage" render={({ field }) => ( <FormItem><FormLabel>Percentage (%)</FormLabel><FormControl><Input type="number" step="0.01" placeholder="e.g., 88.2" {...field} /></FormControl><FormMessage /></FormItem> )} />
+                    <div className="md:col-span-2">
+                        <FormField control={form.control} name="class12.schoolName" render={({ field }) => ( <FormItem><FormLabel>School Name (Class 12th)</FormLabel><FormControl><Input placeholder="e.g., St. Patrick's H.S. School" {...field} /></FormControl><FormMessage /></FormItem> )} />
+                    </div>
                   </CardContent>
                 </Card>
 
