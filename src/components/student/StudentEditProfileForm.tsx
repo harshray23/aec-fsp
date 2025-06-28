@@ -151,7 +151,7 @@ export default function StudentEditProfileForm({ studentData, onSave, onCancel, 
 
             <Card className="bg-muted/50">
                 <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2"><User/>Personal Details</CardTitle>
+                    <CardTitle className="text-base flex items-center gap-2"><User/>Personal & Address Details</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -163,43 +163,38 @@ export default function StudentEditProfileForm({ studentData, onSave, onCancel, 
                         <FormField control={form.control} name="personalDetails.motherOccupation" render={({ field }) => (<FormItem><FormLabel>Mother's Occupation</FormLabel><FormControl><Input placeholder="Mother's Occupation" {...field} /></FormControl><FormMessage /></FormItem>)} />
                     </div>
                     <FormField control={form.control} name="personalDetails.bloodGroup" render={({ field }) => (<FormItem><FormLabel className="flex items-center"><HeartPulse className="mr-2 h-4 w-4"/>Blood Group</FormLabel><FormControl><Input placeholder="e.g., O+" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                
+                    <div className="pt-4 mt-4 border-t">
+                        <h4 className="text-md font-semibold flex items-center gap-2 mb-4"><MapPin/>Present Address</h4>
+                        <div className="space-y-4">
+                            <FormField control={form.control} name="address.street" render={({ field }) => (<FormItem><FormLabel>Street Address</FormLabel><FormControl><Input placeholder="123 Main St" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormField control={form.control} name="address.city" render={({ field }) => (<FormItem><FormLabel>City</FormLabel><FormControl><Input placeholder="Anytown" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="address.state" render={({ field }) => (<FormItem><FormLabel>State / Province</FormLabel><FormControl><Input placeholder="State" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormField control={form.control} name="address.pincode" render={({ field }) => (<FormItem><FormLabel>Pincode / ZIP</FormLabel><FormControl><Input placeholder="12345" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="address.country" render={({ field }) => (<FormItem><FormLabel>Country</FormLabel><FormControl><Input placeholder="Country" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="pt-4 mt-4 border-t">
+                        <h4 className="text-md font-semibold flex items-center gap-2 mb-4"><MapPin/>Permanent Address</h4>
+                        <div className="space-y-4">
+                            <FormField control={form.control} name="permanentAddress.street" render={({ field }) => (<FormItem><FormLabel>Street Address</FormLabel><FormControl><Input placeholder="123 Main St" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormField control={form.control} name="permanentAddress.city" render={({ field }) => (<FormItem><FormLabel>City</FormLabel><FormControl><Input placeholder="Anytown" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="permanentAddress.state" render={({ field }) => (<FormItem><FormLabel>State / Province</FormLabel><FormControl><Input placeholder="State" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <FormField control={form.control} name="permanentAddress.pincode" render={({ field }) => (<FormItem><FormLabel>Pincode / ZIP</FormLabel><FormControl><Input placeholder="12345" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="permanentAddress.country" render={({ field }) => (<FormItem><FormLabel>Country</FormLabel><FormControl><Input placeholder="Country" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            </div>
+                        </div>
+                    </div>
                 </CardContent>
             </Card>
-
-            <Card className="bg-muted/50">
-                <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2"><MapPin/>Present Address</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                     <FormField control={form.control} name="address.street" render={({ field }) => (<FormItem><FormLabel>Street Address</FormLabel><FormControl><Input placeholder="123 Main St" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField control={form.control} name="address.city" render={({ field }) => (<FormItem><FormLabel>City</FormLabel><FormControl><Input placeholder="Anytown" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="address.state" render={({ field }) => (<FormItem><FormLabel>State / Province</FormLabel><FormControl><Input placeholder="State" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                     </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField control={form.control} name="address.pincode" render={({ field }) => (<FormItem><FormLabel>Pincode / ZIP</FormLabel><FormControl><Input placeholder="12345" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="address.country" render={({ field }) => (<FormItem><FormLabel>Country</FormLabel><FormControl><Input placeholder="Country" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                     </div>
-                </CardContent>
-            </Card>
-
-            <Card className="bg-muted/50">
-                <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2"><MapPin/>Permanent Address</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                     <FormField control={form.control} name="permanentAddress.street" render={({ field }) => (<FormItem><FormLabel>Street Address</FormLabel><FormControl><Input placeholder="123 Main St" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField control={form.control} name="permanentAddress.city" render={({ field }) => (<FormItem><FormLabel>City</FormLabel><FormControl><Input placeholder="Anytown" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="permanentAddress.state" render={({ field }) => (<FormItem><FormLabel>State / Province</FormLabel><FormControl><Input placeholder="State" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                     </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <FormField control={form.control} name="permanentAddress.pincode" render={({ field }) => (<FormItem><FormLabel>Pincode / ZIP</FormLabel><FormControl><Input placeholder="12345" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                        <FormField control={form.control} name="permanentAddress.country" render={({ field }) => (<FormItem><FormLabel>Country</FormLabel><FormControl><Input placeholder="Country" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                     </div>
-                </CardContent>
-            </Card>
-
 
             <div className="flex justify-end gap-2 pt-4">
                 <Button type="button" variant="outline" onClick={onCancel} disabled={isSaving}>

@@ -277,10 +277,10 @@ export default function StudentProfilePage() {
 
               <Card className="bg-secondary/50 mt-6">
                 <CardHeader>
-                    <CardTitle className="text-base flex items-center gap-2"><User/>Personal Details</CardTitle>
+                    <CardTitle className="text-base flex items-center gap-2"><User/>Personal & Address Details</CardTitle>
                 </CardHeader>
-                <CardContent>
-                    {studentProfile.personalDetails ? (
+                <CardContent className="space-y-4">
+                     {studentProfile.personalDetails ? (
                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
                             <p><strong>Father's Name:</strong> {studentProfile.personalDetails.fatherName || 'N/A'}</p>
                             <p><strong>Mother's Name:</strong> {studentProfile.personalDetails.motherName || 'N/A'}</p>
@@ -291,30 +291,22 @@ export default function StudentProfilePage() {
                             <p className="flex items-center gap-2"><strong><HeartPulse className="h-4 w-4"/>Blood Group:</strong> {studentProfile.personalDetails.bloodGroup || 'N/A'}</p>
                         </div>
                     ) : (
-                        <p className="text-sm text-muted-foreground">No personal details added yet.</p>
+                        <p className="text-sm text-muted-foreground">No parent/guardian details added yet.</p>
                     )}
-                </CardContent>
-              </Card>
-
-              <Card className="bg-secondary/50 mt-6">
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2"><MapPin/>Present Address</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                        {presentAddress || "No present address added yet."}
-                    </p>
-                </CardContent>
-              </Card>
-
-               <Card className="bg-secondary/50 mt-6">
-                <CardHeader>
-                  <CardTitle className="text-base flex items-center gap-2"><MapPin/>Permanent Address</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                        {permanentAddress || "No permanent address added yet."}
-                    </p>
+                    
+                    <div className="pt-4 border-t">
+                        <h4 className="text-sm font-semibold flex items-center gap-2 mb-1"><MapPin className="h-4 w-4"/>Present Address</h4>
+                        <p className="text-sm text-muted-foreground pl-6">
+                            {presentAddress || "No present address added yet."}
+                        </p>
+                    </div>
+                    
+                    <div className="pt-4 border-t">
+                        <h4 className="text-sm font-semibold flex items-center gap-2 mb-1"><MapPin className="h-4 w-4"/>Permanent Address</h4>
+                        <p className="text-sm text-muted-foreground pl-6">
+                            {permanentAddress || "No permanent address added yet."}
+                        </p>
+                    </div>
                 </CardContent>
               </Card>
               
