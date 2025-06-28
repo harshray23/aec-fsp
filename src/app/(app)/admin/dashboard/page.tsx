@@ -97,6 +97,7 @@ export default function AdminDashboardPage() {
   const adminActions = [
     { href: "/admin/users/teachers", label: "Manage Teachers", icon: Briefcase, description: "Add, view, or edit teacher accounts." },
     { href: "/admin/users/admins", label: "Manage Admins", icon: ShieldAlert, description: "Manage other administrator accounts." },
+    { href: "/admin/users/students", label: "View & Download Students", icon: GraduationCap, description: "Browse student records and download personal data." },
     { href: "/admin/batches", label: "View Batches & Timetables", icon: BookUser, description: "Oversee all program batches and their schedules." },
     { href: "/admin/attendance", label: "Manage Attendance", icon: CheckSquare, description: "Mark and manage student attendance." },
     { href: "/admin/academics", label: "Manage Academics", icon: BookCopy, description: "Track and manage student test scores." },
