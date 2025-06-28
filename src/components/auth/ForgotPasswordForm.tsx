@@ -6,6 +6,8 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { getAuth, sendPasswordResetEmail } from "firebase/auth";
+import { app as firebaseApp } from "@/firebase";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -21,8 +23,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { USER_ROLES, type UserRole } from "@/lib/constants";
 
-const MOCK_OTP = "123456"; // For simulated OTP flow
-
 const forgotPasswordSchema = z.object({
   email: z.string().email("Invalid email address"),
 });
@@ -34,6 +34,7 @@ export default function ForgotPasswordForm() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const role = searchParams.get("role") as UserRole | null;
+  const auth = getAuth(firebaseApp);
 
   const form = useForm<ForgotPasswordFormValues>({
     resolver: zodResolver(forgotPasswordSchema),
@@ -49,34 +50,19 @@ export default function ForgotPasswordForm() {
     }
 
     try {
-      const response = await fetch('/api/auth/request-password-reset', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: values.email, role }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        toast({
-          title: "Error",
-          description: data.message || "Could not request password reset.",
-          variant: "destructive",
-        });
-        return;
-      }
-
+      await sendPasswordResetEmail(auth, values.email);
       toast({
-        title: "OTP Sent (Simulated)",
-        description: `A (mock) OTP has been sent to ${values.email}. Please use ${MOCK_OTP} to reset your password.`,
+        title: "Password Reset Email Sent",
+        description: `If an account exists for ${values.email}, you will receive an email with instructions to reset your password.`,
       });
-      router.push(`/reset-password?role=${role}&email=${encodeURIComponent(values.email)}&token=${MOCK_OTP}`);
-
-    } catch (error) {
+      // Optionally, redirect the user after sending the email
+      router.push(`/login?role=${role}`);
+    } catch (error: any) {
       console.error("Forgot password error:", error);
+      // Firebase provides generic errors for security, so we show a generic message.
       toast({
         title: "Request Failed",
-        description: "An unexpected error occurred. Please try again.",
+        description: "An error occurred while trying to send the password reset email. Please try again.",
         variant: "destructive",
       });
     }
@@ -117,7 +103,7 @@ export default function ForgotPasswordForm() {
               )}
             />
             <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? "Sending..." : "Send Reset Instructions"}
+              {form.formState.isSubmitting ? "Sending..." : "Send Reset Link"}
             </Button>
           </form>
         </Form>

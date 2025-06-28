@@ -6,7 +6,9 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import React from "react";
+import React, { useEffect, useState } from "react";
+import { getAuth, confirmPasswordReset, verifyPasswordResetCode } from "firebase/auth";
+import { app as firebaseApp } from "@/firebase";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -21,9 +23,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { USER_ROLES, type UserRole } from "@/lib/constants";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Loader2, AlertTriangle } from "lucide-react";
 
 const resetPasswordSchema = z.object({
-  otp: z.string().length(6, "OTP must be 6 digits"),
   newPassword: z.string().min(6, "Password must be at least 6 characters"),
   confirmPassword: z.string(),
 }).refine(data => data.newPassword === data.confirmPassword, {
@@ -37,85 +40,100 @@ export default function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
+  const auth = getAuth(firebaseApp);
 
-  const role = searchParams.get("role") as UserRole | null;
-  const email = searchParams.get("email");
-  const tokenFromQuery = searchParams.get("token"); // This is our mock OTP
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [email, setEmail] = useState<string | null>(null);
+  const actionCode = searchParams.get("oobCode");
 
   const form = useForm<ResetPasswordFormValues>({
     resolver: zodResolver(resetPasswordSchema),
     defaultValues: {
-      otp: "",
       newPassword: "",
       confirmPassword: "",
     },
   });
-  
-  React.useEffect(() => {
-    // Pre-fill OTP if it came from query (mock flow)
-    if (tokenFromQuery) {
-      form.setValue("otp", tokenFromQuery);
-    }
-  }, [tokenFromQuery, form]);
+
+  useEffect(() => {
+    const checkCode = async () => {
+      if (!actionCode) {
+        setError("Invalid password reset link. It might be missing the required code.");
+        setIsLoading(false);
+        return;
+      }
+      try {
+        const userEmail = await verifyPasswordResetCode(auth, actionCode);
+        setEmail(userEmail);
+      } catch (e: any) {
+        console.error("Invalid password reset code:", e);
+        setError("This password reset link is invalid or has expired. Please request a new one.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    checkCode();
+  }, [actionCode, auth]);
 
 
   const onSubmit = async (values: ResetPasswordFormValues) => {
-    if (!role || !email || !tokenFromQuery) {
-      toast({ title: "Error", description: "Invalid reset request. Please try again.", variant: "destructive" });
-      router.push("/");
+    if (!actionCode) {
+      toast({ title: "Error", description: "Invalid action code. Please try again.", variant: "destructive" });
       return;
     }
 
-    // In a real app, the 'tokenFromQuery' might be different from user-entered 'values.otp'
-    // Here, for mock, we assume tokenFromQuery is the one "sent" and values.otp is what user types.
-    // We'll use values.otp for the API call.
     try {
-      const response = await fetch('/api/auth/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email, 
-          role, 
-          token: values.otp, // Send the OTP entered by the user
-          password: values.newPassword 
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        toast({
-          title: "Error",
-          description: data.message || "Could not reset password.",
-          variant: "destructive",
-        });
-        return;
-      }
-
+      await confirmPasswordReset(auth, actionCode, values.newPassword);
       toast({
         title: "Password Reset Successful",
-        description: "Your password has been updated. Please log in with your new password.",
+        description: "Your password has been updated. You can now log in.",
       });
-      router.push(`/login?role=${role}`);
-
-    } catch (error) {
+      // A role isn't available from the reset link, so we send them to the main page.
+      // A small inconvenience for a much more secure flow.
+      router.push(`/`);
+    } catch (error: any) {
       console.error("Reset password error:", error);
       toast({
         title: "Request Failed",
-        description: "An unexpected error occurred. Please try again.",
+        description: "This link may have expired. Please request a new password reset link.",
         variant: "destructive",
       });
     }
   };
 
-  if (!role || !email || !tokenFromQuery) {
-     if (typeof window !== 'undefined') router.push('/'); // Redirect if essential params are missing
-     return <p>Invalid reset link. Redirecting...</p>;
+  if (isLoading) {
+      return (
+          <Card className="w-full max-w-md shadow-2xl">
+              <CardHeader>
+                  <CardTitle className="text-3xl font-bold text-center">Verifying Link...</CardTitle>
+              </CardHeader>
+              <CardContent className="flex justify-center items-center h-24">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+              </CardContent>
+          </Card>
+      )
   }
-  
-  let roleTitle = role.charAt(0).toUpperCase() + role.slice(1);
-   if (role === USER_ROLES.HOST) {
-    roleTitle = "Management";
+
+  if (error || !email) {
+      return (
+          <Card className="w-full max-w-md shadow-2xl">
+               <CardHeader>
+                  <CardTitle className="text-3xl font-bold text-center">Invalid Link</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Error</AlertTitle>
+                    <AlertDescription>{error || "Could not verify your email from this link."}</AlertDescription>
+                </Alert>
+                <div className="mt-4 text-center text-sm">
+                    <Link href="/" className="font-medium text-primary hover:underline">
+                        Back to Home
+                    </Link>
+                </div>
+              </CardContent>
+          </Card>
+      )
   }
 
   return (
@@ -123,25 +141,12 @@ export default function ResetPasswordForm() {
       <CardHeader>
         <CardTitle className="text-3xl font-bold text-center">Reset Password</CardTitle>
         <CardDescription className="text-center">
-          Enter the OTP sent to {email} and set your new password for your {roleTitle} account.
+          Set a new password for your account: <span className="font-semibold">{email}</span>.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <FormField
-              control={form.control}
-              name="otp"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>One-Time Password (OTP)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="Enter 6-digit OTP" {...field} maxLength={6} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
             <FormField
               control={form.control}
               name="newPassword"
@@ -173,11 +178,11 @@ export default function ResetPasswordForm() {
             </Button>
           </form>
         </Form>
-        <div className="mt-4 text-center text-sm">
-          <Link href={`/login?role=${role}`} className="font-medium text-muted-foreground hover:text-primary hover:underline">
-            Back to Login
-          </Link>
-        </div>
+         <div className="mt-4 text-center text-sm">
+            <Link href="/" className="font-medium text-muted-foreground hover:text-primary hover:underline">
+              Back to Role Selection
+            </Link>
+          </div>
       </CardContent>
     </Card>
   );
