@@ -96,7 +96,7 @@ export default function ResetPasswordForm() {
         title: "Password Reset Successful",
         description: "Your password has been updated. Please log in with your new password.",
       });
-      router.push(`/auth/login?role=${role}`);
+      router.push(`/login?role=${role}`);
 
     } catch (error) {
       console.error("Reset password error:", error);
@@ -174,7 +174,7 @@ export default function ResetPasswordForm() {
           </form>
         </Form>
         <div className="mt-4 text-center text-sm">
-          <Link href={`/auth/login?role=${role}`} className="font-medium text-muted-foreground hover:text-primary hover:underline">
+          <Link href={`/login?role=${role}`} className="font-medium text-muted-foreground hover:text-primary hover:underline">
             Back to Login
           </Link>
         </div>

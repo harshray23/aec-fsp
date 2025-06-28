@@ -67,7 +67,7 @@ export default function StudentDashboardPage() {
                 description: "Your session seems to be invalid or has expired. Please log in again.",
                 variant: "destructive",
             });
-            router.push("/auth/login?role=student");
+            router.push("/login?role=student");
             return; 
         }
         

@@ -150,7 +150,7 @@ export default function EnrollInBatchPage() {
           </AlertDescription>
           <div className="mt-4">
              <Button asChild>
-                <Link href={`/auth/login?role=student&redirect=/enroll/${batchId}`}>Login as Student</Link>
+                <Link href={`/login?role=student&redirect=/enroll/${batchId}`}>Login as Student</Link>
             </Button>
           </div>
         </Alert>

@@ -47,7 +47,7 @@ export default function TeacherProfilePage() {
             description: "Could not identify teacher. Please log in again.",
             variant: "destructive",
         });
-        router.push("/auth/login?role=teacher");
+        router.push("/login?role=teacher");
         setIsLoading(false);
         return;
     }

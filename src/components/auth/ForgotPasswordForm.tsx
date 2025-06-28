@@ -70,7 +70,7 @@ export default function ForgotPasswordForm() {
         title: "OTP Sent (Simulated)",
         description: `A (mock) OTP has been sent to ${values.email}. Please use ${MOCK_OTP} to reset your password.`,
       });
-      router.push(`/auth/reset-password?role=${role}&email=${encodeURIComponent(values.email)}&token=${MOCK_OTP}`);
+      router.push(`/reset-password?role=${role}&email=${encodeURIComponent(values.email)}&token=${MOCK_OTP}`);
 
     } catch (error) {
       console.error("Forgot password error:", error);
@@ -123,7 +123,7 @@ export default function ForgotPasswordForm() {
         </Form>
         <div className="mt-6 text-center text-sm">
           Remember your password?{" "}
-          <Link href={`/auth/login?role=${role}`} className="font-medium text-primary hover:underline">
+          <Link href={`/login?role=${role}`} className="font-medium text-primary hover:underline">
             Login here
           </Link>
         </div>

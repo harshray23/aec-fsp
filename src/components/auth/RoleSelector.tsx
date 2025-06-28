@@ -50,7 +50,7 @@ export default function RoleSelector() {
   const router = useRouter();
 
   const handleNonStudentRoleSelect = (role: UserRole) => {
-    router.push(`/auth/login?role=${role}`);
+    router.push(`/login?role=${role}`);
   };
 
   return (
@@ -61,7 +61,7 @@ export default function RoleSelector() {
           variant="ghost" 
           size="icon" 
           className="rounded-full h-12 w-12 text-primary hover:bg-primary/10" 
-          onClick={() => router.push(`/auth/login?role=${USER_ROLES.HOST}`)}
+          onClick={() => router.push(`/login?role=${USER_ROLES.HOST}`)}
           aria-label="Management Login"
           title="Management Panel"
         >
@@ -96,14 +96,14 @@ export default function RoleSelector() {
             <Button
               variant="outline"
               className="mt-4 w-full bg-accent text-accent-foreground hover:bg-accent/90"
-              onClick={() => router.push(`/auth/login?role=${USER_ROLES.STUDENT}`)}
+              onClick={() => router.push(`/login?role=${USER_ROLES.STUDENT}`)}
               aria-label="Login as Student"
             >
               Login as Student
             </Button>
             <p className="mt-3 text-sm text-muted-foreground">
               New Student?{" "}
-              <Link href={`/auth/register/student`} className="font-medium text-primary hover:underline">
+              <Link href={`/register/student`} className="font-medium text-primary hover:underline">
                 Register here
               </Link>
             </p>
@@ -133,4 +133,3 @@ export default function RoleSelector() {
     </div>
   );
 }
-

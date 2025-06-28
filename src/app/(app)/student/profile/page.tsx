@@ -53,7 +53,7 @@ export default function StudentProfilePage() {
               description: "Could not identify student. Please log in again.",
               variant: "destructive",
           });
-          router.push("/auth/login?role=student");
+          router.push("/login?role=student");
           setIsLoading(false);
           return;
       }

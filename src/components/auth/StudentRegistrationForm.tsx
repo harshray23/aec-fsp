@@ -142,7 +142,7 @@ export default function StudentRegistrationForm() {
         title: "Registration Successful!",
         description: "Your account has been created. You can now log in.",
       });
-      router.push("/auth/login?role=student");
+      router.push("/login?role=student");
 
     } catch (error: any) {
        toast({
@@ -326,7 +326,7 @@ export default function StudentRegistrationForm() {
         </Form>
         <div className="mt-6 text-center text-sm">
           Already have an account?{" "}
-          <Link href="/auth/login?role=student" className="font-medium text-primary hover:underline">
+          <Link href="/login?role=student" className="font-medium text-primary hover:underline">
             Login here
           </Link>
         </div>

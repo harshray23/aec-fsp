@@ -46,7 +46,7 @@ export default function AdminProfilePage() {
             description: "Could not identify admin. Please log in again.",
             variant: "destructive",
         });
-        router.push("/auth/login?role=admin");
+        router.push("/login?role=admin");
         setIsLoading(false);
         return;
     }

@@ -205,7 +205,7 @@ export default function LoginForm() {
             />
              <div className="flex items-center justify-end text-sm">
               <Link
-                href={`/auth/forgot-password?role=${role}&email=${form.getValues('email')||''}`}
+                href={`/forgot-password?role=${role}&email=${form.getValues('email')||''}`}
                 className="font-medium text-primary hover:underline"
               >
                 Forgot Password?
@@ -219,7 +219,7 @@ export default function LoginForm() {
         {role === USER_ROLES.STUDENT && (
           <div className="mt-6 text-center text-sm">
             Don&apos;t have an account?{" "}
-            <Link href="/auth/register/student" className="font-medium text-primary hover:underline">
+            <Link href="/register/student" className="font-medium text-primary hover:underline">
               Register here
             </Link>
           </div>
