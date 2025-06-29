@@ -6,7 +6,15 @@ export const DEPARTMENTS = [
   { value: "ee", label: "Electrical Engineering" },
   { value: "me", label: "Mechanical Engineering" },
   { value: "ce", label: "Civil Engineering" },
-  // Add more departments as needed
+  { value: "bca", label: "Bachelor of Computer Application (BCA)" },
+  { value: "mca", label: "Master of Computer Application (MCA)" },
+  { value: "cse_ai_ml", label: "Computer Science & Engineering (AI & ML)" },
+  { value: "cse_iot", label: "Computer Science & Engineering (IoT)" },
+  { value: "cst", label: "Computer Science & Technology" },
+  { value: "csbs", label: "Computer Science & Business Systems (CSBS)" },
+  { value: "bba", label: "Bachelor of Business Administration (BBA)" },
+  { value: "bba_hm", label: "BBA in Hospital Management" },
+  { value: "ecs", label: "Electronics & Computer Science" },
 ];
 
 export const USER_ROLES = {
