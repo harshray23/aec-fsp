@@ -15,6 +15,7 @@ export const DEPARTMENTS = [
   { value: "bba", label: "Bachelor of Business Administration (BBA)" },
   { value: "bba_hm", label: "BBA in Hospital Management" },
   { value: "ecs", label: "Electronics & Computer Science" },
+  { value: "bsc_ds", label: "B.Sc in Data Science" },
 ];
 
 export const USER_ROLES = {
