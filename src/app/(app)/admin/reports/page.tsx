@@ -56,34 +56,47 @@ export default function AdminViewReportsPage() {
   }, [toast]);
 
   const attendanceByBatchData = useMemo(() => {
-    const batchMap = new Map<string, { present: number; absent: number; late: number; totalStudents: number }>();
+    // This map will hold the aggregated data for each batch.
+    const batchDataMap = new Map<string, {
+      batchName: string;
+      department: string;
+      totalStudents: number; // Total students enrolled in the batch
+      present: number;
+      absent: number;
+      late: number;
+      totalMarks: number; // Total attendance marks given (present + absent + late)
+    }>();
 
+    // 1. Initialize the map with data from all batches.
     allBatches.forEach(batch => {
-      const studentsInBatch = allStudents.filter(s => s.batchId === batch.id);
-      batchMap.set(batch.id, { present: 0, absent: 0, late: 0, totalStudents: studentsInBatch.length });
+      batchDataMap.set(batch.id, {
+        batchName: batch.name,
+        department: batch.department,
+        totalStudents: batch.studentIds?.length || 0,
+        present: 0,
+        absent: 0,
+        late: 0,
+        totalMarks: 0,
+      });
     });
 
+    // 2. Go through all attendance records and aggregate the stats.
     allAttendanceRecords.forEach(record => {
-      const batchStats = batchMap.get(record.batchId);
+      const batchStats = batchDataMap.get(record.batchId);
       if (batchStats) {
+        batchStats.totalMarks++;
         if (record.status === 'present') batchStats.present++;
         if (record.status === 'absent') batchStats.absent++;
         if (record.status === 'late') batchStats.late++;
       }
     });
 
-    return Array.from(batchMap.entries())
-      .map(([batchId, stats]) => {
-        const batch = allBatches.find(b => b.id === batchId);
-        return {
-          batchId: batchId,
-          batchName: batch?.name || 'Unknown Batch',
-          department: batch?.department || 'N/A',
-          ...stats,
-        };
-      })
-      .filter(b => b.totalStudents > 0);
-  }, [allBatches, allStudents, allAttendanceRecords]);
+    // 3. Convert the map to an array for rendering.
+    return Array.from(batchDataMap.entries()).map(([batchId, stats]) => ({
+      batchId,
+      ...stats,
+    }));
+  }, [allBatches, allAttendanceRecords]);
 
   const filteredAttendanceData = useMemo(() => {
     let data = attendanceByBatchData;
@@ -235,7 +248,7 @@ export default function AdminViewReportsPage() {
                         <TableCell>{d.present}</TableCell>
                         <TableCell>{d.absent}</TableCell>
                         <TableCell>{d.late}</TableCell>
-                        <TableCell>{(d.totalStudents > 0 ? (d.present / d.totalStudents * 100) : 0).toFixed(1)}%</TableCell>
+                        <TableCell>{(d.totalMarks > 0 ? (d.present / d.totalMarks * 100) : 0).toFixed(1)}%</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
