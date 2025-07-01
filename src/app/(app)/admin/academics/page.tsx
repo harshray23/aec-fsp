@@ -41,6 +41,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import type { Student, AcademicTest } from "@/lib/types";
 import { DEPARTMENTS } from "@/lib/constants";
@@ -65,7 +66,13 @@ export default function ManageAcademicsPage() {
   const { toast } = useToast();
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Filters
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all");
+  const [percentageType, setPercentageType] = useState<string>("class12");
+  const [minPercentage, setMinPercentage] = useState<string>("");
+  const [maxPercentage, setMaxPercentage] = useState<string>("");
+
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -100,9 +107,33 @@ export default function ManageAcademicsPage() {
   }, [toast]);
 
   const filteredStudents = useMemo(() => {
-    if (selectedDepartment === "all") return allStudents;
-    return allStudents.filter((s) => s.department === selectedDepartment);
-  }, [allStudents, selectedDepartment]);
+    const min = parseFloat(minPercentage);
+    const max = parseFloat(maxPercentage);
+
+    return allStudents.filter((student) => {
+        // Department filter
+        const departmentMatch = selectedDepartment === "all" || student.department === selectedDepartment;
+        if (!departmentMatch) return false;
+
+        // Percentage filter
+        if (!minPercentage && !maxPercentage) {
+            return true; // No percentage filter applied, so keep the student if department matches
+        }
+        
+        const studentPercentage = percentageType === 'class10' 
+            ? student.academics?.class10?.percentage
+            : student.academics?.class12?.percentage;
+
+        if (studentPercentage === undefined || studentPercentage === null) {
+            return false; // Student doesn't have the required percentage data, so filter them out
+        }
+
+        const minMatch = !isNaN(min) ? studentPercentage >= min : true;
+        const maxMatch = !isNaN(max) ? studentPercentage <= max : true;
+
+        return minMatch && maxMatch;
+    });
+  }, [allStudents, selectedDepartment, percentageType, minPercentage, maxPercentage]);
 
   const handleSelectStudent = (student: Student) => {
     setSelectedStudent(student);
@@ -240,7 +271,7 @@ export default function ManageAcademicsPage() {
     });
 
     if (dataForExcel.length === 0) {
-        toast({ title: "No Data", description: "No students or academic data to export for the selected department.", variant: "destructive" });
+        toast({ title: "No Data", description: "No students or academic data to export for the selected filters.", variant: "destructive" });
         return;
     }
 
@@ -265,21 +296,66 @@ export default function ManageAcademicsPage() {
       />
       <Card>
         <CardHeader>
-          <CardTitle>Filter Students</CardTitle>
-          <div className="mt-4">
-            <Select onValueChange={setSelectedDepartment} defaultValue="all">
-              <SelectTrigger className="w-[300px]">
-                <SelectValue placeholder="Select a department" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Departments</SelectItem>
-                {DEPARTMENTS.map((dept) => (
-                  <SelectItem key={dept.value} value={dept.value}>
-                    {dept.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <CardTitle>Filter Students & Records</CardTitle>
+          <CardDescription>
+            Use the filters below to refine the student list and the data for Excel export.
+          </CardDescription>
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="department-filter">Department</Label>
+              <Select onValueChange={setSelectedDepartment} defaultValue="all">
+                <SelectTrigger id="department-filter" className="w-full">
+                  <SelectValue placeholder="Select a department" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Departments</SelectItem>
+                  {DEPARTMENTS.map((dept) => (
+                    <SelectItem key={dept.value} value={dept.value}>
+                      {dept.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex flex-col gap-1.5">
+                <Label htmlFor="percentage-type">Filter by Percentage Type</Label>
+                <Select onValueChange={setPercentageType} defaultValue="class12">
+                    <SelectTrigger id="percentage-type">
+                        <SelectValue placeholder="Select percentage type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="class12">Class 12th %</SelectItem>
+                        <SelectItem value="class10">Class 10th %</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+                <Label htmlFor="min-percentage">Min %</Label>
+                <Input
+                    id="min-percentage"
+                    type="number"
+                    placeholder="e.g., 60"
+                    value={minPercentage}
+                    onChange={(e) => setMinPercentage(e.target.value)}
+                    min="0"
+                    max="100"
+                />
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+                <Label htmlFor="max-percentage">Max %</Label>
+                <Input
+                    id="max-percentage"
+                    type="number"
+                    placeholder="e.g., 100"
+                    value={maxPercentage}
+                    onChange={(e) => setMaxPercentage(e.target.value)}
+                    min="0"
+                    max="100"
+                />
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -294,6 +370,8 @@ export default function ManageAcademicsPage() {
                   <TableHead>Student Name</TableHead>
                   <TableHead>Student ID</TableHead>
                   <TableHead>Department</TableHead>
+                  <TableHead>10th %</TableHead>
+                  <TableHead>12th %</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -305,17 +383,26 @@ export default function ManageAcademicsPage() {
                     <TableCell>
                       {DEPARTMENTS.find((d) => d.value === student.department)?.label}
                     </TableCell>
+                    <TableCell>{student.academics?.class10?.percentage?.toFixed(2) || 'N/A'}</TableCell>
+                    <TableCell>{student.academics?.class12?.percentage?.toFixed(2) || 'N/A'}</TableCell>
                     <TableCell className="text-right">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => handleSelectStudent(student)}
                       >
-                        <User className="mr-2 h-4 w-4" /> Manage Academics
+                        <User className="mr-2 h-4 w-4" /> Manage Tests
                       </Button>
                     </TableCell>
                   </TableRow>
                 ))}
+                 {filteredStudents.length === 0 && !isLoading && (
+                    <TableRow>
+                    <TableCell colSpan={6} className="text-center h-24">
+                        No students found with the current filters.
+                    </TableCell>
+                    </TableRow>
+                )}
               </TableBody>
             </Table>
           )}
