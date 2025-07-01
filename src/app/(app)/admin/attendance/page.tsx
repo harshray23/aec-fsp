@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { CheckSquare, CalendarIcon, Save, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, parseISO, startOfDay } from "date-fns";
 import type { Student, Batch, AttendanceRecord } from "@/lib/types";
 import { DEPARTMENTS } from "@/lib/constants";
 
@@ -35,7 +35,7 @@ export default function AdminManageAttendancePage() {
   
   const selectedBatch = useMemo(() => batches.find(b => b.id === selectedBatchId), [selectedBatchId, batches]);
 
-  // Fetch all batches on component mount
+  // Fetch all ongoing batches on component mount
   useEffect(() => {
     const fetchBatches = async () => {
       setIsLoadingBatches(true);
@@ -53,6 +53,21 @@ export default function AdminManageAttendancePage() {
     };
     fetchBatches();
   }, [toast]);
+
+  // When a new batch is selected, check if the current date is valid for it
+  useEffect(() => {
+    if (selectedBatch && selectedDate) {
+      const batchStartDate = startOfDay(parseISO(selectedBatch.startDate));
+      if (selectedDate < batchStartDate) {
+        setSelectedDate(new Date()); // Reset to today if invalid
+        toast({
+          title: "Date Adjusted",
+          description: "The selected date was before the new batch's start date. It has been reset to today.",
+        });
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedBatchId]); // Run only when batch changes
 
   // Fetch students and attendance records when batch or date changes
   useEffect(() => {
@@ -178,6 +193,7 @@ export default function AdminManageAttendancePage() {
                 <Button
                   variant={"outline"}
                   className={`w-full md:w-[280px] justify-start text-left font-normal ${!selectedDate && "text-muted-foreground"}`}
+                  disabled={!selectedBatchId}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
@@ -189,7 +205,21 @@ export default function AdminManageAttendancePage() {
                   selected={selectedDate}
                   onSelect={setSelectedDate}
                   initialFocus
-                  disabled={(date) => date > new Date() || date < new Date("2020-01-01")}
+                  disabled={(date) => {
+                    // Disable all future dates
+                    if (date > new Date()) {
+                      return true;
+                    }
+                    // If a batch is selected, also disable dates before its start date
+                    if (selectedBatch) {
+                      const batchStartDate = startOfDay(parseISO(selectedBatch.startDate));
+                      if (date < batchStartDate) {
+                        return true;
+                      }
+                    }
+                    // Enable all other valid dates
+                    return false;
+                  }}
                 />
               </PopoverContent>
             </Popover>
@@ -275,5 +305,3 @@ export default function AdminManageAttendancePage() {
     </div>
   );
 }
-
-    
