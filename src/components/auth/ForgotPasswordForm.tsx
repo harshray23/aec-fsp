@@ -50,19 +50,34 @@ export default function ForgotPasswordForm() {
     }
 
     try {
+      // Step 1: Pre-flight check with our backend API to ensure the user exists for the given role.
+      const preCheckResponse = await fetch('/api/auth/request-password-reset', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: values.email, role: role }),
+      });
+
+      if (!preCheckResponse.ok) {
+          const errorData = await preCheckResponse.json().catch(() => ({ message: 'Could not verify your email for the selected role.'}));
+          throw new Error(errorData.message);
+      }
+
+      // Step 2: If the pre-flight check is successful, send the actual Firebase password reset email.
       await sendPasswordResetEmail(auth, values.email);
+      
       toast({
         title: "Password Reset Email Sent",
-        description: `If an account exists for ${values.email}, you will receive an email with instructions to reset your password.`,
+        description: `If an account exists for ${values.email} as a ${role}, you will receive an email with instructions to reset your password.`,
       });
+
       // Optionally, redirect the user after sending the email
       router.push(`/login?role=${role}`);
+
     } catch (error: any) {
       console.error("Forgot password error:", error);
-      // Firebase provides generic errors for security, so we show a generic message.
       toast({
         title: "Request Failed",
-        description: "An error occurred while trying to send the password reset email. Please try again.",
+        description: error.message || "An error occurred. Please check the email address and try again.",
         variant: "destructive",
       });
     }
