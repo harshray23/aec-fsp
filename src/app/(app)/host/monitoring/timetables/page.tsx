@@ -51,7 +51,7 @@ export default function HostMonitorTimetablesPage() {
           .filter(batch => batch.daysOfWeek?.length > 0 && batch.startTime && batch.endTime)
           .map(batch => {
             const departmentInfo = DEPARTMENTS.find(d => d.value === batch.department);
-            const teacherNames = batch.teacherIds.map(id => teachersMap.get(id)).filter(Boolean).join(', ');
+            const teacherNames = (batch.teacherIds || []).map(id => teachersMap.get(id)).filter(Boolean).join(', ');
 
             return {
               batchId: batch.id,
