@@ -51,7 +51,8 @@ export default function AdminTimetableOverviewPage() {
           .filter(batch => batch.daysOfWeek?.length > 0 && batch.startTime && batch.endTime)
           .map(batch => {
             const departmentInfo = DEPARTMENTS.find(d => d.value === batch.department);
-            const teacherNames = batch.teacherIds.map(id => teachersMap.get(id)).filter(Boolean).join(', ');
+            // Safely handle cases where teacherIds might be missing or empty
+            const teacherNames = (batch.teacherIds || []).map(id => teachersMap.get(id)).filter(Boolean).join(', ');
             
             return {
               batchId: batch.id,
