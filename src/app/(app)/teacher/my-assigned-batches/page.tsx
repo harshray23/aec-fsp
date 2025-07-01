@@ -1,4 +1,3 @@
-
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -101,9 +100,10 @@ export default function TeacherMyAssignedBatchesPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" asChild disabled>
+                    <Button variant="outline" size="sm" asChild>
                       <Link href={`/teacher/batches/view/${batch.id}`}> 
-                        <Eye className="h-4 w-4" />
+                        <Eye className="mr-2 h-4 w-4" />
+                        View
                       </Link>
                     </Button>
                   </TableCell>
