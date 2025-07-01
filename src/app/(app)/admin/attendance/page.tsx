@@ -43,7 +43,8 @@ export default function AdminManageAttendancePage() {
         const res = await fetch('/api/batches');
         if (!res.ok) throw new Error("Failed to fetch batches");
         const data: Batch[] = await res.json();
-        setBatches(data);
+        // Only allow marking attendance for "Ongoing" batches
+        setBatches(data.filter(b => b.status === "Ongoing"));
       } catch (error: any) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       } finally {
@@ -154,7 +155,7 @@ export default function AdminManageAttendancePage() {
     <div className="space-y-8">
       <PageHeader
         title="Manage Student Attendance"
-        description="Select a batch and date to mark or update student attendance records."
+        description="Select an ongoing batch and date to mark or update student attendance records."
         icon={CheckSquare}
       />
       <Card className="shadow-lg">
@@ -163,13 +164,13 @@ export default function AdminManageAttendancePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 items-end">
             <Select onValueChange={setSelectedBatchId} value={selectedBatchId} disabled={isLoadingBatches}>
               <SelectTrigger>
-                <SelectValue placeholder={isLoadingBatches ? "Loading batches..." : "Select a Batch"} />
+                <SelectValue placeholder={isLoadingBatches ? "Loading batches..." : "Select an Ongoing Batch"} />
               </SelectTrigger>
               <SelectContent>
                 {batches.map(batch => (
                   <SelectItem key={batch.id} value={batch.id}>{batch.name} ({DEPARTMENTS.find(d=>d.value === batch.department)?.label})</SelectItem>
                 ))}
-                 {batches.length === 0 && !isLoadingBatches && <p className="p-2 text-sm text-muted-foreground">No batches found.</p>}
+                 {batches.length === 0 && !isLoadingBatches && <p className="p-2 text-sm text-muted-foreground">No ongoing batches found.</p>}
               </SelectContent>
             </Select>
             <Popover>
@@ -188,6 +189,7 @@ export default function AdminManageAttendancePage() {
                   selected={selectedDate}
                   onSelect={setSelectedDate}
                   initialFocus
+                  disabled={(date) => date > new Date() || date < new Date("2020-01-01")}
                 />
               </PopoverContent>
             </Popover>
@@ -266,10 +268,12 @@ export default function AdminManageAttendancePage() {
               )}
             </>
           ) : (
-            <p className="text-center text-muted-foreground py-4">Please select a batch and a date to mark attendance.</p>
+            <p className="text-center text-muted-foreground py-4">Please select an ongoing batch and a date to mark attendance.</p>
           )}
         </CardContent>
       </Card>
     </div>
   );
 }
+
+    
