@@ -35,7 +35,7 @@ export default function AdminManageAttendancePage() {
   
   const selectedBatch = useMemo(() => batches.find(b => b.id === selectedBatchId), [selectedBatchId, batches]);
 
-  // Fetch all ongoing batches on component mount
+  // Fetch all batches on component mount
   useEffect(() => {
     const fetchBatches = async () => {
       setIsLoadingBatches(true);
@@ -43,8 +43,7 @@ export default function AdminManageAttendancePage() {
         const res = await fetch('/api/batches');
         if (!res.ok) throw new Error("Failed to fetch batches");
         const data: Batch[] = await res.json();
-        // Only allow marking attendance for "Ongoing" batches
-        setBatches(data.filter(b => b.status === "Ongoing"));
+        setBatches(data); // Show all batches
       } catch (error: any) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       } finally {
@@ -53,21 +52,6 @@ export default function AdminManageAttendancePage() {
     };
     fetchBatches();
   }, [toast]);
-
-  // When a new batch is selected, check if the current date is valid for it
-  useEffect(() => {
-    if (selectedBatch && selectedDate) {
-      const batchStartDate = startOfDay(parseISO(selectedBatch.startDate));
-      if (selectedDate < batchStartDate) {
-        setSelectedDate(new Date()); // Reset to today if invalid
-        toast({
-          title: "Date Adjusted",
-          description: "The selected date was before the new batch's start date. It has been reset to today.",
-        });
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedBatchId]); // Run only when batch changes
 
   // Fetch students and attendance records when batch or date changes
   useEffect(() => {
@@ -170,7 +154,7 @@ export default function AdminManageAttendancePage() {
     <div className="space-y-8">
       <PageHeader
         title="Manage Student Attendance"
-        description="Select an ongoing batch and date to mark or update student attendance records."
+        description="Select a batch and date to mark or update student attendance records."
         icon={CheckSquare}
       />
       <Card className="shadow-lg">
@@ -179,13 +163,13 @@ export default function AdminManageAttendancePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 items-end">
             <Select onValueChange={setSelectedBatchId} value={selectedBatchId} disabled={isLoadingBatches}>
               <SelectTrigger>
-                <SelectValue placeholder={isLoadingBatches ? "Loading batches..." : "Select an Ongoing Batch"} />
+                <SelectValue placeholder={isLoadingBatches ? "Loading batches..." : "Select a Batch"} />
               </SelectTrigger>
               <SelectContent>
                 {batches.map(batch => (
                   <SelectItem key={batch.id} value={batch.id}>{batch.name} ({DEPARTMENTS.find(d=>d.value === batch.department)?.label})</SelectItem>
                 ))}
-                 {batches.length === 0 && !isLoadingBatches && <p className="p-2 text-sm text-muted-foreground">No ongoing batches found.</p>}
+                 {batches.length === 0 && !isLoadingBatches && <p className="p-2 text-sm text-muted-foreground">No batches found.</p>}
               </SelectContent>
             </Select>
             <Popover>
@@ -205,21 +189,6 @@ export default function AdminManageAttendancePage() {
                   selected={selectedDate}
                   onSelect={setSelectedDate}
                   initialFocus
-                  disabled={(date) => {
-                    // Disable all future dates
-                    if (date > new Date()) {
-                      return true;
-                    }
-                    // If a batch is selected, also disable dates before its start date
-                    if (selectedBatch) {
-                      const batchStartDate = startOfDay(parseISO(selectedBatch.startDate));
-                      if (date < batchStartDate) {
-                        return true;
-                      }
-                    }
-                    // Enable all other valid dates
-                    return false;
-                  }}
                 />
               </PopoverContent>
             </Popover>
@@ -298,7 +267,7 @@ export default function AdminManageAttendancePage() {
               )}
             </>
           ) : (
-            <p className="text-center text-muted-foreground py-4">Please select an ongoing batch and a date to mark attendance.</p>
+            <p className="text-center text-muted-foreground py-4">Please select a batch and a date to mark attendance.</p>
           )}
         </CardContent>
       </Card>
