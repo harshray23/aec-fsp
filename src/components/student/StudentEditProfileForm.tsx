@@ -1,7 +1,7 @@
 
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import type { Student } from "@/lib/types";
 import { Mail, Phone, Building, UserSquare2, Hash, ClipboardList, MapPin, User, HeartPulse, School } from "lucide-react";
 import { DEPARTMENTS } from "@/lib/constants";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const editStudentProfileSchema = z.object({
   phoneNumber: z.string().optional().or(z.literal('')).refine(val => !val || /^\d{10,15}$/.test(val), {
@@ -95,6 +96,19 @@ export default function StudentEditProfileForm({ studentData, onSave, onCancel, 
       }
     },
   });
+
+  const { watch, setValue } = form;
+  const [isSameAddress, setIsSameAddress] = useState(false);
+  const presentAddress = watch("address");
+
+  useEffect(() => {
+    if (isSameAddress) {
+      setValue("permanentAddress", presentAddress, {
+        shouldValidate: true,
+        shouldDirty: true,
+      });
+    }
+  }, [isSameAddress, presentAddress, setValue]);
 
   const departmentLabel = DEPARTMENTS.find(d => d.value === studentData?.department)?.label || studentData?.department || "N/A";
 
@@ -182,17 +196,31 @@ export default function StudentEditProfileForm({ studentData, onSave, onCancel, 
                         </div>
                     </div>
 
+                    <div className="flex items-center space-x-2 pt-4">
+                      <Checkbox
+                        id="same-address"
+                        checked={isSameAddress}
+                        onCheckedChange={(checked) => setIsSameAddress(checked as boolean)}
+                      />
+                      <label
+                        htmlFor="same-address"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        Permanent Address is the same as Present Address
+                      </label>
+                    </div>
+
                     <div className="pt-4 mt-4 border-t">
                         <h4 className="text-md font-semibold flex items-center gap-2 mb-4"><MapPin/>Permanent Address</h4>
                         <div className="space-y-4">
-                            <FormField control={form.control} name="permanentAddress.street" render={({ field }) => (<FormItem><FormLabel>Street Address</FormLabel><FormControl><Input placeholder="123 Main St" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                            <FormField control={form.control} name="permanentAddress.street" render={({ field }) => (<FormItem><FormLabel>Street Address</FormLabel><FormControl><Input placeholder="123 Main St" {...field} disabled={isSameAddress} /></FormControl><FormMessage /></FormItem>)} />
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <FormField control={form.control} name="permanentAddress.city" render={({ field }) => (<FormItem><FormLabel>City</FormLabel><FormControl><Input placeholder="Anytown" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="permanentAddress.state" render={({ field }) => (<FormItem><FormLabel>State / Province</FormLabel><FormControl><Input placeholder="State" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="permanentAddress.city" render={({ field }) => (<FormItem><FormLabel>City</FormLabel><FormControl><Input placeholder="Anytown" {...field} disabled={isSameAddress} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="permanentAddress.state" render={({ field }) => (<FormItem><FormLabel>State / Province</FormLabel><FormControl><Input placeholder="State" {...field} disabled={isSameAddress} /></FormControl><FormMessage /></FormItem>)} />
                             </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <FormField control={form.control} name="permanentAddress.pincode" render={({ field }) => (<FormItem><FormLabel>Pincode / ZIP</FormLabel><FormControl><Input placeholder="12345" {...field} /></FormControl><FormMessage /></FormItem>)} />
-                                <FormField control={form.control} name="permanentAddress.country" render={({ field }) => (<FormItem><FormLabel>Country</FormLabel><FormControl><Input placeholder="Country" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="permanentAddress.pincode" render={({ field }) => (<FormItem><FormLabel>Pincode / ZIP</FormLabel><FormControl><Input placeholder="12345" {...field} disabled={isSameAddress} /></FormControl><FormMessage /></FormItem>)} />
+                                <FormField control={form.control} name="permanentAddress.country" render={({ field }) => (<FormItem><FormLabel>Country</FormLabel><FormControl><Input placeholder="Country" {...field} disabled={isSameAddress} /></FormControl><FormMessage /></FormItem>)} />
                             </div>
                         </div>
                     </div>
