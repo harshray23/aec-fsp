@@ -29,7 +29,7 @@ export default function TeacherViewReportsPage() {
   useEffect(() => {
     const fetchData = async () => {
       setIsLoading(true);
-      let teacherId = null;
+      let teacherId: string | null = null;
       const storedUserJSON = localStorage.getItem("currentUser");
       if (storedUserJSON) {
         const user = JSON.parse(storedUserJSON);
@@ -53,7 +53,8 @@ export default function TeacherViewReportsPage() {
         }
 
         const allBatches: Batch[] = await batchesRes.json();
-        const teacherBatches = allBatches.filter(b => b.teacherId === teacherId);
+        // Correctly filter batches assigned to the teacher
+        const teacherBatches = allBatches.filter(b => b.teacherIds?.includes(teacherId!));
         
         setAssignedBatches(teacherBatches);
         setAllStudents(await studentsRes.json());
@@ -68,16 +69,18 @@ export default function TeacherViewReportsPage() {
   }, [toast]);
   
   const attendanceByBatchData = useMemo(() => {
-    const batchMap = new Map<string, { present: number; absent: number; late: number; totalStudents: number }>();
+    const batchMap = new Map<string, { present: number; absent: number; late: number; totalStudents: number, totalMarks: number }>();
 
     assignedBatches.forEach(batch => {
-      const studentsInBatch = allStudents.filter(s => s.batchId === batch.id);
-      batchMap.set(batch.id, { present: 0, absent: 0, late: 0, totalStudents: studentsInBatch.length });
+      // Correctly filter students who are in this batch
+      const studentsInBatch = allStudents.filter(s => s.batchIds?.includes(batch.id));
+      batchMap.set(batch.id, { present: 0, absent: 0, late: 0, totalStudents: studentsInBatch.length, totalMarks: 0 });
     });
 
     allAttendanceRecords.forEach(record => {
       const batchStats = batchMap.get(record.batchId);
       if (batchStats) {
+        batchStats.totalMarks++;
         if (record.status === 'present') batchStats.present++;
         if (record.status === 'absent') batchStats.absent++;
         if (record.status === 'late') batchStats.late++;
@@ -92,8 +95,7 @@ export default function TeacherViewReportsPage() {
           batchName: batch?.name || 'Unknown Batch',
           ...stats,
         };
-      })
-      .filter(b => b.totalStudents > 0);
+      });
   }, [assignedBatches, allStudents, allAttendanceRecords]);
   
   const filteredAttendanceData = useMemo(() => {
@@ -128,12 +130,12 @@ export default function TeacherViewReportsPage() {
     }
     const dataToExport = filteredAttendanceData.map(d => ({
         'Batch Name': d.batchName,
-        'Present': d.present,
-        'Absent': d.absent,
-        'Late': d.late,
         'Total Students': d.totalStudents,
-        'Present (%)': (d.totalStudents > 0 ? (d.present / d.totalStudents * 100) : 0).toFixed(1),
-        'Absent (%)': (d.totalStudents > 0 ? (d.absent / d.totalStudents * 100) : 0).toFixed(1),
+        'Present Sessions': d.present,
+        'Absent Sessions': d.absent,
+        'Late Sessions': d.late,
+        'Total Marked Sessions': d.totalMarks,
+        'Overall Present (%)': (d.totalMarks > 0 ? (d.present / d.totalMarks * 100) : 0).toFixed(1),
     }));
     exportToExcel(dataToExport, "Teacher_Batch_Attendance_Report");
   };
@@ -210,7 +212,7 @@ export default function TeacherViewReportsPage() {
                         <TableCell>{d.present}</TableCell>
                         <TableCell>{d.absent}</TableCell>
                         <TableCell>{d.late}</TableCell>
-                        <TableCell>{(d.totalStudents > 0 ? (d.present / d.totalStudents * 100) : 0).toFixed(1)}%</TableCell>
+                        <TableCell>{(d.totalMarks > 0 ? (d.present / d.totalMarks * 100) : 0).toFixed(1)}%</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
