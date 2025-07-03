@@ -31,8 +31,19 @@ import type { Student } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { MailCheck, SmartphoneNfc, Loader2 } from "lucide-react"; // Added Loader2
 
+const currentYear = new Date().getFullYear();
 const studentRegistrationSchema = z.object({
-  studentId: z.string().regex(/^AEC\/\d{4}\/\d{4}$/, "Student ID must be in the format AEC/XXXX/YYYY."),
+  studentId: z.string()
+    .regex(/^AEC\/\d{4}\/\d{4}$/, "Student ID must be in the format AEC/XXXX/YYYY.")
+    .refine(val => {
+      const yearPart = val.split('/')[2];
+      if (!yearPart) return false;
+      const year = parseInt(yearPart, 10);
+      // Let's allow a generous range, e.g., from 2010 to 5 years in the future
+      return year >= 2010 && year <= currentYear + 5;
+    }, {
+      message: `Please enter a valid registration year (e.g., between 2010 and ${currentYear + 5}).`
+    }),
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   rollNumber: z.string().min(1, "Roll Number is required"),
