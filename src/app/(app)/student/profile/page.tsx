@@ -85,10 +85,13 @@ export default function StudentProfilePage() {
     if (!studentProfile.id) return;
     setIsSaving(true);
     try {
+        const newEditCount = (studentProfile.profileEditCount || 0) + 1;
+        const payload = { ...values, profileEditCount: newEditCount };
+
         const response = await fetch(`/api/students/${studentProfile.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(values),
+            body: JSON.stringify(payload),
         });
         const result = await response.json();
         if (!response.ok) {
@@ -207,9 +210,18 @@ export default function StudentProfilePage() {
         icon={GraduationCap}
         actions={
           !isEditing && (
-            <Button variant="outline" onClick={() => setIsEditing(true)}>
-              <Edit3 className="mr-2 h-4 w-4" /> Edit Profile
-            </Button>
+            <div className="flex flex-col items-end">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsEditing(true)}
+                disabled={(studentProfile.profileEditCount || 0) >= 2}
+              >
+                <Edit3 className="mr-2 h-4 w-4" /> Edit Profile
+              </Button>
+              {(studentProfile.profileEditCount || 0) >= 2 && (
+                 <p className="text-xs text-destructive mt-1">Edit limit reached. Contact admin.</p>
+              )}
+            </div>
           )
         }
       />

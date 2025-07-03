@@ -73,6 +73,7 @@ export interface Student extends User {
     pincode?: string;
     country?: string;
   };
+  profileEditCount?: number;
   personalDetails?: {
     fatherName?: string;
     motherName?: string;

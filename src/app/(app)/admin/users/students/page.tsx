@@ -7,18 +7,27 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
-import { GraduationCap, Loader2, MoreHorizontal, Trash2, Download } from "lucide-react"; 
+import { GraduationCap, Loader2, MoreHorizontal, Trash2, Download, Edit } from "lucide-react"; 
 import { DEPARTMENTS } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import type { Student, Batch } from "@/lib/types";
 import { Button } from "@/components/ui/button";
+import StudentEditProfileForm, { type EditStudentProfileFormValues } from "@/components/student/StudentEditProfileForm";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,6 +68,11 @@ export default function ViewStudentsPage() {
   // State for delete dialog
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [studentToDelete, setStudentToDelete] = useState<Student | null>(null);
+
+  // State for edit dialog
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [studentToEdit, setStudentToEdit] = useState<Student | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Fetch batches once on mount
   useEffect(() => {
@@ -113,6 +127,11 @@ export default function ViewStudentsPage() {
   const openDeleteDialog = (student: Student) => {
     setStudentToDelete(student);
     setIsDeleteDialogOpen(true);
+  };
+  
+  const openEditDialog = (student: Student) => {
+    setStudentToEdit(student);
+    setIsEditDialogOpen(true);
   };
 
   const handleDownload = () => {
@@ -182,6 +201,41 @@ export default function ViewStudentsPage() {
       setStudentToDelete(null);
     }
   };
+
+  const handleAdminSaveProfile = async (values: EditStudentProfileFormValues) => {
+    if (!studentToEdit) return;
+    setIsSaving(true);
+    try {
+      const response = await fetch(`/api/students/${studentToEdit.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to update student.' }));
+        throw new Error(errorData.message);
+      }
+      
+      const result = await response.json();
+      setStudents(prev => prev.map(s => s.id === result.student.id ? result.student : s));
+      toast({
+        title: "Student Updated",
+        description: `Profile for ${result.student.name} has been updated.`,
+      });
+      setIsEditDialogOpen(false);
+      setStudentToEdit(null);
+    } catch (error: any) {
+      toast({
+        title: "Error Updating Student",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
 
   return (
     <div className="space-y-8">
@@ -255,6 +309,10 @@ export default function ViewStudentsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                         <DropdownMenuItem onClick={() => openEditDialog(student)} className="cursor-pointer">
+                          <Edit className="mr-2 h-4 w-4" /> Edit Profile
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem
                           onClick={() => openDeleteDialog(student)}
                           className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
@@ -297,6 +355,27 @@ export default function ViewStudentsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {studentToEdit && (
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>Edit Student: {studentToEdit.name}</DialogTitle>
+              <DialogDescription>
+                Modify the student's personal and contact information below.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4 max-h-[70vh] overflow-y-auto pr-2">
+              <StudentEditProfileForm
+                studentData={studentToEdit}
+                onSave={handleAdminSaveProfile}
+                onCancel={() => setIsEditDialogOpen(false)}
+                isSaving={isSaving}
+              />
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
     </div>
   );
