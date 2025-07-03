@@ -12,8 +12,19 @@ import { DEPARTMENTS } from "@/lib/constants";
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Bar } from 'recharts';
 import * as XLSX from 'xlsx';
 import { useToast } from "@/hooks/use-toast";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { Batch, Student, AttendanceRecord } from "@/lib/types";
+
+interface BatchAttendanceSummary {
+  batchId: string;
+  batchName: string;
+  department: string;
+  totalStudents: number;
+  present: number;
+  absent: number;
+  late: number;
+  totalMarks: number;
+}
 
 export default function AdminViewReportsPage() {
   const { toast } = useToast();
@@ -22,8 +33,7 @@ export default function AdminViewReportsPage() {
 
   // Data states
   const [allBatches, setAllBatches] = useState<Batch[]>([]);
-  const [allStudents, setAllStudents] = useState<Student[]>([]);
-  const [allAttendanceRecords, setAllAttendanceRecords] = useState<AttendanceRecord[]>([]);
+  const [summaryData, setSummaryData] = useState<BatchAttendanceSummary[]>([]);
   
   // Filters
   const [selectedBatchFilter, setSelectedBatchFilter] = useState<string>("all");
@@ -33,19 +43,16 @@ export default function AdminViewReportsPage() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const [batchesRes, studentsRes, attendanceRes] = await Promise.all([
-          fetch('/api/batches'),
-          fetch('/api/students'),
-          fetch('/api/attendance'),
-        ]);
-
-        if (!batchesRes.ok || !studentsRes.ok || !attendanceRes.ok) {
-          throw new Error('Failed to fetch all necessary report data.');
-        }
-
+        // Fetch batches for the filter dropdown
+        const batchesRes = await fetch('/api/batches');
+        if (!batchesRes.ok) throw new Error('Failed to fetch batches for filtering.');
         setAllBatches(await batchesRes.json());
-        setAllStudents(await studentsRes.json());
-        setAllAttendanceRecords(await attendanceRes.json());
+        
+        // Fetch the processed summary data from the new backend endpoint
+        const summaryRes = await fetch('/api/reports/attendance-summary');
+        if (!summaryRes.ok) throw new Error('Failed to fetch attendance summary report.');
+        setSummaryData(await summaryRes.json());
+
       } catch (error: any) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       } finally {
@@ -55,51 +62,8 @@ export default function AdminViewReportsPage() {
     fetchData();
   }, [toast]);
 
-  const attendanceByBatchData = useMemo(() => {
-    // This map will hold the aggregated data for each batch.
-    const batchDataMap = new Map<string, {
-      batchName: string;
-      department: string;
-      totalStudents: number; // Total students enrolled in the batch
-      present: number;
-      absent: number;
-      late: number;
-      totalMarks: number; // Total attendance marks given (present + absent + late)
-    }>();
-
-    // 1. Initialize the map with data from all batches.
-    allBatches.forEach(batch => {
-      batchDataMap.set(batch.id, {
-        batchName: batch.name,
-        department: batch.department,
-        totalStudents: batch.studentIds?.length || 0,
-        present: 0,
-        absent: 0,
-        late: 0,
-        totalMarks: 0,
-      });
-    });
-
-    // 2. Go through all attendance records and aggregate the stats.
-    allAttendanceRecords.forEach(record => {
-      const batchStats = batchDataMap.get(record.batchId);
-      if (batchStats) {
-        batchStats.totalMarks++;
-        if (record.status === 'present') batchStats.present++;
-        if (record.status === 'absent') batchStats.absent++;
-        if (record.status === 'late') batchStats.late++;
-      }
-    });
-
-    // 3. Convert the map to an array for rendering.
-    return Array.from(batchDataMap.entries()).map(([batchId, stats]) => ({
-      batchId,
-      ...stats,
-    }));
-  }, [allBatches, allAttendanceRecords]);
-
   const filteredAttendanceData = useMemo(() => {
-    let data = attendanceByBatchData;
+    let data = summaryData;
     if (selectedBatchFilter !== "all") {
       data = data.filter(d => d.batchId === selectedBatchFilter);
     }
@@ -108,7 +72,7 @@ export default function AdminViewReportsPage() {
         data = data.filter(d => d.department === department.value)
     }
     return data;
-  }, [attendanceByBatchData, selectedBatchFilter, selectedDepartmentFilter]);
+  }, [summaryData, selectedBatchFilter, selectedDepartmentFilter]);
 
   const chartData = useMemo(() => {
     if (reportType === "attendance-batch") {
@@ -117,54 +81,13 @@ export default function AdminViewReportsPage() {
     return [];
   }, [reportType, filteredAttendanceData]);
 
-  // Data for detailed Excel export
-  const detailedExportData = useMemo(() => {
-      const studentsMap = new Map(allStudents.map(s => [s.id, s]));
-      const batchesMap = new Map(allBatches.map(b => [b.id, b]));
-
-      let recordsToExport = allAttendanceRecords;
-
-      // Apply department filter by first filtering batches
-      if (selectedDepartmentFilter !== 'all') {
-          const departmentBatchIds = new Set(allBatches.filter(b => b.department === selectedDepartmentFilter).map(b => b.id));
-          recordsToExport = recordsToExport.filter(r => departmentBatchIds.has(r.batchId));
-      }
-
-      // Apply batch filter
-      if (selectedBatchFilter !== 'all') {
-          recordsToExport = recordsToExport.filter(r => r.batchId === selectedBatchFilter);
-      }
-
-      return recordsToExport.map(record => {
-          const student = studentsMap.get(record.studentId);
-          const batch = batchesMap.get(record.batchId);
-          return {
-              'Date': record.date,
-              'Student Name': student?.name || 'N/A',
-              'Student ID': student?.studentId || 'N/A',
-              'Batch Name': batch?.name || 'N/A',
-              'Subject': record.subject,
-              'Status': record.status,
-              'Remarks': record.remarks || '',
-          };
-      });
-  }, [allAttendanceRecords, allStudents, allBatches, selectedBatchFilter, selectedDepartmentFilter]);
-
-
-  const exportToExcel = (data: any[], fileName: string) => {
-    if (data.length === 0) {
-      toast({ title: "No Data", description: "There is no data to export for the selected filters.", variant: "destructive" });
-      return;
-    }
-    const worksheet = XLSX.utils.json_to_sheet(data);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "ReportData");
-    XLSX.writeFile(workbook, `${fileName}.xlsx`);
-    toast({ title: "Export Successful", description: `${fileName}.xlsx has been downloaded.` });
-  };
 
   const handleDownloadReport = () => {
-    exportToExcel(detailedExportData, "Admin_Detailed_Attendance_Report");
+    toast({
+        title: "Download Preparing",
+        description: "Generating detailed reports for large datasets can take time. This feature is being optimized for scale.",
+        variant: "default",
+    });
   };
   
   if (isLoading) {
@@ -183,8 +106,8 @@ export default function AdminViewReportsPage() {
         description="Analyze system-wide attendance and performance data."
         icon={BarChart3}
         actions={
-          <Button onClick={handleDownloadReport} disabled={detailedExportData.length === 0}>
-            <Download className="mr-2 h-4 w-4" /> Download Detailed Report
+          <Button onClick={handleDownloadReport} disabled>
+            <Download className="mr-2 h-4 w-4" /> Download Detailed Report (WIP)
           </Button>
         }
       />
