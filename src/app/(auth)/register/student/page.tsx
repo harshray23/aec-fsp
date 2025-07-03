@@ -2,6 +2,9 @@
 import StudentRegistrationForm from "@/components/auth/StudentRegistrationForm";
 import { Suspense } from "react";
 
+// Force this page to be dynamically rendered on the client
+export const dynamic = 'force-dynamic';
+
 export default function StudentRegistrationPage() {
   return (
     <Suspense fallback={<div>Loading registration form...</div>}>
@@ -13,4 +16,3 @@ export default function StudentRegistrationPage() {
 export const metadata = {
   title: "Student Registration - AEC FSP",
 };
-
