@@ -32,7 +32,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { MailCheck, SmartphoneNfc, Loader2 } from "lucide-react"; // Added Loader2
 
 const studentRegistrationSchema = z.object({
-  studentId: z.string().min(1, "Student ID is required"),
+  studentId: z.string().regex(/^AEC\/\d{4}\/\d{4}$/, "Student ID must be in the format AEC/XXXX/YYYY."),
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   rollNumber: z.string().min(1, "Roll Number is required"),
@@ -180,7 +180,7 @@ export default function StudentRegistrationForm() {
                   <FormItem>
                     <RHFFormLabel>Student ID</RHFFormLabel>
                     <FormControl>
-                      <Input placeholder="Enter your Student ID" {...field} />
+                      <Input placeholder="e.g., AEC/2021/0015" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
