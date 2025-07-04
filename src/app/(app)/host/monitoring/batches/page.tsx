@@ -107,7 +107,7 @@ export default function HostMonitorBatchesPage() {
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" asChild disabled> 
+                    <Button variant="ghost" size="icon" asChild> 
                       <Link href={`/host/monitoring/batches/${batch.id}`}> 
                         <Eye className="h-4 w-4" />
                       </Link>
