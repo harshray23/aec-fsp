@@ -23,7 +23,7 @@ export default function HostDashboardPage() {
           fetch('/api/teachers'),
           fetch('/api/admins'),
           fetch('/api/batches'),
-          fetch('/api/students'),
+          fetch('/api/students?limit=99999'),
           fetch('/api/hosts')
         ]);
 
@@ -31,11 +31,13 @@ export default function HostDashboardPage() {
           throw new Error("Failed to fetch dashboard statistics.");
         }
 
+        const studentsApiResponse = await studentsRes.json();
+
         setStats({
           teachers: (await teachersRes.json()).length,
           admins: (await adminsRes.json()).length,
           batches: (await batchesRes.json()).length,
-          students: (await studentsRes.json()).length,
+          students: studentsApiResponse.students.length,
           hosts: (await hostsRes.json()).length
         });
 

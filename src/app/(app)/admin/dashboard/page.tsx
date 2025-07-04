@@ -27,7 +27,7 @@ export default function AdminDashboardPage() {
       setIsLoading(true);
       try {
         const [studentsRes, teachersRes, batchesRes, adminsRes] = await Promise.all([
-          fetch('/api/students'),
+          fetch('/api/students?limit=99999'),
           fetch('/api/teachers'),
           fetch('/api/batches'),
           fetch('/api/admins')
@@ -37,7 +37,8 @@ export default function AdminDashboardPage() {
             throw new Error("Failed to fetch all dashboard statistics.");
         }
         
-        const studentsData: Student[] = await studentsRes.json();
+        const studentsApiResponse = await studentsRes.json();
+        const studentsData: Student[] = studentsApiResponse.students;
         const teachersData = await teachersRes.json();
         const batchesData = await batchesRes.json();
         const adminsData = await adminsRes.json();
