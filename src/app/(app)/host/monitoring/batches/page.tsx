@@ -4,10 +4,8 @@ import React, { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BookUser, Eye, Loader2 } from "lucide-react";
+import { BookUser, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
 import { DEPARTMENTS } from "@/lib/constants";
 import type { Batch, Teacher } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
@@ -88,7 +86,6 @@ export default function HostMonitorBatchesPage() {
                 <TableHead>Room</TableHead>
                 <TableHead>Students</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -106,18 +103,11 @@ export default function HostMonitorBatchesPage() {
                       {batch.status || "Scheduled"}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" asChild> 
-                      <Link href={`/host/monitoring/batches/${batch.id}`}> 
-                        <Eye className="h-4 w-4" />
-                      </Link>
-                    </Button>
-                  </TableCell>
                 </TableRow>
               ))}
               {batches.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-muted-foreground h-24">
+                  <TableCell colSpan={8} className="text-center text-muted-foreground h-24">
                     No batches found in the system.
                   </TableCell>
                 </TableRow>
