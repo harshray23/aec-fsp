@@ -1,4 +1,3 @@
-
 "use client"; 
 
 import React from "react";
@@ -79,6 +78,8 @@ export function DashboardLayout({
     setOpenMenus(newOpenMenus);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname, navItems]);
+
+  const profileLinkPath = userRole === 'Management' ? 'host' : userRole.toLowerCase();
 
 
   return (
@@ -185,7 +186,7 @@ export function DashboardLayout({
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href={`/${userRole.toLowerCase()}/profile`}>
+                  <Link href={`/${profileLinkPath}/profile`}>
                     <UserCircle className="mr-2 h-4 w-4" />
                     <span>Profile</span>
                   </Link>
