@@ -11,6 +11,7 @@ import Link from "next/link";
 import { DEPARTMENTS } from "@/lib/constants";
 import type { Batch, Teacher } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
+import { isAfter, startOfDay } from "date-fns";
 
 export default function HostMonitorBatchesPage() {
   const [batches, setBatches] = useState<Batch[]>([]);
@@ -48,7 +49,25 @@ export default function HostMonitorBatchesPage() {
   const getDepartmentLabel = (deptValue: string) => {
     const dept = DEPARTMENTS.find(d => d.value === deptValue);
     return dept ? dept.label : deptValue;
-  }
+  };
+
+  const getDynamicStatus = (batch: Batch): "Scheduled" | "Ongoing" | "Completed" => {
+    if (batch.status === "Completed") {
+      return "Completed";
+    }
+    try {
+      const today = startOfDay(new Date());
+      const startDate = startOfDay(new Date(batch.startDate));
+      
+      if (isAfter(today, startDate) || today.getTime() === startDate.getTime()) {
+        return "Ongoing";
+      }
+    } catch (e) {
+      console.error("Invalid date for batch:", batch.name, batch.startDate);
+      return "Scheduled";
+    }
+    return "Scheduled";
+  };
   
   if (isLoading) {
     return (
@@ -88,7 +107,7 @@ export default function HostMonitorBatchesPage() {
                 <TableHead>Room</TableHead>
                 <TableHead>Students</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-right">Details</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -102,9 +121,14 @@ export default function HostMonitorBatchesPage() {
                   <TableCell>{batch.roomNumber || "N/A"}</TableCell>
                   <TableCell>{batch.studentIds.length}</TableCell>
                   <TableCell>
-                    <Badge variant={batch.status === "Ongoing" ? "default" : batch.status === "Scheduled" ? "outline" : "secondary"}>
-                      {batch.status || "Scheduled"}
-                    </Badge>
+                    {(() => {
+                        const status = getDynamicStatus(batch);
+                        return (
+                            <Badge variant={status === "Ongoing" ? "default" : status === "Scheduled" ? "outline" : "secondary"}>
+                              {status}
+                            </Badge>
+                        );
+                    })()}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button asChild variant="outline" size="sm">

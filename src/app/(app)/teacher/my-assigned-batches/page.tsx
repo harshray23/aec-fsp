@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -11,6 +12,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import type { Batch } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
+import { isAfter, startOfDay } from "date-fns";
 
 export default function TeacherMyAssignedBatchesPage() {
   const [assignedBatches, setAssignedBatches] = useState<Batch[]>([]);
@@ -53,6 +55,25 @@ export default function TeacherMyAssignedBatchesPage() {
     const dept = DEPARTMENTS.find(d => d.value === deptValue);
     return dept ? dept.label : deptValue;
   };
+  
+  const getDynamicStatus = (batch: Batch): "Scheduled" | "Ongoing" | "Completed" => {
+    if (batch.status === "Completed") {
+      return "Completed";
+    }
+    try {
+      const today = startOfDay(new Date());
+      const startDate = startOfDay(new Date(batch.startDate));
+      
+      if (isAfter(today, startDate) || today.getTime() === startDate.getTime()) {
+        return "Ongoing";
+      }
+    } catch (e) {
+      console.error("Invalid date for batch:", batch.name, batch.startDate);
+      return "Scheduled";
+    }
+    return "Scheduled";
+  };
+
 
   return (
     <div className="space-y-8">
@@ -95,9 +116,14 @@ export default function TeacherMyAssignedBatchesPage() {
                   <TableCell>{batch.roomNumber || "N/A"}</TableCell>
                   <TableCell>{batch.studentIds.length}</TableCell>
                   <TableCell>
-                    <Badge variant={batch.status === "Ongoing" ? "default" : batch.status === "Scheduled" ? "outline" : "secondary"}>
-                      {batch.status}
-                    </Badge>
+                    {(() => {
+                        const status = getDynamicStatus(batch);
+                        return (
+                            <Badge variant={status === "Ongoing" ? "default" : status === "Scheduled" ? "outline" : "secondary"}>
+                              {status}
+                            </Badge>
+                        );
+                    })()}
                   </TableCell>
                   <TableCell className="text-right">
                     <Button variant="outline" size="sm" asChild>

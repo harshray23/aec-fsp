@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
+import { isAfter, startOfDay } from "date-fns";
 
 export default function AdminBatchOverviewPage() {
   const { toast } = useToast();
@@ -86,6 +87,25 @@ export default function AdminBatchOverviewPage() {
     setBatchToDeleteId(batchId);
     setIsDeleteDialogOpen(true);
   };
+
+  const getDynamicStatus = (batch: Batch): "Scheduled" | "Ongoing" | "Completed" => {
+    if (batch.status === "Completed") {
+      return "Completed";
+    }
+    try {
+      const today = startOfDay(new Date());
+      const startDate = startOfDay(new Date(batch.startDate));
+      
+      if (isAfter(today, startDate) || today.getTime() === startDate.getTime()) {
+        return "Ongoing";
+      }
+    } catch (e) {
+      console.error("Invalid date for batch:", batch.name, batch.startDate);
+      return "Scheduled";
+    }
+    return "Scheduled";
+  };
+
 
   const handleDeleteBatch = async () => {
     if (!batchToDeleteId) return;
@@ -173,9 +193,14 @@ export default function AdminBatchOverviewPage() {
                   <TableCell>{getTeacherNames(batch.teacherIds)}</TableCell>
                   <TableCell>{batch.studentIds.length}</TableCell>
                   <TableCell>
-                    <Badge variant={batch.status === "Ongoing" ? "default" : batch.status === "Scheduled" ? "outline" : "secondary"}>
-                      {batch.status || "Scheduled"}
-                    </Badge>
+                     {(() => {
+                        const status = getDynamicStatus(batch);
+                        return (
+                            <Badge variant={status === "Ongoing" ? "default" : status === "Scheduled" ? "outline" : "secondary"}>
+                              {status}
+                            </Badge>
+                        );
+                    })()}
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
