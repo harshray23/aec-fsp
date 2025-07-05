@@ -69,6 +69,7 @@ const getNavItems = (role: "student" | "teacher" | "admin" | "host" | "guest"): 
     case "host":
       return [
         { href: "/host/dashboard", label: "Management Dashboard", icon: ServerCog, tooltip: "Management overview" },
+        { href: "/host/profile", label: "My Profile", icon: UserCircle, tooltip: "View your management profile" },
         { href: "/host/user-approval", label: "User Approval", icon: UserCheck, tooltip: "Approve or reject new user registrations" },
         { href: "/host/add-host", label: "Add New Host", icon: UserPlus, tooltip: "Create a new management user" },
         { href: "/host/announcements", label: "Send Announcements", icon: Megaphone, tooltip: "Broadcast messages to users" },
