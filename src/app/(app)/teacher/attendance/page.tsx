@@ -82,10 +82,14 @@ export default function TeacherManageAttendancePage() {
     const fetchDataForBatchAndDate = async () => {
       setIsLoadingStudents(true);
       try {
-        const studentsRes = await fetch('/api/students?limit=99999'); // Fetch all students
-        if (!studentsRes.ok) throw new Error("Failed to fetch students");
-        const studentsResponse = await studentsRes.json();
-        const allStudents: Student[] = studentsResponse.students;
+        const studentsRes = await fetch('/api/students?limit=99999');
+        if (!studentsRes.ok) {
+            throw new Error(`Failed to fetch student list (${studentsRes.status})`);
+        }
+        
+        const studentsApiResponse = await studentsRes.json();
+        const allStudents: Student[] = Array.isArray(studentsApiResponse?.students) ? studentsApiResponse.students : [];
+
         const studentsInBatch = allStudents.filter(s => s.batchIds?.includes(selectedBatchId));
         setStudents(studentsInBatch);
 
@@ -104,6 +108,7 @@ export default function TeacherManageAttendancePage() {
 
       } catch (error: any) {
         toast({ title: "Error", description: `Failed to load data for batch: ${error.message}`, variant: "destructive" });
+        setStudents([]);
       } finally {
         setIsLoadingStudents(false);
       }
