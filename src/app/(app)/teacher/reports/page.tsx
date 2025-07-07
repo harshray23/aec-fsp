@@ -44,7 +44,7 @@ export default function TeacherViewReportsPage() {
       try {
         const [batchesRes, studentsRes, attendanceRes] = await Promise.all([
           fetch('/api/batches'),
-          fetch('/api/students'),
+          fetch('/api/students?limit=99999'),
           fetch('/api/attendance'),
         ]);
 
@@ -53,11 +53,13 @@ export default function TeacherViewReportsPage() {
         }
 
         const allBatches: Batch[] = await batchesRes.json();
+        const studentsApiResponse = await studentsRes.json();
+        
         // Correctly filter batches assigned to the teacher
         const teacherBatches = allBatches.filter(b => b.teacherIds?.includes(teacherId!));
         
         setAssignedBatches(teacherBatches);
-        setAllStudents(await studentsRes.json());
+        setAllStudents(studentsApiResponse.students);
         setAllAttendanceRecords(await attendanceRes.json());
       } catch (error: any) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
