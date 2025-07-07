@@ -33,7 +33,7 @@ export default function TeacherViewBatchDetailsPage() {
             try {
                 const [batchRes, allStudentsRes] = await Promise.all([
                     fetch(`/api/batches/${batchId}`),
-                    fetch('/api/students')
+                    fetch('/api/students?limit=99999')
                 ]);
 
                 if (!batchRes.ok) {
@@ -45,7 +45,8 @@ export default function TeacherViewBatchDetailsPage() {
                 const batchData: Batch = await batchRes.json();
 
                 if (!allStudentsRes.ok) throw new Error("Failed to fetch student list.");
-                const allStudents: Student[] = await allStudentsRes.json();
+                const studentsResponse = await allStudentsRes.json();
+                const allStudents: Student[] = studentsResponse.students;
                 
                 const studentsInBatch = allStudents.filter(student => batchData.studentIds?.includes(student.id));
 
