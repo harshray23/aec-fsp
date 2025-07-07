@@ -12,11 +12,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { CheckSquare, CalendarIcon, Save, Loader2 } from "lucide-react";
+import { CheckSquare, CalendarIcon, Save, Loader2, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { Student, Batch, AttendanceRecord } from "@/lib/types";
 import { DEPARTMENTS, USER_ROLES } from "@/lib/constants";
+import * as XLSX from "xlsx";
 
 type AttendanceStatus = "present" | "absent" | "late";
 
@@ -172,6 +173,36 @@ export default function TeacherManageAttendancePage() {
     }
   };
   
+  const handleDownloadExcel = () => {
+    if (!selectedBatch || !selectedDate || students.length === 0) {
+      toast({
+        title: "No Data to Export",
+        description: "Please select a batch and date with student records to download.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const dataForExcel = students.map((student) => ({
+      'Student ID': student.studentId,
+      'Student Name': student.name,
+      'Status': attendanceRecords[student.id] ? attendanceRecords[student.id].charAt(0).toUpperCase() + attendanceRecords[student.id].slice(1) : 'Not Marked',
+      'Remarks': remarksRecords[student.id] || '',
+    }));
+    
+    const worksheet = XLSX.utils.json_to_sheet(dataForExcel);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, `Attendance ${format(selectedDate, "yyyy-MM-dd")}`);
+    
+    const fileName = `Attendance_${selectedBatch.name.replace(/\s/g, '_')}_${format(selectedDate, "yyyy-MM-dd")}.xlsx`;
+    XLSX.writeFile(workbook, fileName);
+
+    toast({
+        title: "Download Started",
+        description: `Your file ${fileName} is being downloaded.`,
+    })
+  };
+
 
   return (
     <div className="space-y-8">
@@ -179,6 +210,12 @@ export default function TeacherManageAttendancePage() {
         title="Manage Student Attendance"
         description="Select a batch you're assigned to and date to mark or update attendance records."
         icon={CheckSquare}
+        actions={
+          <Button onClick={handleDownloadExcel} disabled={!selectedBatchId || !selectedDate || students.length === 0}>
+            <Download className="mr-2 h-4 w-4" />
+            Download as Excel
+          </Button>
+        }
       />
       <Card className="shadow-lg">
         <CardHeader>
