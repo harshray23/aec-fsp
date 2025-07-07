@@ -131,6 +131,8 @@ export default function StudentDashboardPage() {
                     }));
 
                 attendanceData = await allAttendanceRes.json();
+                // Sort records by date, oldest first (ascending)
+                attendanceData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
             } else {
                  console.warn(`Failed to fetch all required data for dashboard.`);
             }
