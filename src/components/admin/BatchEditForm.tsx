@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
-import { format, parseISO, isPast, startOfDay } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { CalendarIcon, Users, Link as LinkIcon, Clipboard, ClipboardCheck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -45,9 +45,7 @@ const batchEditSchema = z.object({
   department: z.string().min(1, "Department is required"),
   topic: z.string().min(2, "Topic must be at least 2 characters"),
   teacherIds: z.array(z.string()).min(1, "At least one teacher is required."),
-  startDate: z.date({ required_error: "Start date is required." }).refine(
-    (date) => !isPast(startOfDay(date)), { message: "Start date cannot be in the past." }
-  ),
+  startDate: z.date({ required_error: "Start date is required." }),
   daysOfWeek: z.array(z.string()).refine(value => value.length > 0, {
     message: "Please select at least one day of the week.",
   }),

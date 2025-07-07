@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { CheckSquare, CalendarIcon, Save, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format, parseISO, startOfDay, isBefore, isAfter } from "date-fns";
+import { format } from "date-fns";
 import type { Student, Batch, AttendanceRecord } from "@/lib/types";
 import { DEPARTMENTS, USER_ROLES } from "@/lib/constants";
 
@@ -206,22 +206,6 @@ export default function TeacherManageAttendancePage() {
                   mode="single"
                   selected={selectedDate}
                   onSelect={setSelectedDate}
-                  disabled={(date) => {
-                    // Disable all dates if no batch is selected.
-                    if (!selectedBatch) return true;
-
-                    const today = startOfDay(new Date());
-                    const batchStartDate = startOfDay(parseISO(selectedBatch.startDate));
-
-                    // Disable dates in the future.
-                    if (isAfter(date, today)) return true;
-                    
-                    // Disable dates before the batch start date.
-                    if (isBefore(date, batchStartDate)) return true;
-
-                    // Otherwise, enable the date.
-                    return false;
-                  }}
                   initialFocus
                 />
               </PopoverContent>
