@@ -51,10 +51,17 @@ export default function TeacherMyAssignedBatchesPage() {
     fetchBatches();
   }, [toast]);
 
-  const getDepartmentLabel = (deptValue: string) => {
-    const dept = DEPARTMENTS.find(d => d.value === deptValue);
-    return dept ? dept.label : deptValue;
-  };
+  const getDepartmentLabels = (deptValues?: string[]) => {
+    if (!deptValues || deptValues.length === 0) return "N/A";
+    const labels = deptValues.map(value => {
+        const dept = DEPARTMENTS.find(d => d.value === value);
+        return dept ? dept.label : value;
+    });
+    if (labels.length > 2) {
+      return `${labels.slice(0, 2).join(', ')} +${labels.length - 2} more`;
+    }
+    return labels.join(', ');
+  }
   
   const getDynamicStatus = (batch: Batch): "Scheduled" | "Ongoing" | "Completed" => {
     if (batch.status === "Completed") {
@@ -63,12 +70,17 @@ export default function TeacherMyAssignedBatchesPage() {
     try {
       const today = startOfDay(new Date());
       const startDate = startOfDay(new Date(batch.startDate));
+      const endDate = startOfDay(new Date(batch.endDate));
+
+      if (isAfter(today, endDate)) {
+        return "Completed";
+      }
       
       if (isAfter(today, startDate) || today.getTime() === startDate.getTime()) {
         return "Ongoing";
       }
     } catch (e) {
-      console.error("Invalid date for batch:", batch.name, batch.startDate);
+      console.error("Invalid date for batch:", batch.name, batch.startDate, batch.endDate);
       return "Scheduled";
     }
     return "Scheduled";
@@ -96,9 +108,8 @@ export default function TeacherMyAssignedBatchesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Batch ID</TableHead>
                 <TableHead>Batch Name</TableHead>
-                <TableHead>Department</TableHead>
+                <TableHead>Departments</TableHead>
                 <TableHead>Topic</TableHead>
                 <TableHead>Room</TableHead>
                 <TableHead>Students</TableHead>
@@ -109,9 +120,8 @@ export default function TeacherMyAssignedBatchesPage() {
             <TableBody>
               {assignedBatches.map((batch) => (
                 <TableRow key={batch.id}>
-                  <TableCell className="truncate max-w-[100px]">{batch.id}</TableCell>
                   <TableCell className="font-medium">{batch.name}</TableCell>
-                  <TableCell>{getDepartmentLabel(batch.department)}</TableCell>
+                  <TableCell>{getDepartmentLabels(batch.departments)}</TableCell>
                   <TableCell>{batch.topic}</TableCell>
                   <TableCell>{batch.roomNumber || "N/A"}</TableCell>
                   <TableCell>{batch.studentIds.length}</TableCell>

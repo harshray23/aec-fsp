@@ -53,6 +53,7 @@ export interface Student extends User {
   registrationNumber: string;
   department: string;
   section?: Section; // Made section optional
+  currentYear?: number;
   phoneNumber: string;
   whatsappNumber?: string;
   batchIds?: string[]; // IDs of the batches the student is assigned to
@@ -111,9 +112,9 @@ export interface Admin extends User {
 export interface Batch {
   id: string;
   name: string;
-  department?: string;
   topic: string;
   startDate: string; // ISO string format
+  endDate: string; // ISO string format
   daysOfWeek: string[];
   startTime: string;
   endTime: string;
@@ -121,6 +122,7 @@ export interface Batch {
   studentIds: string[];
   status: "Scheduled" | "Ongoing" | "Completed";
   roomNumber?: string;
+  departments?: string[];
 }
 
 export interface AttendanceRecord {

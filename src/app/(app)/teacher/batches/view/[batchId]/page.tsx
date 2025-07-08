@@ -11,6 +11,7 @@ import { Eye, Loader2, CalendarDays, Clock, HomeIcon, Users, ArrowLeft } from "l
 import type { Batch, Student } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { DEPARTMENTS } from '@/lib/constants';
+import { format, parseISO } from 'date-fns';
 
 interface BatchDetails extends Batch {
     students: Student[];
@@ -108,9 +109,11 @@ export default function TeacherViewBatchDetailsPage() {
 
             <Card>
                 <CardHeader>
-                    <CardTitle>Batch Schedule</CardTitle>
+                    <CardTitle>Batch Schedule & Duration</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+                    <div className="flex items-center gap-2"><CalendarDays className="h-5 w-5 text-primary" /> <strong>Start Date:</strong> {format(parseISO(batchDetails.startDate), "PPP")}</div>
+                    <div className="flex items-center gap-2"><CalendarDays className="h-5 w-5 text-primary" /> <strong>End Date:</strong> {format(parseISO(batchDetails.endDate), "PPP")}</div>
                     <div className="flex items-center gap-2"><CalendarDays className="h-5 w-5 text-primary" /> <strong>Days:</strong> {batchDetails.daysOfWeek.join(', ')}</div>
                     <div className="flex items-center gap-2"><Clock className="h-5 w-5 text-primary" /> <strong>Time:</strong> {batchDetails.startTime} - {batchDetails.endTime}</div>
                     <div className="flex items-center gap-2"><HomeIcon className="h-5 w-5 text-primary" /> <strong>Room:</strong> {batchDetails.roomNumber || 'N/A'}</div>

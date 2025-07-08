@@ -20,7 +20,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -44,7 +43,9 @@ const batchEditSchema = z.object({
   name: z.string().min(3, "Batch name must be at least 3 characters"),
   topic: z.string().min(2, "Topic must be at least 2 characters"),
   teacherIds: z.array(z.string()).min(1, "At least one teacher is required."),
+  departments: z.array(z.string()).min(1, "At least one department is required"),
   startDate: z.date({ required_error: "Start date is required." }),
+  endDate: z.date({ required_error: "End date is required." }),
   daysOfWeek: z.array(z.string()).refine(value => value.length > 0, {
     message: "Please select at least one day of the week.",
   }),
@@ -55,6 +56,9 @@ const batchEditSchema = z.object({
 }).refine(data => data.startTime < data.endTime, {
   message: "End time must be after start time.",
   path: ["endTime"],
+}).refine(data => data.endDate > data.startDate, {
+  message: "End date must be after the start date.",
+  path: ["endDate"],
 });
 
 type BatchEditFormValues = z.infer<typeof batchEditSchema>;
@@ -80,7 +84,9 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
       name: batchData?.name || "",
       topic: batchData?.topic || "",
       teacherIds: batchData?.teacherIds || [],
+      departments: batchData?.departments || [],
       startDate: batchData?.startDate ? parseISO(batchData.startDate) : new Date(),
+      endDate: batchData?.endDate ? parseISO(batchData.endDate) : new Date(),
       daysOfWeek: batchData?.daysOfWeek || [],
       startTime: batchData?.startTime || "",
       endTime: batchData?.endTime || "",
@@ -96,7 +102,9 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
         name: batchData.name || "",
         topic: batchData.topic || "",
         teacherIds: batchData.teacherIds || [],
+        departments: batchData.departments || [],
         startDate: batchData.startDate ? parseISO(batchData.startDate) : new Date(),
+        endDate: batchData.endDate ? parseISO(batchData.endDate) : new Date(),
         daysOfWeek: batchData.daysOfWeek || [],
         startTime: batchData.startTime || "",
         endTime: batchData.endTime || "",
@@ -114,7 +122,7 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
     const fetchTeachers = async () => {
       setIsLoadingTeachers(true);
       try {
-        const response = await fetch("/api/teachers");
+        const response = await fetch("/api/teachers?status=active");
         if (!response.ok) throw new Error("Failed to fetch teachers");
         const data = await response.json();
         setTeachers(data);
@@ -141,6 +149,7 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
       const payload = {
         ...values,
         startDate: values.startDate.toISOString(),
+        endDate: values.endDate.toISOString(),
       };
 
       const url = isEditMode ? `/api/batches/${batchData.id}` : '/api/batches';
@@ -232,19 +241,68 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
                 </FormItem>
             )}
         />
+        
+        <FormField
+            control={form.control}
+            name="departments"
+            render={() => (
+                <FormItem>
+                    <FormLabel>Assign Departments</FormLabel>
+                    <FormDescription>Select one or more departments this batch is for.</FormDescription>
+                     <ScrollArea className="h-40 w-full rounded-md border">
+                        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+                            {DEPARTMENTS.map((dept) => (
+                            <FormField
+                                key={dept.value}
+                                control={form.control}
+                                name="departments"
+                                render={({ field }) => {
+                                return (
+                                    <FormItem
+                                    key={dept.value}
+                                    className="flex flex-row items-center space-x-3 space-y-0"
+                                    >
+                                    <FormControl>
+                                        <Checkbox
+                                        checked={field.value?.includes(dept.value)}
+                                        onCheckedChange={(checked) => {
+                                            return checked
+                                            ? field.onChange([...(field.value || []), dept.value])
+                                            : field.onChange(
+                                                (field.value || []).filter(
+                                                    (value) => value !== dept.value
+                                                )
+                                                );
+                                        }}
+                                        />
+                                    </FormControl>
+                                    <FormLabel className="font-normal">
+                                        {dept.label}
+                                    </FormLabel>
+                                    </FormItem>
+                                );
+                                }}
+                            />
+                            ))}
+                        </div>
+                    </ScrollArea>
+                    <FormMessage />
+                </FormItem>
+            )}
+        />
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <FormField control={form.control} name="startDate" render={({ field }) => ( <FormItem className="flex flex-col"> <FormLabel>Start Date</FormLabel> <Popover><PopoverTrigger asChild><FormControl><Button variant="outline" className={cn("w-full pl-3 text-left font-normal",!field.value && "text-muted-foreground")}>{field.value ? format(field.value, "PPP") : <span>Pick a date</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent></Popover> <FormMessage /> </FormItem> )}/>
+          <FormField control={form.control} name="endDate" render={({ field }) => ( <FormItem className="flex flex-col"> <FormLabel>End Date</FormLabel> <Popover><PopoverTrigger asChild><FormControl><Button variant="outline" className={cn("w-full pl-3 text-left font-normal",!field.value && "text-muted-foreground")}>{field.value ? format(field.value, "PPP") : <span>Pick a date</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date < form.getValues("startDate")} initialFocus /></PopoverContent></Popover> <FormMessage /> </FormItem> )}/>
+        </div>
 
-        <FormField control={form.control} name="startDate" render={({ field }) => ( <FormItem className="flex flex-col"> <FormLabel>Start Date</FormLabel> <Popover><PopoverTrigger asChild><FormControl><Button variant="outline" className={cn("w-full pl-3 text-left font-normal md:w-1/2",!field.value && "text-muted-foreground")}>{field.value ? format(field.value, "PPP") : <span>Pick a date</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent></Popover> <FormMessage /> </FormItem> )}/>
         <FormField control={form.control} name="daysOfWeek" render={() => ( <FormItem> <FormLabel>Days of the Week</FormLabel> <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 pt-2">{daysOfWeekOptions.map((item) => (<FormField key={item.id} control={form.control} name="daysOfWeek" render={({ field }) => (<FormItem key={item.id} className="flex flex-row items-start space-x-3 space-y-0"><FormControl><Checkbox checked={field.value?.includes(item.label)} onCheckedChange={(checked) => checked ? field.onChange([...(field.value || []), item.label]) : field.onChange((field.value || []).filter(value => value !== item.label))}/></FormControl><FormLabel className="font-normal">{item.label}</FormLabel></FormItem>)}/>))}</div><FormMessage /></FormItem>)}/>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField control={form.control} name="startTime" render={({ field }) => ( <FormItem> <FormLabel>Start Time</FormLabel> <FormControl><Input type="time" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
             <FormField control={form.control} name="endTime" render={({ field }) => ( <FormItem> <FormLabel>End Time</FormLabel> <FormControl><Input type="time" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
         </div>
         <FormField control={form.control} name="roomNumber" render={({ field }) => ( <FormItem> <FormLabel>Room Number (Optional)</FormLabel> <FormControl><Input placeholder="E.g., R101" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
-        
-        {isEditMode && (
-          <FormField control={form.control} name="status" render={({ field }) => ( <FormItem> <FormLabel>Batch Status</FormLabel> <Select onValueChange={field.onChange} value={field.value}> <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl> <SelectContent><SelectItem value="Scheduled">Scheduled</SelectItem><SelectItem value="Ongoing">Ongoing</SelectItem><SelectItem value="Completed">Completed</SelectItem></SelectContent> </Select> <FormMessage /> </FormItem> )}/>
-        )}
         
         {isEditMode && batchData.id && (
             <Card className="shadow-inner bg-muted/50">

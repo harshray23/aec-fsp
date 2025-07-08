@@ -46,10 +46,16 @@ export default function HostMonitorBatchesPage() {
     return teacherIds.map(id => teachersMap.get(id)).filter(Boolean).join(', ') || "N/A";
   };
 
-  const getDepartmentLabel = (deptValue?: string) => {
-    if (!deptValue) return "N/A";
-    const dept = DEPARTMENTS.find(d => d.value === deptValue);
-    return dept ? dept.label : deptValue;
+  const getDepartmentLabels = (deptValues?: string[]) => {
+    if (!deptValues || deptValues.length === 0) return "N/A";
+    const labels = deptValues.map(value => {
+        const dept = DEPARTMENTS.find(d => d.value === value);
+        return dept ? dept.label : value;
+    });
+    if (labels.length > 2) {
+      return `${labels.slice(0, 2).join(', ')} +${labels.length - 2} more`;
+    }
+    return labels.join(', ');
   };
 
   const getDynamicStatus = (batch: Batch): "Scheduled" | "Ongoing" | "Completed" => {
@@ -59,12 +65,17 @@ export default function HostMonitorBatchesPage() {
     try {
       const today = startOfDay(new Date());
       const startDate = startOfDay(new Date(batch.startDate));
+      const endDate = startOfDay(new Date(batch.endDate));
+
+      if (isAfter(today, endDate)) {
+        return "Completed";
+      }
       
       if (isAfter(today, startDate) || today.getTime() === startDate.getTime()) {
         return "Ongoing";
       }
     } catch (e) {
-      console.error("Invalid date for batch:", batch.name, batch.startDate);
+      console.error("Invalid date for batch:", batch.name, batch.startDate, batch.endDate);
       return "Scheduled";
     }
     return "Scheduled";
@@ -100,9 +111,8 @@ export default function HostMonitorBatchesPage() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Batch ID</TableHead>
                 <TableHead>Batch Name</TableHead>
-                <TableHead>Department</TableHead>
+                <TableHead>Departments</TableHead>
                 <TableHead>Topic</TableHead>
                 <TableHead>Teachers</TableHead>
                 <TableHead>Room</TableHead>
@@ -114,9 +124,8 @@ export default function HostMonitorBatchesPage() {
             <TableBody>
               {batches.map((batch) => (
                 <TableRow key={batch.id}>
-                  <TableCell className="truncate max-w-[100px]">{batch.id}</TableCell>
                   <TableCell className="font-medium">{batch.name}</TableCell>
-                  <TableCell>{getDepartmentLabel(batch.department)}</TableCell>
+                  <TableCell>{getDepartmentLabels(batch.departments)}</TableCell>
                   <TableCell>{batch.topic}</TableCell>
                   <TableCell>{getTeacherNames(batch.teacherIds)}</TableCell>
                   <TableCell>{batch.roomNumber || "N/A"}</TableCell>

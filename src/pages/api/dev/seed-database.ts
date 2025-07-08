@@ -21,6 +21,7 @@ const superHost: Omit<Host, 'id' | 'uid'> & {password: string} = {
   name: "Sanjay",
   email: "sanjay041024@gmail.com",
   role: "host",
+  status: "active",
   password: "Sanjay@9851"
 };
 
@@ -28,6 +29,7 @@ const elvishHost: Omit<Host, 'id' | 'uid'> & {password: string} = {
   name: "Elvish Ray",
   email: "elvishray007@gmail.com",
   role: "host",
+  status: "active",
   password: "harsh@123"
 };
 
@@ -40,16 +42,16 @@ const sampleTeachers: (Omit<Teacher, 'id' | 'uid'> & {password: string})[] = [
 ];
 
 const sampleStudents: (Omit<Student, 'id' | 'uid'> & {password: string})[] = [
-  { name: 'Aarav Sharma', email: 'aarav.s@example.com', studentId: 'S001', rollNumber: 'CSE/20/01', registrationNumber: 'REG-CSE-01', department: 'cse', section: 'A', phoneNumber: '9876543210', isEmailVerified: true, isPhoneVerified: true, role: 'student', password: 'Password@123' },
-  { name: 'Diya Patel', email: 'diya.p@example.com', studentId: 'S002', rollNumber: 'CSE/20/02', registrationNumber: 'REG-CSE-02', department: 'cse', section: 'A', phoneNumber: '9876543211', isEmailVerified: true, isPhoneVerified: true, role: 'student', password: 'Password@123' },
-  { name: 'Rohan Mehta', email: 'rohan.m@example.com', studentId: 'S003', rollNumber: 'IT/20/01', registrationNumber: 'REG-IT-01', department: 'it', section: 'B', phoneNumber: '9876543212', isEmailVerified: true, isPhoneVerified: true, role: 'student', password: 'Password@123' },
-  { name: 'Isha Singh', email: 'isha.s@example.com', studentId: 'S004', rollNumber: 'IT/20/02', registrationNumber: 'REG-IT-02', department: 'it', section: 'B', phoneNumber: '9876543213', isEmailVerified: true, isPhoneVerified: true, role: 'student', password: 'Password@123' },
-  { name: 'Arjun Verma', email: 'arjun.v@example.com', studentId: 'S005', rollNumber: 'ECE/20/01', registrationNumber: 'REG-ECE-01', department: 'ece', section: 'C', phoneNumber: '9876543214', isEmailVerified: true, isPhoneVerified: true, role: 'student', password: 'Password@123' },
+  { name: 'Aarav Sharma', email: 'aarav.s@example.com', studentId: 'AEC/2021/0001', rollNumber: 'CSE/20/01', registrationNumber: 'REG-CSE-01', department: 'cse', section: 'A', phoneNumber: '9876543210', isEmailVerified: true, isPhoneVerified: true, role: 'student', password: 'Password@123', currentYear: 1 },
+  { name: 'Diya Patel', email: 'diya.p@example.com', studentId: 'AEC/2021/0002', rollNumber: 'CSE/20/02', registrationNumber: 'REG-CSE-02', department: 'cse', section: 'A', phoneNumber: '9876543211', isEmailVerified: true, isPhoneVerified: true, role: 'student', password: 'Password@123', currentYear: 1 },
+  { name: 'Rohan Mehta', email: 'rohan.m@example.com', studentId: 'AEC/2022/0001', rollNumber: 'IT/20/01', registrationNumber: 'REG-IT-01', department: 'it', section: 'B', phoneNumber: '9876543212', isEmailVerified: true, isPhoneVerified: true, role: 'student', password: 'Password@123', currentYear: 2 },
+  { name: 'Isha Singh', email: 'isha.s@example.com', studentId: 'AEC/2022/0002', rollNumber: 'IT/20/02', registrationNumber: 'REG-IT-02', department: 'it', section: 'B', phoneNumber: '9876543213', isEmailVerified: true, isPhoneVerified: true, role: 'student', password: 'Password@123', currentYear: 2 },
+  { name: 'Arjun Verma', email: 'arjun.v@example.com', studentId: 'AEC/2023/0001', rollNumber: 'ECE/20/01', registrationNumber: 'REG-ECE-01', department: 'ece', section: 'C', phoneNumber: '9876543214', isEmailVerified: true, isPhoneVerified: true, role: 'student', password: 'Password@123', currentYear: 3 },
 ];
 
 const sampleBatchDefinitions: Omit<Batch, 'id' | 'teacherIds' | 'studentIds'>[] = [
-  { name: 'FSP-CSE-JAVA-A', department: 'cse', topic: 'Core Java', startDate: new Date('2024-08-01').toISOString(), daysOfWeek: ['Monday', 'Wednesday', 'Friday'], startTime: '09:30', endTime: '12:30', roomNumber: 'R301', status: 'Scheduled' },
-  { name: 'FSP-IT-2024-B', department: 'it', topic: 'Cloud Computing', startDate: new Date('2024-08-01').toISOString(), daysOfWeek: ['Tuesday', 'Thursday'], startTime: '14:00', endTime: '15:30', roomNumber: 'R302', status: 'Scheduled' },
+  { name: 'FSP-CSE-JAVA-A', departments: ['cse', 'it'], topic: 'Core Java', startDate: new Date('2024-08-01').toISOString(), endDate: new Date('2024-11-30').toISOString(), daysOfWeek: ['Monday', 'Wednesday', 'Friday'], startTime: '09:30', endTime: '12:30', roomNumber: 'R301', status: 'Scheduled' },
+  { name: 'FSP-IT-2024-B', departments: ['it', 'ece'], topic: 'Cloud Computing', startDate: new Date('2024-08-01').toISOString(), endDate: new Date('2024-12-15').toISOString(), daysOfWeek: ['Tuesday', 'Thursday'], startTime: '14:00', endTime: '15:30', roomNumber: 'R302', status: 'Scheduled' },
 ];
 
 
@@ -131,8 +133,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }));
 
     // Process Batches - only create if they don't exist
-    const cseBatchData = { ...sampleBatchDefinitions[0], teacherIds: [teacherDocIds[0]], studentIds: studentDocIdsByDept['cse'] || [] };
-    const itBatchData = { ...sampleBatchDefinitions[1], teacherIds: [teacherDocIds[1]], studentIds: studentDocIdsByDept['it'] || [] };
+    const cseBatchData = { ...sampleBatchDefinitions[0], teacherIds: [teacherDocIds[0]], studentIds: [...(studentDocIdsByDept['cse'] || []), ...(studentDocIdsByDept['it'] || [])] };
+    const itBatchData = { ...sampleBatchDefinitions[1], teacherIds: [teacherDocIds[1]], studentIds: [...(studentDocIdsByDept['it'] || []), ...(studentDocIdsByDept['ece'] || [])] };
     
     const cseBatchQuery = await db.collection('batches').where('name', '==', cseBatchData.name).limit(1).get();
     if (cseBatchQuery.empty) {
