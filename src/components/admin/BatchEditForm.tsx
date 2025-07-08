@@ -251,7 +251,7 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
         <FormField
             control={form.control}
             name="teacherIds"
-            render={() => (
+            render={({ field }) => (
                 <FormItem>
                     <FormLabel>Assign Teachers</FormLabel>
                     <FormDescription>Select one or more teachers for this batch.</FormDescription>
@@ -300,7 +300,7 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
         <FormField
             control={form.control}
             name="departments"
-            render={() => (
+            render={({ field }) => (
                 <FormItem>
                     <FormLabel>Assign Departments</FormLabel>
                     <FormDescription>Select the departments this batch is for. This will filter the available students below.</FormDescription>
