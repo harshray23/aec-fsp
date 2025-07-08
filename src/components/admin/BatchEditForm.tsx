@@ -30,6 +30,8 @@ import type { Batch, Teacher, Student } from "@/lib/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Alert, AlertTitle } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+
 
 const daysOfWeekOptions = [
   { id: "monday", label: "Monday" },
@@ -79,6 +81,9 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
   const [isLoadingStudents, setIsLoadingStudents] = useState(true);
   const [enrollmentLink, setEnrollmentLink] = useState("");
   const [isCopied, setIsCopied] = useState(false);
+  
+  const [isStudentDialogOpen, setIsStudentDialogOpen] = useState(false);
+  const [tempSelectedStudentIds, setTempSelectedStudentIds] = useState<string[]>([]);
 
   const isEditMode = !!batchData?.id;
   const isFirstRender = React.useRef(true);
@@ -152,6 +157,8 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
   }, [toast]);
 
   const watchedDepartments = form.watch("departments");
+  const studentIds = form.watch("studentIds") || [];
+
 
   const availableStudents = useMemo(() => {
     if (!watchedDepartments || watchedDepartments.length === 0) {
@@ -226,6 +233,7 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
   };
 
   return (
+    <>
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -331,71 +339,23 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
             )}
         />
 
-        <FormField
-          control={form.control}
-          name="studentIds"
-          render={() => (
-            <FormItem>
-              <FormLabel>Assign Students</FormLabel>
-              <FormDescription>Select students from the chosen departments to add to this batch.</FormDescription>
-              <Card>
-                <CardContent className="p-4">
-                  {isLoadingStudents ? (
-                    <div className="flex justify-center items-center h-32">
-                        <Loader2 className="animate-spin" />
-                    </div>
-                  ) : watchedDepartments.length > 0 ? (
-                    <ScrollArea className="h-64">
-                      <div className="p-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2">
-                        {availableStudents.map((student) => (
-                          <FormField
-                            key={student.id}
-                            control={form.control}
-                            name="studentIds"
-                            render={({ field }) => (
-                              <FormItem
-                                key={student.id}
-                                className="flex flex-row items-center space-x-3 space-y-0 p-2 rounded-md hover:bg-muted"
-                              >
-                                <FormControl>
-                                  <Checkbox
-                                    checked={field.value?.includes(student.id)}
-                                    onCheckedChange={(checked) => {
-                                      return checked
-                                        ? field.onChange([...(field.value || []), student.id])
-                                        : field.onChange(
-                                            (field.value || []).filter(
-                                              (value) => value !== student.id
-                                            )
-                                          );
-                                    }}
-                                  />
-                                </FormControl>
-                                <FormLabel className="font-normal text-sm">
-                                  {student.name} <span className="text-xs text-muted-foreground">({student.rollNumber})</span>
-                                </FormLabel>
-                              </FormItem>
-                            )}
-                          />
-                        ))}
-                        {availableStudents.length === 0 && (
-                            <p className="text-muted-foreground col-span-full text-center py-4">No students found for the selected department(s).</p>
-                        )}
-                      </div>
-                    </ScrollArea>
-                  ) : (
-                    <Alert>
-                        <AlertTitle>Select a department first</AlertTitle>
-                        <FormDescription>Please select one or more departments above to see the list of available students.</FormDescription>
-                    </Alert>
-                  )}
-                </CardContent>
-              </Card>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
+        <div className="space-y-2">
+          <FormLabel>Assign Students</FormLabel>
+          <FormDescription>Manually assign students to this batch or use the shareable link.</FormDescription>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full justify-start"
+            onClick={() => {
+              setTempSelectedStudentIds(form.getValues("studentIds") || []);
+              setIsStudentDialogOpen(true);
+            }}
+          >
+            <Users className="mr-2 h-4 w-4" />
+            Assign Students ({studentIds.length} selected)
+          </Button>
+          <FormField control={form.control} name="studentIds" render={() => <FormMessage />} />
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField control={form.control} name="startDate" render={({ field }) => ( <FormItem className="flex flex-col"> <FormLabel>Start Date</FormLabel> <Popover><PopoverTrigger asChild><FormControl><Button variant="outline" className={cn("w-full pl-3 text-left font-normal",!field.value && "text-muted-foreground")}>{field.value ? format(field.value, "PPP") : <span>Pick a date</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent></Popover> <FormMessage /> </FormItem> )}/>
@@ -433,5 +393,87 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
         </Button>
       </form>
     </Form>
+    <Dialog open={isStudentDialogOpen} onOpenChange={setIsStudentDialogOpen}>
+        <DialogContent className="max-w-4xl h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Assign Students</DialogTitle>
+            <DialogDescription>
+              Select students from the chosen departments to add to this batch.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex-grow overflow-hidden">
+            {isLoadingStudents ? (
+              <div className="flex justify-center items-center h-full">
+                <Loader2 className="animate-spin" />
+              </div>
+            ) : watchedDepartments.length > 0 ? (
+              <ScrollArea className="h-full">
+                <div className="p-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2">
+                  {availableStudents.map((student) => (
+                    <div
+                      key={student.id}
+                      className="flex flex-row items-center space-x-3 space-y-0 p-2 rounded-md hover:bg-muted"
+                    >
+                      <Checkbox
+                        id={`student-${student.id}`}
+                        checked={tempSelectedStudentIds.includes(student.id)}
+                        onCheckedChange={(checked) => {
+                          setTempSelectedStudentIds((prev) =>
+                            checked
+                              ? [...prev, student.id]
+                              : prev.filter((id) => id !== student.id)
+                          );
+                        }}
+                      />
+                      <label htmlFor={`student-${student.id}`} className="font-normal text-sm cursor-pointer">
+                        {student.name}{" "}
+                        <span className="text-xs text-muted-foreground">
+                          ({student.rollNumber})
+                        </span>
+                      </label>
+                    </div>
+                  ))}
+                  {availableStudents.length === 0 && (
+                    <p className="text-muted-foreground col-span-full text-center py-4">
+                      No students found for the selected department(s).
+                    </p>
+                  )}
+                </div>
+              </ScrollArea>
+            ) : (
+              <div className="flex items-center justify-center h-full">
+                <Alert>
+                  <AlertTitle>Select a department first</AlertTitle>
+                  <FormDescription>
+                    Please select one or more departments on the main form to see the list of available students.
+                  </FormDescription>
+                </Alert>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsStudentDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={() => {
+                form.setValue("studentIds", tempSelectedStudentIds, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                });
+                setIsStudentDialogOpen(false);
+              }}
+            >
+              Confirm Assignment ({tempSelectedStudentIds.length} students)
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
