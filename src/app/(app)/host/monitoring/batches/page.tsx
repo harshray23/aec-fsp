@@ -46,7 +46,8 @@ export default function HostMonitorBatchesPage() {
     return teacherIds.map(id => teachersMap.get(id)).filter(Boolean).join(', ') || "N/A";
   };
 
-  const getDepartmentLabel = (deptValue: string) => {
+  const getDepartmentLabel = (deptValue?: string) => {
+    if (!deptValue) return "N/A";
     const dept = DEPARTMENTS.find(d => d.value === deptValue);
     return dept ? dept.label : deptValue;
   };

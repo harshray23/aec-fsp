@@ -18,7 +18,7 @@ import type { Batch, Student, AttendanceRecord } from "@/lib/types";
 interface BatchAttendanceSummary {
   batchId: string;
   batchName: string;
-  department: string;
+  department?: string;
   totalStudents: number;
   present: number;
   absent: number;

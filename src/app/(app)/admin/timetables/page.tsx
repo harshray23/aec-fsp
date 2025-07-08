@@ -57,7 +57,7 @@ export default function AdminTimetableOverviewPage() {
             return {
               batchId: batch.id,
               batchName: batch.name,
-              departmentName: departmentInfo ? departmentInfo.label : batch.department,
+              departmentName: departmentInfo ? departmentInfo.label : (batch.department || "N/A"),
               teacherName: teacherNames || "N/A",
               roomNumber: batch.roomNumber,
               schedule: [{

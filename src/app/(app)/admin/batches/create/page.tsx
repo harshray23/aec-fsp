@@ -17,7 +17,7 @@ export default function AdminCreateBatchPage() {
       <Card className="max-w-2xl mx-auto shadow-lg">
         <CardHeader>
           <CardTitle>New Batch Details</CardTitle>
-          <CardDescription>Configure the new batch including schedule, teachers, and topic.</CardDescription>
+          <CardDescription>Configure the new batch including its topic, schedule, and assigned teachers.</CardDescription>
         </CardHeader>
         <CardContent>
           {/* No batchData is passed, so the form will be in 'create' mode */}

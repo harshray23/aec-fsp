@@ -111,7 +111,7 @@ export interface Admin extends User {
 export interface Batch {
   id: string;
   name: string;
-  department: string;
+  department?: string;
   topic: string;
   startDate: string; // ISO string format
   daysOfWeek: string[];

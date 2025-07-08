@@ -78,7 +78,8 @@ export default function AdminBatchOverviewPage() {
     return names.join(", ");
   };
 
-  const getDepartmentLabel = (deptValue: string) => {
+  const getDepartmentLabel = (deptValue?: string) => {
+    if (!deptValue) return "N/A";
     const dept = DEPARTMENTS.find(d => d.value === deptValue);
     return dept ? dept.label : deptValue;
   }

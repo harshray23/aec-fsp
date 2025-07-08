@@ -42,7 +42,6 @@ const daysOfWeekOptions = [
 
 const batchEditSchema = z.object({
   name: z.string().min(3, "Batch name must be at least 3 characters"),
-  department: z.string().min(1, "Department is required"),
   topic: z.string().min(2, "Topic must be at least 2 characters"),
   teacherIds: z.array(z.string()).min(1, "At least one teacher is required."),
   startDate: z.date({ required_error: "Start date is required." }),
@@ -79,7 +78,6 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
     resolver: zodResolver(batchEditSchema),
     defaultValues: {
       name: batchData?.name || "",
-      department: batchData?.department || "",
       topic: batchData?.topic || "",
       teacherIds: batchData?.teacherIds || [],
       startDate: batchData?.startDate ? parseISO(batchData.startDate) : new Date(),
@@ -96,7 +94,6 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
     if (isEditMode && batchData) {
       form.reset({
         name: batchData.name || "",
-        department: batchData.department || "",
         topic: batchData.topic || "",
         teacherIds: batchData.teacherIds || [],
         startDate: batchData.startDate ? parseISO(batchData.startDate) : new Date(),
@@ -186,7 +183,6 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
             <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Batch Name</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
             <FormField control={form.control} name="topic" render={({ field }) => ( <FormItem> <FormLabel>Topic / Module Name</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
         </div>
-        <FormField control={form.control} name="department" render={({ field }) => ( <FormItem> <FormLabel>Department</FormLabel> <Select onValueChange={field.onChange} value={field.value}> <FormControl><SelectTrigger><SelectValue placeholder="Select a department"/></SelectTrigger></FormControl> <SelectContent>{DEPARTMENTS.map(dept => (<SelectItem key={dept.value} value={dept.value}>{dept.label}</SelectItem>))}</SelectContent> </Select> <FormMessage /> </FormItem> )}/>
         
         <FormField
             control={form.control}
