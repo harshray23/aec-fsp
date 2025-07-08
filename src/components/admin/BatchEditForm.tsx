@@ -126,13 +126,17 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
       if (batchData?.id) {
           setEnrollmentLink(`${window.location.origin}/enroll/${batchData.id}`);
       }
-    } else if (!isEditMode) {
-      // For create mode, set dates on client to avoid hydration mismatch
-      const today = new Date();
-      form.setValue('startDate', today);
-      form.setValue('endDate', today);
     }
   }, [batchData, form, isEditMode]);
+
+  useEffect(() => {
+    // For create mode, set dates on client to avoid hydration mismatch
+    if (!isEditMode) {
+        const today = new Date();
+        form.setValue('startDate', today);
+        form.setValue('endDate', today);
+    }
+  }, [isEditMode, form]);
 
 
   useEffect(() => {
@@ -162,8 +166,6 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
   }, [toast]);
 
   const watchedDepartments = form.watch("departments");
-  const studentIds = form.watch("studentIds") || [];
-
 
   const availableStudents = useMemo(() => {
     if (!watchedDepartments || watchedDepartments.length === 0) {
@@ -344,23 +346,33 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
             )}
         />
 
-        <div className="space-y-2">
-          <FormLabel>Assign Students</FormLabel>
-          <FormDescription>Manually assign students to this batch or use the shareable link.</FormDescription>
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full justify-start"
-            onClick={() => {
-              setTempSelectedStudentIds(form.getValues("studentIds") || []);
-              setIsStudentDialogOpen(true);
-            }}
-          >
-            <Users className="mr-2 h-4 w-4" />
-            Assign Students ({studentIds.length} selected)
-          </Button>
-          <FormField control={form.control} name="studentIds" render={() => <FormMessage />} />
-        </div>
+        <FormField
+          control={form.control}
+          name="studentIds"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Assign Students</FormLabel>
+              <FormDescription>
+                Manually assign students to this batch or use the shareable link.
+              </FormDescription>
+              <FormControl>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full justify-start"
+                  onClick={() => {
+                    setTempSelectedStudentIds(field.value || []);
+                    setIsStudentDialogOpen(true);
+                  }}
+                >
+                  <Users className="mr-2 h-4 w-4" />
+                  Assign Students ({field.value?.length || 0} selected)
+                </Button>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField control={form.control} name="startDate" render={({ field }) => ( <FormItem className="flex flex-col"> <FormLabel>Start Date</FormLabel> <Popover><PopoverTrigger asChild><FormControl><Button variant="outline" className={cn("w-full pl-3 text-left font-normal",!field.value && "text-muted-foreground")}>{field.value ? format(field.value, "PPP") : <span>Pick a date</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent></Popover> <FormMessage /> </FormItem> )}/>
