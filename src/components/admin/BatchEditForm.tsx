@@ -61,7 +61,7 @@ const batchEditSchema = z.object({
 type BatchEditFormValues = z.infer<typeof batchEditSchema>;
 
 interface BatchEditFormProps {
-  batchData: Batch;
+  batchData?: Batch; // Make optional to support create mode
   redirectPathAfterSuccess?: string;
 }
 
@@ -73,39 +73,44 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
   const [enrollmentLink, setEnrollmentLink] = useState("");
   const [isCopied, setIsCopied] = useState(false);
 
+  const isEditMode = !!batchData?.id;
+
   const form = useForm<BatchEditFormValues>({
     resolver: zodResolver(batchEditSchema),
     defaultValues: {
-      name: batchData.name || "",
-      department: batchData.department || "",
-      topic: batchData.topic || "",
-      teacherIds: batchData.teacherIds || [],
-      startDate: batchData.startDate ? parseISO(batchData.startDate) : new Date(),
-      daysOfWeek: batchData.daysOfWeek || [],
-      startTime: batchData.startTime || "",
-      endTime: batchData.endTime || "",
-      roomNumber: batchData.roomNumber || "",
-      status: batchData.status || "Scheduled",
+      name: batchData?.name || "",
+      department: batchData?.department || "",
+      topic: batchData?.topic || "",
+      teacherIds: batchData?.teacherIds || [],
+      startDate: batchData?.startDate ? parseISO(batchData.startDate) : new Date(),
+      daysOfWeek: batchData?.daysOfWeek || [],
+      startTime: batchData?.startTime || "",
+      endTime: batchData?.endTime || "",
+      roomNumber: batchData?.roomNumber || "",
+      status: batchData?.status || "Scheduled",
     },
   });
   
   useEffect(() => {
-    form.reset({
-      name: batchData.name || "",
-      department: batchData.department || "",
-      topic: batchData.topic || "",
-      teacherIds: batchData.teacherIds || [],
-      startDate: batchData.startDate ? parseISO(batchData.startDate) : new Date(),
-      daysOfWeek: batchData.daysOfWeek || [],
-      startTime: batchData.startTime || "",
-      endTime: batchData.endTime || "",
-      roomNumber: batchData.roomNumber || "",
-      status: batchData.status || "Scheduled",
-    });
-    if (batchData.id) {
+    // Only reset if in edit mode, otherwise form fields get cleared on teacher load
+    if (isEditMode && batchData) {
+      form.reset({
+        name: batchData.name || "",
+        department: batchData.department || "",
+        topic: batchData.topic || "",
+        teacherIds: batchData.teacherIds || [],
+        startDate: batchData.startDate ? parseISO(batchData.startDate) : new Date(),
+        daysOfWeek: batchData.daysOfWeek || [],
+        startTime: batchData.startTime || "",
+        endTime: batchData.endTime || "",
+        roomNumber: batchData.roomNumber || "",
+        status: batchData.status || "Scheduled",
+      });
+    }
+    if (isEditMode && batchData?.id) {
         setEnrollmentLink(`${window.location.origin}/enroll/${batchData.id}`);
     }
-  }, [batchData, form]);
+  }, [batchData, form, isEditMode]);
 
 
   useEffect(() => {
@@ -141,29 +146,32 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
         startDate: values.startDate.toISOString(),
       };
 
-      const response = await fetch(`/api/batches/${batchData.id}`, {
-        method: 'PUT',
+      const url = isEditMode ? `/api/batches/${batchData.id}` : '/api/batches';
+      const method = isEditMode ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method: method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: 'Failed to update batch. Unknown error.' }));
-        throw new Error(errorData.message || 'Failed to update batch.');
+        const errorData = await response.json().catch(() => ({ message: `Failed to ${isEditMode ? 'update' : 'create'} batch. Unknown error.` }));
+        throw new Error(errorData.message || `Failed to ${isEditMode ? 'update' : 'create'} batch.`);
       }
       
       await response.json();
       
       toast({
-          title: "Batch Update Successful!",
-          description: `Batch "${values.name}" has been updated.`,
+          title: isEditMode ? "Batch Update Successful!" : "Batch Created Successfully!",
+          description: `Batch "${values.name}" has been ${isEditMode ? 'updated' : 'created'}.`,
       });
       router.push(redirectPathAfterSuccess || "/admin/batches");
       router.refresh(); 
     } catch (error: any) {
       toast({
-        title: "Batch Update Error",
-        description: error.message || "Could not update batch.",
+        title: `Batch ${isEditMode ? 'Update' : 'Creation'} Error`,
+        description: error.message || `Could not ${isEditMode ? 'update' : 'create'} batch.`,
         variant: "destructive",
       });
     } finally {
@@ -178,7 +186,7 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
             <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Batch Name</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
             <FormField control={form.control} name="topic" render={({ field }) => ( <FormItem> <FormLabel>Topic / Module Name</FormLabel> <FormControl><Input {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
         </div>
-        <FormField control={form.control} name="department" render={({ field }) => ( <FormItem> <FormLabel>Department</FormLabel> <Select onValueChange={field.onChange} value={field.value}> <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl> <SelectContent>{DEPARTMENTS.map(dept => (<SelectItem key={dept.value} value={dept.value}>{dept.label}</SelectItem>))}</SelectContent> </Select> <FormMessage /> </FormItem> )}/>
+        <FormField control={form.control} name="department" render={({ field }) => ( <FormItem> <FormLabel>Department</FormLabel> <Select onValueChange={field.onChange} value={field.value}> <FormControl><SelectTrigger><SelectValue placeholder="Select a department"/></SelectTrigger></FormControl> <SelectContent>{DEPARTMENTS.map(dept => (<SelectItem key={dept.value} value={dept.value}>{dept.label}</SelectItem>))}</SelectContent> </Select> <FormMessage /> </FormItem> )}/>
         
         <FormField
             control={form.control}
@@ -237,9 +245,12 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
             <FormField control={form.control} name="endTime" render={({ field }) => ( <FormItem> <FormLabel>End Time</FormLabel> <FormControl><Input type="time" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
         </div>
         <FormField control={form.control} name="roomNumber" render={({ field }) => ( <FormItem> <FormLabel>Room Number (Optional)</FormLabel> <FormControl><Input placeholder="E.g., R101" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
-        <FormField control={form.control} name="status" render={({ field }) => ( <FormItem> <FormLabel>Batch Status</FormLabel> <Select onValueChange={field.onChange} value={field.value}> <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl> <SelectContent><SelectItem value="Scheduled">Scheduled</SelectItem><SelectItem value="Ongoing">Ongoing</SelectItem><SelectItem value="Completed">Completed</SelectItem></SelectContent> </Select> <FormMessage /> </FormItem> )}/>
         
-        {batchData.id && (
+        {isEditMode && (
+          <FormField control={form.control} name="status" render={({ field }) => ( <FormItem> <FormLabel>Batch Status</FormLabel> <Select onValueChange={field.onChange} value={field.value}> <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl> <SelectContent><SelectItem value="Scheduled">Scheduled</SelectItem><SelectItem value="Ongoing">Ongoing</SelectItem><SelectItem value="Completed">Completed</SelectItem></SelectContent> </Select> <FormMessage /> </FormItem> )}/>
+        )}
+        
+        {isEditMode && batchData.id && (
             <Card className="shadow-inner bg-muted/50">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><LinkIcon/> Shareable Enrollment Link</CardTitle>
@@ -258,11 +269,9 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
 
 
         <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || isLoadingTeachers}>
-          {form.formState.isSubmitting ? "Saving Changes..." : "Save All Changes"}
+          {form.formState.isSubmitting ? (isEditMode ? "Saving..." : "Creating...") : (isEditMode ? "Save All Changes" : "Create Batch")}
         </Button>
       </form>
     </Form>
   );
 }
-
-    

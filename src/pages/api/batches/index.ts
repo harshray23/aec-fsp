@@ -30,31 +30,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     case 'POST':
       try {
-        // Simplified batch creation for step 1 of the new flow
-        const { name, department } = req.body;
+        const batchPayload: Omit<Batch, 'id'> = req.body;
 
-        if (!name || !department) {
-          return res.status(400).json({ message: 'Missing required fields: name and department.' });
+        if (!batchPayload.name || !batchPayload.department || !batchPayload.topic || !batchPayload.teacherIds) {
+          return res.status(400).json({ message: 'Missing required fields for batch creation.' });
         }
         
-        const newBatchData: Omit<Batch, 'id'> = {
-          name,
-          department,
-          topic: "", // Default to empty, to be filled in step 2
-          teacherIds: [], // Correctly initialize as an empty array
-          startDate: new Date().toISOString(), // Default to today
-          daysOfWeek: [],
-          startTime: "",
-          endTime: "",
-          roomNumber: "",
-          studentIds: [],
-          status: "Scheduled", // Default status
-        };
+        // Ensure studentIds is an empty array if not provided
+        if (!batchPayload.studentIds) {
+          batchPayload.studentIds = [];
+        }
 
-        const batchRef = await db.collection('batches').add(newBatchData);
+        const batchRef = await db.collection('batches').add(batchPayload);
         const newBatchId = batchRef.id;
 
-        res.status(201).json({ message: 'Batch created successfully', batch: { id: newBatchId, ...newBatchData } });
+        res.status(201).json({ message: 'Batch created successfully', batch: { id: newBatchId, ...batchPayload } });
       } catch (error) {
         console.error('Error creating batch:', error);
         res.status(500).json({ message: 'Internal server error while creating batch.' });
