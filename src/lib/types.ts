@@ -122,7 +122,7 @@ export interface Batch {
   studentIds: string[];
   status: "Scheduled" | "Ongoing" | "Completed";
   roomNumber?: string;
-  departments?: string[];
+  departments: string[];
 }
 
 export interface AttendanceRecord {

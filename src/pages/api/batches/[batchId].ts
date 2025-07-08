@@ -28,8 +28,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const batch = { 
             id: doc.id, 
             ...data,
-            // Ensure startDate is ISO string if stored as Timestamp
             startDate: data?.startDate instanceof Timestamp ? data.startDate.toDate().toISOString() : data?.startDate,
+            endDate: data?.endDate instanceof Timestamp ? data.endDate.toDate().toISOString() : data?.endDate,
         } as Batch;
         res.status(200).json(batch);
       } catch (error) {
@@ -44,14 +44,35 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         if (!currentDoc.exists) {
           return res.status(404).json({ message: 'Batch not found to update.' });
         }
+        
+        const oldBatchData = currentDoc.data() as Batch;
+        const oldStudentIds = oldBatchData.studentIds || [];
+        
+        const { studentIds: newStudentIds, ...updateData } = req.body;
+        
+        const finalUpdateData = { ...updateData, studentIds: newStudentIds || [] };
 
-        const { studentIds, ...updateData } = req.body;
+        const addedStudents = (newStudentIds || []).filter((id: string) => !oldStudentIds.includes(id));
+        const removedStudents = oldStudentIds.filter((id: string) => !(newStudentIds || []).includes(id));
         
-        // This endpoint no longer manages student assignments directly.
-        // It only updates the batch's own properties.
-        // The studentIds are managed via the /enroll API.
-        
-        await batchRef.update(updateData);
+        const transaction = db.runTransaction(async t => {
+            // 1. Update the batch document itself
+            t.update(batchRef, finalUpdateData);
+
+            // 2. Add batchId to newly assigned students
+            addedStudents.forEach((studentId: string) => {
+                const studentRef = db.collection('students').doc(studentId);
+                t.update(studentRef, { batchIds: FieldValue.arrayUnion(batchId) });
+            });
+
+            // 3. Remove batchId from unassigned students
+            removedStudents.forEach((studentId: string) => {
+                const studentRef = db.collection('students').doc(studentId);
+                t.update(studentRef, { batchIds: FieldValue.arrayRemove(batchId) });
+            });
+        });
+
+        await transaction;
         
         const updatedDoc = await batchRef.get();
         const batchWithId = { id: batchId, ...updatedDoc.data() };

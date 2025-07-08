@@ -2,6 +2,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { db, Timestamp } from '@/lib/firebaseAdmin';
 import type { Batch } from '@/lib/types';
+import { FieldValue } from 'firebase-admin/firestore';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (!db) {
@@ -19,6 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             ...data,
             // Ensure startDate is ISO string if stored as Timestamp
             startDate: data.startDate instanceof Timestamp ? data.startDate.toDate().toISOString() : data.startDate,
+            endDate: data.endDate instanceof Timestamp ? data.endDate.toDate().toISOString() : data.endDate,
           } as Batch;
         });
         res.status(200).json(batches);
@@ -36,13 +38,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           return res.status(400).json({ message: 'Missing required fields for batch creation.' });
         }
         
-        // Ensure studentIds is an empty array if not provided
-        if (!batchPayload.studentIds) {
-          batchPayload.studentIds = [];
-        }
+        const studentIds = batchPayload.studentIds || [];
+        batchPayload.studentIds = studentIds;
 
-        const batchRef = await db.collection('batches').add(batchPayload);
+        const batchRef = db.collection('batches').doc(); // Create ref with ID first
         const newBatchId = batchRef.id;
+
+        const writeBatch = db.batch();
+
+        // 1. Create the batch document
+        writeBatch.set(batchRef, batchPayload);
+
+        // 2. Update all assigned students to add the new batchId
+        if (studentIds.length > 0) {
+            studentIds.forEach((studentId: string) => {
+                const studentRef = db.collection('students').doc(studentId);
+                // Note: This assumes the student document exists. A more robust implementation
+                // might check for existence first, but we trust the client for now.
+                writeBatch.update(studentRef, { batchIds: FieldValue.arrayUnion(newBatchId) });
+            });
+        }
+        
+        await writeBatch.commit();
 
         res.status(201).json({ message: 'Batch created successfully', batch: { id: newBatchId, ...batchPayload } });
       } catch (error) {

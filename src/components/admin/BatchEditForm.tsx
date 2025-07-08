@@ -7,7 +7,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { useRouter } from "next/navigation";
 import { format, parseISO } from "date-fns";
-import { CalendarIcon, Users, Link as LinkIcon, Clipboard, ClipboardCheck } from "lucide-react";
+import { CalendarIcon, Users, Link as LinkIcon, Clipboard, ClipboardCheck, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -26,9 +26,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { DEPARTMENTS } from "@/lib/constants";
 import { cn } from "@/lib/utils";
-import type { Batch, Teacher } from "@/lib/types";
+import type { Batch, Teacher, Student } from "@/lib/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Alert, AlertTitle } from "@/components/ui/alert";
 
 const daysOfWeekOptions = [
   { id: "monday", label: "Monday" },
@@ -44,13 +45,14 @@ const batchEditSchema = z.object({
   topic: z.string().min(2, "Topic must be at least 2 characters"),
   teacherIds: z.array(z.string()).min(1, "At least one teacher is required."),
   departments: z.array(z.string()).min(1, "At least one department is required"),
+  studentIds: z.array(z.string()).optional(),
   startDate: z.date({ required_error: "Start date is required." }),
   endDate: z.date({ required_error: "End date is required." }),
   daysOfWeek: z.array(z.string()).refine(value => value.length > 0, {
     message: "Please select at least one day of the week.",
   }),
   startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid start time (HH:MM)."),
-  endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid end time (HH:MM)."),
+  endTime: z.string().regex(/^([01]\d|2[0-5]\d)$/, "Invalid end time (HH:MM)."),
   roomNumber: z.string().max(20, "Room number too long").optional(),
   status: z.enum(["Scheduled", "Ongoing", "Completed"], { required_error: "Status is required." }),
 }).refine(data => data.startTime < data.endTime, {
@@ -72,11 +74,15 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
   const router = useRouter();
   const { toast } = useToast();
   const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [isLoadingTeachers, setIsLoadingTeachers] = useState(true);
+  const [isLoadingStudents, setIsLoadingStudents] = useState(true);
   const [enrollmentLink, setEnrollmentLink] = useState("");
   const [isCopied, setIsCopied] = useState(false);
 
   const isEditMode = !!batchData?.id;
+  const isFirstRender = React.useRef(true);
+
 
   const form = useForm<BatchEditFormValues>({
     resolver: zodResolver(batchEditSchema),
@@ -85,6 +91,7 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
       topic: batchData?.topic || "",
       teacherIds: batchData?.teacherIds || [],
       departments: batchData?.departments || [],
+      studentIds: batchData?.studentIds || [],
       startDate: batchData?.startDate ? parseISO(batchData.startDate) : new Date(),
       endDate: batchData?.endDate ? parseISO(batchData.endDate) : new Date(),
       daysOfWeek: batchData?.daysOfWeek || [],
@@ -96,13 +103,13 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
   });
   
   useEffect(() => {
-    // Only reset if in edit mode, otherwise form fields get cleared on teacher load
     if (isEditMode && batchData) {
       form.reset({
         name: batchData.name || "",
         topic: batchData.topic || "",
         teacherIds: batchData.teacherIds || [],
         departments: batchData.departments || [],
+        studentIds: batchData.studentIds || [],
         startDate: batchData.startDate ? parseISO(batchData.startDate) : new Date(),
         endDate: batchData.endDate ? parseISO(batchData.endDate) : new Date(),
         daysOfWeek: batchData.daysOfWeek || [],
@@ -119,21 +126,54 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
 
 
   useEffect(() => {
-    const fetchTeachers = async () => {
+    const fetchInitialData = async () => {
       setIsLoadingTeachers(true);
+      setIsLoadingStudents(true);
       try {
-        const response = await fetch("/api/teachers?status=active");
-        if (!response.ok) throw new Error("Failed to fetch teachers");
-        const data = await response.json();
-        setTeachers(data);
-      } catch (error) {
-        toast({ title: "Error", description: "Could not load teachers.", variant: "destructive" });
+        const [teachersRes, studentsRes] = await Promise.all([
+          fetch("/api/teachers?status=active"),
+          fetch('/api/students?limit=99999')
+        ]);
+        if (!teachersRes.ok) throw new Error("Failed to fetch teachers");
+        setTeachers(await teachersRes.json());
+
+        if (!studentsRes.ok) throw new Error("Failed to fetch students");
+        const studentData = await studentsRes.json();
+        setAllStudents(studentData.students || []);
+
+      } catch (error: any) {
+        toast({ title: "Error", description: `Could not load required data: ${error.message}`, variant: "destructive" });
       } finally {
         setIsLoadingTeachers(false);
+        setIsLoadingStudents(false);
       }
     };
-    fetchTeachers();
+    fetchInitialData();
   }, [toast]);
+
+  const watchedDepartments = form.watch("departments");
+
+  const availableStudents = useMemo(() => {
+    if (!watchedDepartments || watchedDepartments.length === 0) {
+        return [];
+    }
+    return allStudents.filter(student => watchedDepartments.includes(student.department));
+  }, [allStudents, watchedDepartments]);
+  
+  useEffect(() => {
+    if (isFirstRender.current) {
+        isFirstRender.current = false;
+        return;
+    }
+    // When departments change, filter the existing selection of students
+    // to ensure only students from the currently selected departments remain selected.
+    const currentStudentIds = form.getValues("studentIds") || [];
+    const availableStudentIds = availableStudents.map(s => s.id);
+    const newStudentIds = currentStudentIds.filter(id => availableStudentIds.includes(id));
+    form.setValue("studentIds", newStudentIds, { shouldDirty: true });
+    
+  }, [watchedDepartments, form, availableStudents]);
+  
   
   const handleCopyToClipboard = () => {
     navigator.clipboard.writeText(enrollmentLink).then(() => {
@@ -202,7 +242,7 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
                     <FormDescription>Select one or more teachers for this batch.</FormDescription>
                      <ScrollArea className="h-40 w-full rounded-md border">
                         <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
-                            {teachers.map((teacher) => (
+                            {isLoadingTeachers ? <Loader2 className="animate-spin" /> : teachers.map((teacher) => (
                             <FormField
                                 key={teacher.id}
                                 control={form.control}
@@ -248,7 +288,7 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
             render={() => (
                 <FormItem>
                     <FormLabel>Assign Departments</FormLabel>
-                    <FormDescription>Select one or more departments this batch is for.</FormDescription>
+                    <FormDescription>Select the departments this batch is for. This will filter the available students below.</FormDescription>
                      <ScrollArea className="h-40 w-full rounded-md border">
                         <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
                             {DEPARTMENTS.map((dept) => (
@@ -291,6 +331,72 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
             )}
         />
 
+        <FormField
+          control={form.control}
+          name="studentIds"
+          render={() => (
+            <FormItem>
+              <FormLabel>Assign Students</FormLabel>
+              <FormDescription>Select students from the chosen departments to add to this batch.</FormDescription>
+              <Card>
+                <CardContent className="p-4">
+                  {isLoadingStudents ? (
+                    <div className="flex justify-center items-center h-32">
+                        <Loader2 className="animate-spin" />
+                    </div>
+                  ) : watchedDepartments.length > 0 ? (
+                    <ScrollArea className="h-64">
+                      <div className="p-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2">
+                        {availableStudents.map((student) => (
+                          <FormField
+                            key={student.id}
+                            control={form.control}
+                            name="studentIds"
+                            render={({ field }) => (
+                              <FormItem
+                                key={student.id}
+                                className="flex flex-row items-center space-x-3 space-y-0 p-2 rounded-md hover:bg-muted"
+                              >
+                                <FormControl>
+                                  <Checkbox
+                                    checked={field.value?.includes(student.id)}
+                                    onCheckedChange={(checked) => {
+                                      return checked
+                                        ? field.onChange([...(field.value || []), student.id])
+                                        : field.onChange(
+                                            (field.value || []).filter(
+                                              (value) => value !== student.id
+                                            )
+                                          );
+                                    }}
+                                  />
+                                </FormControl>
+                                <FormLabel className="font-normal text-sm">
+                                  {student.name} <span className="text-xs text-muted-foreground">({student.rollNumber})</span>
+                                </FormLabel>
+                              </FormItem>
+                            )}
+                          />
+                        ))}
+                        {availableStudents.length === 0 && (
+                            <p className="text-muted-foreground col-span-full text-center py-4">No students found for the selected department(s).</p>
+                        )}
+                      </div>
+                    </ScrollArea>
+                  ) : (
+                    <Alert>
+                        <AlertTitle>Select a department first</AlertTitle>
+                        <FormDescription>Please select one or more departments above to see the list of available students.</FormDescription>
+                    </Alert>
+                  )}
+                </CardContent>
+              </Card>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FormField control={form.control} name="startDate" render={({ field }) => ( <FormItem className="flex flex-col"> <FormLabel>Start Date</FormLabel> <Popover><PopoverTrigger asChild><FormControl><Button variant="outline" className={cn("w-full pl-3 text-left font-normal",!field.value && "text-muted-foreground")}>{field.value ? format(field.value, "PPP") : <span>Pick a date</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} initialFocus /></PopoverContent></Popover> <FormMessage /> </FormItem> )}/>
           <FormField control={form.control} name="endDate" render={({ field }) => ( <FormItem className="flex flex-col"> <FormLabel>End Date</FormLabel> <Popover><PopoverTrigger asChild><FormControl><Button variant="outline" className={cn("w-full pl-3 text-left font-normal",!field.value && "text-muted-foreground")}>{field.value ? format(field.value, "PPP") : <span>Pick a date</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date < form.getValues("startDate")} initialFocus /></PopoverContent></Popover> <FormMessage /> </FormItem> )}/>
@@ -309,7 +415,7 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><LinkIcon/> Shareable Enrollment Link</CardTitle>
                     <CardDescription>
-                        Share this link with students to allow them to self-enroll in this batch.
+                        Share this link with students to allow them to self-enroll in this batch. This works alongside manual assignment.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="flex items-center gap-2">
@@ -322,7 +428,7 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
         )}
 
 
-        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || isLoadingTeachers}>
+        <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || isLoadingTeachers || isLoadingStudents}>
           {form.formState.isSubmitting ? (isEditMode ? "Saving..." : "Creating...") : (isEditMode ? "Save All Changes" : "Create Batch")}
         </Button>
       </form>
