@@ -29,8 +29,8 @@ import { cn } from "@/lib/utils";
 import type { Batch, Teacher, Student } from "@/lib/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { Alert, AlertTitle } from "@/components/ui/alert";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 
 const daysOfWeekOptions = [
@@ -379,7 +379,47 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
           <FormField control={form.control} name="endDate" render={({ field }) => ( <FormItem className="flex flex-col"> <FormLabel>End Date</FormLabel> <Popover><PopoverTrigger asChild><FormControl><Button variant="outline" className={cn("w-full pl-3 text-left font-normal",!field.value && "text-muted-foreground")}>{field.value ? format(field.value, "PPP") : <span>Pick a date</span>}<CalendarIcon className="ml-auto h-4 w-4 opacity-50" /></Button></FormControl></PopoverTrigger><PopoverContent className="w-auto p-0" align="start"><Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date < form.getValues("startDate")} initialFocus /></PopoverContent></Popover> <FormMessage /> </FormItem> )}/>
         </div>
 
-        <FormField control={form.control} name="daysOfWeek" render={() => ( <FormItem> <FormLabel>Days of the Week</FormLabel> <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 pt-2">{daysOfWeekOptions.map((item) => (<FormField key={item.id} control={form.control} name="daysOfWeek" render={({ field }) => (<FormItem key={item.id} className="flex flex-row items-start space-x-3 space-y-0"><FormControl><Checkbox checked={field.value?.includes(item.label)} onCheckedChange={(checked) => checked ? field.onChange([...(field.value || []), item.label]) : field.onChange((field.value || []).filter(value => value !== item.label))}/></FormControl><FormLabel className="font-normal">{item.label}</FormLabel></FormItem>)}/>))}</div><FormMessage /></FormItem>)}/>
+        <FormField
+            control={form.control}
+            name="daysOfWeek"
+            render={({ field }) => (
+                <FormItem>
+                <FormLabel>Days of the Week</FormLabel>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 pt-2">
+                    {daysOfWeekOptions.map((item) => (
+                    <FormField
+                        key={item.id}
+                        control={form.control}
+                        name="daysOfWeek"
+                        render={({ field }) => (
+                        <FormItem
+                            key={item.id}
+                            className="flex flex-row items-start space-x-3 space-y-0"
+                        >
+                            <FormControl>
+                            <Checkbox
+                                checked={field.value?.includes(item.label)}
+                                onCheckedChange={(checked) =>
+                                checked
+                                    ? field.onChange([...(field.value || []), item.label])
+                                    : field.onChange(
+                                        (field.value || []).filter(
+                                        (value) => value !== item.label
+                                        )
+                                    )
+                                }
+                            />
+                            </FormControl>
+                            <FormLabel className="font-normal">{item.label}</FormLabel>
+                        </FormItem>
+                        )}
+                    />
+                    ))}
+                </div>
+                <FormMessage />
+                </FormItem>
+            )}
+            />
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <FormField control={form.control} name="startTime" render={({ field }) => ( <FormItem> <FormLabel>Start Time</FormLabel> <FormControl><Input type="time" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
@@ -461,9 +501,9 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
               <div className="flex items-center justify-center h-full">
                 <Alert>
                   <AlertTitle>Select a department first</AlertTitle>
-                  <FormDescription>
+                  <AlertDescription>
                     Please select one or more departments on the main form to see the list of available students.
-                  </FormDescription>
+                  </AlertDescription>
                 </Alert>
               </div>
             )}
