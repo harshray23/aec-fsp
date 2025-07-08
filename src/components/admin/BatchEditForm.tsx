@@ -97,8 +97,8 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
       teacherIds: batchData?.teacherIds || [],
       departments: batchData?.departments || [],
       studentIds: batchData?.studentIds || [],
-      startDate: batchData?.startDate ? parseISO(batchData.startDate) : new Date(),
-      endDate: batchData?.endDate ? parseISO(batchData.endDate) : new Date(),
+      startDate: batchData?.startDate ? parseISO(batchData.startDate) : undefined,
+      endDate: batchData?.endDate ? parseISO(batchData.endDate) : undefined,
       daysOfWeek: batchData?.daysOfWeek || [],
       startTime: batchData?.startTime || "",
       endTime: batchData?.endTime || "",
@@ -115,17 +115,22 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
         teacherIds: batchData.teacherIds || [],
         departments: batchData.departments || [],
         studentIds: batchData.studentIds || [],
-        startDate: batchData.startDate ? parseISO(batchData.startDate) : new Date(),
-        endDate: batchData.endDate ? parseISO(batchData.endDate) : new Date(),
+        startDate: batchData.startDate ? parseISO(batchData.startDate) : undefined,
+        endDate: batchData.endDate ? parseISO(batchData.endDate) : undefined,
         daysOfWeek: batchData.daysOfWeek || [],
         startTime: batchData.startTime || "",
         endTime: batchData.endTime || "",
         roomNumber: batchData.roomNumber || "",
         status: batchData.status || "Scheduled",
       });
-    }
-    if (isEditMode && batchData?.id) {
-        setEnrollmentLink(`${window.location.origin}/enroll/${batchData.id}`);
+      if (batchData?.id) {
+          setEnrollmentLink(`${window.location.origin}/enroll/${batchData.id}`);
+      }
+    } else if (!isEditMode) {
+      // For create mode, set dates on client to avoid hydration mismatch
+      const today = new Date();
+      form.setValue('startDate', today);
+      form.setValue('endDate', today);
     }
   }, [batchData, form, isEditMode]);
 
