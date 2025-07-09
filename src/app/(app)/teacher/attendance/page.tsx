@@ -244,22 +244,27 @@ export default function TeacherManageAttendancePage() {
       });
 
       // 4. Build Excel Data (Array of Arrays)
-      const aoa: (string | number)[][] = [];
+      const aoa: (string | number)[][] = [
+        [], // Row 1 for title
+        [], // Row 2 for subtitle
+        [], // Row 3 for teacher
+        [], // Row 4 for spacing
+      ];
       const teacherNames = selectedBatch.teacherIds.map(id => allTeachers.find(t => t.id === id)?.name).filter(Boolean).join(', ');
 
-      aoa.push(['Attendance Sheet']);
-      aoa.push([`${selectedBatch.topic} (Room: ${selectedBatch.roomNumber || 'N/A'})`]);
-      aoa.push([`Teacher(s): ${teacherNames}`]);
-      aoa.push([]);
-
+      // Populate titles in the pre-made rows
+      aoa[0][0] = 'Attendance Sheet';
+      aoa[1][0] = `${selectedBatch.topic} (Room: ${selectedBatch.roomNumber || 'N/A'})`;
+      aoa[2][0] = `Teacher(s): ${teacherNames}`;
+      
       const staticHeaders = ['Sl. No.', 'Student Name', 'University Roll No', 'Phone Number', 'Department'];
       const dateHeaders = uniqueDates.map(date => format(new Date(date.replace(/-/g, '/')), 'dd-MM-yyyy'));
       
       const headerRow1 = [...staticHeaders, ...dateHeaders.flatMap(d => [d, '', ''])];
-      aoa.push(headerRow1);
+      aoa.push(headerRow1); // Row 5
 
       const headerRow2 = [...staticHeaders.map(() => ''), ...uniqueDates.flatMap(() => ['M', 'A', 'Remark'])];
-      aoa.push(headerRow2);
+      aoa.push(headerRow2); // Row 6
       
       students
         .sort((a, b) => a.name.localeCompare(b.name))
@@ -287,7 +292,7 @@ export default function TeacherManageAttendancePage() {
       // 5. Create Worksheet and Download
       const worksheet = XLSX.utils.aoa_to_sheet(aoa);
 
-      // Define merges
+      // Define merges, with indices matching the new layout
       const merges = [
         { s: { r: 0, c: 0 }, e: { r: 0, c: staticHeaders.length + (uniqueDates.length * 3) - 1 } },
         { s: { r: 1, c: 0 }, e: { r: 1, c: staticHeaders.length + (uniqueDates.length * 3) - 1 } },
@@ -300,16 +305,23 @@ export default function TeacherManageAttendancePage() {
       worksheet['!merges'] = merges;
       
       // Auto-fit columns
-      const columnWidths = aoa[5].map((_, colIndex) => {
-          let maxLength = 0;
-          aoa.forEach(row => {
-              if (row[colIndex] && String(row[colIndex]).length > maxLength) {
-                  maxLength = String(row[colIndex]).length;
-              }
-          });
-          return { wch: maxLength + 2 }; // +2 for padding
-      });
-      worksheet['!cols'] = columnWidths;
+      const headerForWidths = aoa[5];
+      if (headerForWidths) {
+        const columnWidths = headerForWidths.map((_, colIndex) => {
+            let maxLength = 0;
+            aoa.forEach(row => {
+                if (row[colIndex] && String(row[colIndex]).length > maxLength) {
+                    maxLength = String(row[colIndex]).length;
+                }
+            });
+            // clamp width for remarks and student name
+            if(headerForWidths[colIndex] === 'Remark' || headerForWidths[colIndex] === 'Student Name') {
+              return { wch: Math.min(maxLength, 30) + 2 };
+            }
+            return { wch: maxLength + 2 }; // +2 for padding
+        });
+        worksheet['!cols'] = columnWidths;
+      }
 
 
       const workbook = XLSX.utils.book_new();
