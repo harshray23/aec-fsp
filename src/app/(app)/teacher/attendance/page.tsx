@@ -275,7 +275,7 @@ export default function TeacherManageAttendancePage() {
           const row: (string|number)[] = [
             index + 1,
             student.name,
-            student.registrationNumber || 'N/A',
+            student.rollNumber || 'N/A',
             student.phoneNumber || 'N/A',
             studentDept,
           ];
