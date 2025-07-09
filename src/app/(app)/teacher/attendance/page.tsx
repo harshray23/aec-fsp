@@ -265,10 +265,7 @@ export default function TeacherManageAttendancePage() {
         .sort((a, b) => a.name.localeCompare(b.name))
         .forEach((student, index) => {
           const studentAttendance = attendanceMap.get(student.id);
-          const studentDept = DEPARTMENTS.find(d => d.value === student.department)?.label
-                .split(' ')
-                .filter(word => word.match(/^[A-Z&]+$/))
-                .join('') || student.department;
+          const studentDept = student.department.toUpperCase();
 
           const row: (string|number)[] = [
             index + 1,
