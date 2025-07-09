@@ -32,7 +32,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     case 'POST':
       try {
-        const batchPayload: Omit<Batch, 'id'> = req.body;
+        const { ...batchPayload }: Omit<Batch, 'id'> = req.body;
 
         if (!batchPayload.name || !batchPayload.topic || !batchPayload.teacherIds) {
           return res.status(400).json({ message: 'Missing required fields for batch creation.' });

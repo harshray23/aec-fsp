@@ -174,12 +174,6 @@ export default function StudentDashboardPage() {
   };
 
   const studentName = dashboardData.student?.name || "Student";
-  
-  const formatTimetable = (batch?: Batch) => {
-    if (!batch || !batch.daysOfWeek || !batch.startTime || !batch.endTime) return "N/A";
-    return `${batch.daysOfWeek.join(', ')} from ${batch.startTime} to ${batch.endTime}`;
-  };
-
 
   if (isLoading) {
     return (
@@ -230,7 +224,11 @@ export default function StudentDashboardPage() {
                     <CardDescription>{batch.topic}</CardDescription>
                     <div className="mt-2 text-sm space-y-1">
                         <p><strong>Teachers:</strong> {batch.teacherNames || "N/A"}</p>
-                        <p className="flex items-center gap-2"><Clock className="h-4 w-4" /> {formatTimetable(batch)}</p>
+                        <p className="flex items-center gap-2"><Clock className="h-4 w-4" /> <strong>Days:</strong> {batch.daysOfWeek.join(', ')}</p>
+                        <p className="pl-6"><strong>First Half:</strong> {batch.startTimeFirstHalf} - {batch.endTimeFirstHalf}</p>
+                        {batch.startTimeSecondHalf && batch.endTimeSecondHalf && (
+                            <p className="pl-6"><strong>Second Half:</strong> {batch.startTimeSecondHalf} - {batch.endTimeSecondHalf}</p>
+                        )}
                     </div>
                 </Card>
             ))
@@ -257,6 +255,7 @@ export default function StudentDashboardPage() {
                 <TableRow>
                   <TableHead>Date</TableHead>
                   <TableHead>Subject/Module</TableHead>
+                  <TableHead>Half</TableHead>
                   <TableHead className="text-right">Status</TableHead>
                 </TableRow>
               </TableHeader>
@@ -265,6 +264,7 @@ export default function StudentDashboardPage() {
                   <TableRow key={record.id || index}>
                     <TableCell>{new Date(record.date).toLocaleDateString(undefined, { timeZone: 'UTC' })}</TableCell>
                     <TableCell>{record.subject}</TableCell>
+                    <TableCell className="capitalize">{record.batchHalf}</TableCell>
                     <TableCell className="text-right">
                       <Badge 
                         variant={record.status === "absent" ? "destructive" : record.status === "late" ? "secondary" : "default"}

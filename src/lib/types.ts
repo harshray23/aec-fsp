@@ -116,8 +116,10 @@ export interface Batch {
   startDate: string; // ISO string format
   endDate: string; // ISO string format
   daysOfWeek: string[];
-  startTime: string;
-  endTime: string;
+  startTimeFirstHalf: string;
+  endTimeFirstHalf: string;
+  startTimeSecondHalf?: string;
+  endTimeSecondHalf?: string;
   teacherIds: string[];
   studentIds: string[];
   status: "Scheduled" | "Ongoing" | "Completed";
@@ -132,6 +134,7 @@ export interface AttendanceRecord {
   status: "present" | "absent" | "late";
   batchId: string; 
   subject: string; // Subject/module for which attendance was taken
+  batchHalf: "first" | "second";
   remarks?: string;
 }
 

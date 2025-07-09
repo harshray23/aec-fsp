@@ -115,7 +115,10 @@ export default function TeacherViewBatchDetailsPage() {
                     <div className="flex items-center gap-2"><CalendarDays className="h-5 w-5 text-primary" /> <strong>Start Date:</strong> {format(parseISO(batchDetails.startDate), "PPP")}</div>
                     <div className="flex items-center gap-2"><CalendarDays className="h-5 w-5 text-primary" /> <strong>End Date:</strong> {format(parseISO(batchDetails.endDate), "PPP")}</div>
                     <div className="flex items-center gap-2"><CalendarDays className="h-5 w-5 text-primary" /> <strong>Days:</strong> {batchDetails.daysOfWeek.join(', ')}</div>
-                    <div className="flex items-center gap-2"><Clock className="h-5 w-5 text-primary" /> <strong>Time:</strong> {batchDetails.startTime} - {batchDetails.endTime}</div>
+                    <div className="flex items-center gap-2"><Clock className="h-5 w-5 text-primary" /> <strong>First Half:</strong> {batchDetails.startTimeFirstHalf} - {batchDetails.endTimeFirstHalf}</div>
+                    {batchDetails.startTimeSecondHalf && batchDetails.endTimeSecondHalf && (
+                        <div className="flex items-center gap-2"><Clock className="h-5 w-5 text-primary" /> <strong>Second Half:</strong> {batchDetails.startTimeSecondHalf} - {batchDetails.endTimeSecondHalf}</div>
+                    )}
                     <div className="flex items-center gap-2"><HomeIcon className="h-5 w-5 text-primary" /> <strong>Room:</strong> {batchDetails.roomNumber || 'N/A'}</div>
                 </CardContent>
             </Card>

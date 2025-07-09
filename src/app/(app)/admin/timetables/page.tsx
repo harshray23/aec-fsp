@@ -48,23 +48,35 @@ export default function AdminTimetableOverviewPage() {
         const teachersMap = new Map(allTeachers.map(t => [t.id, t.name]));
 
         const timetables = allBatches
-          .filter(batch => batch.daysOfWeek?.length > 0 && batch.startTime && batch.endTime)
+          .filter(batch => batch.daysOfWeek?.length > 0 && batch.startTimeFirstHalf && batch.endTimeFirstHalf)
           .map(batch => {
             const departmentInfo = DEPARTMENTS.find(d => d.value === batch.department);
             // Safely handle cases where teacherIds might be missing or empty
             const teacherNames = (batch.teacherIds || []).map(id => teachersMap.get(id)).filter(Boolean).join(', ');
             
+            const schedule = [];
+            if (batch.startTimeFirstHalf && batch.endTimeFirstHalf) {
+              schedule.push({
+                days: batch.daysOfWeek.join(', '),
+                time: `${batch.startTimeFirstHalf} - ${batch.endTimeFirstHalf}`,
+                subject: `${batch.topic} (First Half)`,
+              });
+            }
+            if (batch.startTimeSecondHalf && batch.endTimeSecondHalf) {
+              schedule.push({
+                days: batch.daysOfWeek.join(', '),
+                time: `${batch.startTimeSecondHalf} - ${batch.endTimeSecondHalf}`,
+                subject: `${batch.topic} (Second Half)`,
+              });
+            }
+
             return {
               batchId: batch.id,
               batchName: batch.name,
               departmentName: departmentInfo ? departmentInfo.label : (batch.department || "N/A"),
               teacherName: teacherNames || "N/A",
               roomNumber: batch.roomNumber,
-              schedule: [{
-                days: batch.daysOfWeek.join(', '),
-                time: `${batch.startTime} - ${batch.endTime}`,
-                subject: batch.topic,
-              }],
+              schedule: schedule,
             };
           })
           .sort((a, b) => a.batchName.localeCompare(b.batchName));
@@ -123,7 +135,7 @@ export default function AdminTimetableOverviewPage() {
                           {timetable.roomNumber && <span className="flex items-center"><HomeIcon className="h-3.5 w-3.5 mr-1 flex-shrink-0" /> Room: {timetable.roomNumber}</span>}
                         </div>
                       </div>
-                      <Badge variant="outline" className="mt-1 md:mt-0 self-start md:self-center">1 schedule</Badge>
+                      <Badge variant="outline" className="mt-1 md:mt-0 self-start md:self-center">{timetable.schedule.length} schedule(s)</Badge>
                     </div>
                   </AccordionTrigger>
                   <AccordionContent>

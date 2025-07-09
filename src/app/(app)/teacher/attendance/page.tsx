@@ -31,6 +31,7 @@ export default function TeacherManageAttendancePage() {
 
   const [selectedBatchId, setSelectedBatchId] = useState<string>("");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
+  const [selectedHalf, setSelectedHalf] = useState<'first' | 'second'>('first');
   const [attendanceRecords, setAttendanceRecords] = useState<Record<string, AttendanceStatus>>({});
   const [remarksRecords, setRemarksRecords] = useState<Record<string, string>>({});
   
@@ -71,7 +72,7 @@ export default function TeacherManageAttendancePage() {
     fetchBatches();
   }, [toast]);
 
-  // Fetch students and attendance records when batch or date changes
+  // Fetch students and attendance records when batch, date, or half changes
   useEffect(() => {
     if (!selectedBatchId || !selectedDate) {
       setStudents([]);
@@ -94,7 +95,7 @@ export default function TeacherManageAttendancePage() {
         const studentsInBatch = allStudents.filter(s => s.batchIds?.includes(selectedBatchId));
         setStudents(studentsInBatch);
 
-        const attendanceRes = await fetch(`/api/attendance?batchId=${selectedBatchId}&date=${format(selectedDate, 'yyyy-MM-dd')}`);
+        const attendanceRes = await fetch(`/api/attendance?batchId=${selectedBatchId}&date=${format(selectedDate, 'yyyy-MM-dd')}&batchHalf=${selectedHalf}`);
         if (!attendanceRes.ok) throw new Error("Failed to fetch attendance records");
         const existingRecords: AttendanceRecord[] = await attendanceRes.json();
         
@@ -117,7 +118,12 @@ export default function TeacherManageAttendancePage() {
 
     fetchDataForBatchAndDate();
 
-  }, [selectedBatchId, selectedDate, toast]);
+  }, [selectedBatchId, selectedDate, selectedHalf, toast]);
+
+  // Reset selected half to first when batch changes
+  useEffect(() => {
+    setSelectedHalf('first');
+  }, [selectedBatchId]);
 
 
   const handleAttendanceChange = (studentId: string, status: AttendanceStatus) => {
@@ -153,6 +159,7 @@ export default function TeacherManageAttendancePage() {
                 batchId: selectedBatch.id,
                 date: format(selectedDate, 'yyyy-MM-dd'),
                 subject: selectedBatch.topic,
+                batchHalf: selectedHalf,
             }),
         });
 
@@ -163,7 +170,7 @@ export default function TeacherManageAttendancePage() {
         
         toast({
           title: "Attendance Saved",
-          description: `Attendance for batch ${selectedBatch.name} on ${format(selectedDate, "PPP")} has been saved.`,
+          description: `Attendance for batch ${selectedBatch.name} on ${format(selectedDate, "PPP")} (${selectedHalf} half) has been saved.`,
         });
 
     } catch (error: any) {
@@ -194,7 +201,7 @@ export default function TeacherManageAttendancePage() {
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, `Attendance ${format(selectedDate, "yyyy-MM-dd")}`);
     
-    const fileName = `Attendance_${selectedBatch.name.replace(/\s/g, '_')}_${format(selectedDate, "yyyy-MM-dd")}.xlsx`;
+    const fileName = `Attendance_${selectedBatch.name.replace(/\s/g, '_')}_${format(selectedDate, "yyyy-MM-dd")}_${selectedHalf}_half.xlsx`;
     XLSX.writeFile(workbook, fileName);
 
     toast({
@@ -220,38 +227,61 @@ export default function TeacherManageAttendancePage() {
       <Card className="shadow-lg">
         <CardHeader>
           <CardTitle>Mark Attendance</CardTitle>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 items-end">
-            <Select onValueChange={setSelectedBatchId} value={selectedBatchId} disabled={isLoadingBatches}>
-              <SelectTrigger>
-                <SelectValue placeholder={isLoadingBatches ? "Loading your batches..." : "Select an Assigned Batch"} />
-              </SelectTrigger>
-              <SelectContent>
-                {assignedBatches.map(batch => (
-                  <SelectItem key={batch.id} value={batch.id}>{batch.name} ({DEPARTMENTS.find(d=>d.value === batch.department)?.label})</SelectItem>
-                ))}
-                 {assignedBatches.length === 0 && !isLoadingBatches && <p className="p-2 text-sm text-muted-foreground">No batches assigned to you.</p>}
-              </SelectContent>
-            </Select>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant={"outline"}
-                  className={`w-full md:w-[280px] justify-start text-left font-normal ${!selectedDate && "text-muted-foreground"}`}
-                  disabled={!selectedBatchId}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4 items-end">
+            <div className="flex flex-col gap-1.5">
+                <Label>Batch</Label>
+                <Select onValueChange={setSelectedBatchId} value={selectedBatchId} disabled={isLoadingBatches}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={isLoadingBatches ? "Loading your batches..." : "Select an Assigned Batch"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {assignedBatches.map(batch => (
+                      <SelectItem key={batch.id} value={batch.id}>{batch.name} ({DEPARTMENTS.find(d=>d.value === batch.department)?.label})</SelectItem>
+                    ))}
+                     {assignedBatches.length === 0 && !isLoadingBatches && <p className="p-2 text-sm text-muted-foreground">No batches assigned to you.</p>}
+                  </SelectContent>
+                </Select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+                <Label>Date</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={`w-full justify-start text-left font-normal ${!selectedDate && "text-muted-foreground"}`}
+                      disabled={!selectedBatchId}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {selectedDate ? format(selectedDate, "PPP") : <span>Pick a date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={setSelectedDate}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+            </div>
+             {selectedBatch && (
+              <div className="flex flex-col gap-1.5">
+                <Label>Select Batch Half</Label>
+                <RadioGroup value={selectedHalf} onValueChange={(value) => setSelectedHalf(value as 'first' | 'second')} className="flex items-center space-x-4 h-10">
+                    <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="first" id="r1" />
+                    <Label htmlFor="r1">First Half</Label>
+                    </div>
+                    {selectedBatch.startTimeSecondHalf && selectedBatch.endTimeSecondHalf && (
+                    <div className="flex items-center space-x-2">
+                        <RadioGroupItem value="second" id="r2" />
+                        <Label htmlFor="r2">Second Half</Label>
+                    </div>
+                    )}
+                </RadioGroup>
+              </div>
+            )}
           </div>
         </CardHeader>
         <CardContent>
@@ -264,6 +294,8 @@ export default function TeacherManageAttendancePage() {
               <p className="mb-4 text-sm font-medium">
                 Marking attendance for: <span className="text-primary">{selectedBatch.name}</span> on <span className="text-primary">{format(selectedDate, "PPP")}</span>.
                 Topic: <span className="text-primary">{selectedBatch.topic}</span>.
+                {selectedHalf === 'first' && <span> Time: <span className="text-primary">{selectedBatch.startTimeFirstHalf} - {selectedBatch.endTimeFirstHalf}</span>.</span>}
+                {selectedHalf === 'second' && <span> Time: <span className="text-primary">{selectedBatch.startTimeSecondHalf} - {selectedBatch.endTimeSecondHalf}</span>.</span>}
               </p>
               {students.length > 0 ? (
                 <>

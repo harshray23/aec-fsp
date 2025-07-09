@@ -11,19 +11,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ message: 'Database not initialized' });
   }
 
-  const { records, remarks, batchId, date, subject } = req.body;
+  const { records, remarks, batchId, date, subject, batchHalf } = req.body;
   // `records` is expected to be an object like: { studentId1: 'present', studentId2: 'absent' }
   // `remarks` is expected to be an object like: { studentId1: 'Good work', studentId2: 'Missed quiz' }
 
-  if (!records || typeof records !== 'object' || !batchId || !date || !subject) {
-    return res.status(400).json({ message: 'Missing required fields: records, batchId, date, subject' });
+  if (!records || typeof records !== 'object' || !batchId || !date || !subject || !batchHalf) {
+    return res.status(400).json({ message: 'Missing required fields: records, batchId, date, subject, batchHalf' });
   }
 
   try {
     const attendanceCollection = db.collection('attendanceRecords');
 
-    // Fetch all existing records for this day and batch in one query
-    const q = attendanceCollection.where('batchId', '==', batchId).where('date', '==', date);
+    // Fetch all existing records for this day, batch, and half in one query
+    const q = attendanceCollection.where('batchId', '==', batchId).where('date', '==', date).where('batchHalf', '==', batchHalf);
     const existingDocsSnap = await q.get();
     
     const existingRecordsMap = new Map<string, {docId: string, status: string, remarks?: string}>();
@@ -44,13 +44,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const existingRecord = existingRecordsMap.get(studentId);
 
             if (existingRecord) {
-                // Update if status or remark is different
-                const updatePayload: { status: string; remarks?: string } = { status: newStatus };
-                if (newRemark !== undefined) {
-                    updatePayload.remarks = newRemark;
-                }
+                const updatePayload: { [key: string]: any } = {};
                 
-                if (existingRecord.status !== newStatus || (newRemark !== undefined && existingRecord.remarks !== newRemark)) {
+                if (existingRecord.status !== newStatus) {
+                  updatePayload.status = newStatus;
+                }
+                if (newRemark !== undefined && existingRecord.remarks !== newRemark) {
+                  updatePayload.remarks = newRemark;
+                }
+
+                if (Object.keys(updatePayload).length > 0) {
                     const docRef = attendanceCollection.doc(existingRecord.docId);
                     writeBatch.update(docRef, updatePayload);
                 }
@@ -63,6 +66,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
                     date, // Storing as YYYY-MM-DD string
                     subject,
                     status: newStatus,
+                    batchHalf: batchHalf,
                     remarks: newRemark || "",
                 });
             }

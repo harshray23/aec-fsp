@@ -53,16 +53,35 @@ const batchEditSchema = z.object({
   daysOfWeek: z.array(z.string()).refine(value => value.length > 0, {
     message: "Please select at least one day of the week.",
   }),
-  startTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid start time (HH:MM)."),
-  endTime: z.string().regex(/^([01]\d|2[0-5]\d)$/, "Invalid end time (HH:MM)."),
+  startTimeFirstHalf: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid start time (HH:MM)."),
+  endTimeFirstHalf: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid end time (HH:MM)."),
+  startTimeSecondHalf: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: "Invalid start time (HH:MM)." }).optional().or(z.literal('')),
+  endTimeSecondHalf: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, { message: "Invalid end time (HH:MM)." }).optional().or(z.literal('')),
   roomNumber: z.string().max(20, "Room number too long").optional(),
   status: z.enum(["Scheduled", "Ongoing", "Completed"], { required_error: "Status is required." }),
-}).refine(data => data.startTime < data.endTime, {
-  message: "End time must be after start time.",
-  path: ["endTime"],
 }).refine(data => data.endDate > data.startDate, {
   message: "End date must be after the start date.",
   path: ["endDate"],
+}).refine(data => data.startTimeFirstHalf < data.endTimeFirstHalf, {
+  message: "End time for first half must be after start time.",
+  path: ["endTimeFirstHalf"],
+}).refine(data => {
+    // If one of the second half times is provided, both must be.
+    if (data.startTimeSecondHalf || data.endTimeSecondHalf) {
+        return !!data.startTimeSecondHalf && !!data.endTimeSecondHalf;
+    }
+    return true;
+}, {
+    message: "Both start and end time for the second half are required if one is provided.",
+    path: ["startTimeSecondHalf"], 
+}).refine(data => {
+    if (data.startTimeSecondHalf && data.endTimeSecondHalf) {
+        return data.startTimeSecondHalf < data.endTimeSecondHalf;
+    }
+    return true;
+}, {
+    message: "End time for second half must be after start time.",
+    path: ["endTimeSecondHalf"],
 });
 
 type BatchEditFormValues = z.infer<typeof batchEditSchema>;
@@ -100,8 +119,10 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
       startDate: batchData?.startDate ? parseISO(batchData.startDate) : undefined,
       endDate: batchData?.endDate ? parseISO(batchData.endDate) : undefined,
       daysOfWeek: batchData?.daysOfWeek || [],
-      startTime: batchData?.startTime || "",
-      endTime: batchData?.endTime || "",
+      startTimeFirstHalf: batchData?.startTimeFirstHalf || "",
+      endTimeFirstHalf: batchData?.endTimeFirstHalf || "",
+      startTimeSecondHalf: batchData?.startTimeSecondHalf || "",
+      endTimeSecondHalf: batchData?.endTimeSecondHalf || "",
       roomNumber: batchData?.roomNumber || "",
       status: batchData?.status || "Scheduled",
     },
@@ -118,8 +139,10 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
         startDate: batchData.startDate ? parseISO(batchData.startDate) : undefined,
         endDate: batchData.endDate ? parseISO(batchData.endDate) : undefined,
         daysOfWeek: batchData.daysOfWeek || [],
-        startTime: batchData.startTime || "",
-        endTime: batchData.endTime || "",
+        startTimeFirstHalf: batchData.startTimeFirstHalf || "",
+        endTimeFirstHalf: batchData.endTimeFirstHalf || "",
+        startTimeSecondHalf: batchData.startTimeSecondHalf || "",
+        endTimeSecondHalf: batchData.endTimeSecondHalf || "",
         roomNumber: batchData.roomNumber || "",
         status: batchData.status || "Scheduled",
       });
@@ -382,7 +405,7 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
         <FormField
             control={form.control}
             name="daysOfWeek"
-            render={({ field }) => (
+            render={({ field: formField }) => (
                 <FormItem>
                 <FormLabel>Days of the Week</FormLabel>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 pt-2">
@@ -421,10 +444,26 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
             )}
             />
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField control={form.control} name="startTime" render={({ field }) => ( <FormItem> <FormLabel>Start Time</FormLabel> <FormControl><Input type="time" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
-            <FormField control={form.control} name="endTime" render={({ field }) => ( <FormItem> <FormLabel>End Time</FormLabel> <FormControl><Input type="time" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
-        </div>
+        <Card>
+            <CardHeader><CardTitle>Batch Timings</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+                 <div>
+                    <h3 className="font-medium mb-2">First Half</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <FormField control={form.control} name="startTimeFirstHalf" render={({ field }) => ( <FormItem> <FormLabel>Start Time</FormLabel> <FormControl><Input type="time" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                        <FormField control={form.control} name="endTimeFirstHalf" render={({ field }) => ( <FormItem> <FormLabel>End Time</FormLabel> <FormControl><Input type="time" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                    </div>
+                 </div>
+                 <div className="pt-4 border-t">
+                    <h3 className="font-medium mb-2">Second Half (Optional)</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <FormField control={form.control} name="startTimeSecondHalf" render={({ field }) => ( <FormItem> <FormLabel>Start Time</FormLabel> <FormControl><Input type="time" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                        <FormField control={form.control} name="endTimeSecondHalf" render={({ field }) => ( <FormItem> <FormLabel>End Time</FormLabel> <FormControl><Input type="time" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
+                    </div>
+                 </div>
+            </CardContent>
+        </Card>
+
         <FormField control={form.control} name="roomNumber" render={({ field }) => ( <FormItem> <FormLabel>Room Number (Optional)</FormLabel> <FormControl><Input placeholder="E.g., R101" {...field} /></FormControl> <FormMessage /> </FormItem> )}/>
         
         {isEditMode && batchData.id && (

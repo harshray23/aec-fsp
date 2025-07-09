@@ -14,7 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ message: 'Database not initialized.' });
   }
 
-  const { studentId, batchId, date } = req.query;
+  const { studentId, batchId, date, batchHalf } = req.query;
 
   try {
     let query: Query = db.collection('attendanceRecords');
@@ -30,6 +30,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // We store date as 'YYYY-MM-DD' string to make this an exact match query.
       query = query.where('date', '==', date);
     }
+    if (batchHalf && typeof batchHalf === 'string') {
+      query = query.where('batchHalf', '==', batchHalf);
+    }
+
 
     const snapshot = await query.get();
     const records: AttendanceRecord[] = snapshot.docs.map(doc => {

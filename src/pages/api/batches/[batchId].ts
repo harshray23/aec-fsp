@@ -50,7 +50,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         
         const { studentIds: newStudentIds, ...updateData } = req.body;
         
-        const finalUpdateData = { ...updateData, studentIds: newStudentIds || [] };
+        const finalUpdateData = { ...updateData };
+        if (newStudentIds) {
+          finalUpdateData.studentIds = newStudentIds;
+        }
 
         const addedStudents = (newStudentIds || []).filter((id: string) => !oldStudentIds.includes(id));
         const removedStudents = oldStudentIds.filter((id: string) => !(newStudentIds || []).includes(id));

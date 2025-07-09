@@ -39,7 +39,7 @@ export default function ViewTimetablesPage() {
         const allBatches: Batch[] = await res.json();
         
         const teacherBatches = allBatches.filter(
-            batch => batch.teacherIds?.includes(teacherId) && batch.daysOfWeek?.length > 0 && batch.startTime && batch.endTime
+            batch => batch.teacherIds?.includes(teacherId) && batch.daysOfWeek?.length > 0 && batch.startTimeFirstHalf && batch.endTimeFirstHalf
         );
         setScheduledBatches(teacherBatches);
         
@@ -85,8 +85,18 @@ export default function ViewTimetablesPage() {
                     <CardContent className="p-4 pt-0 text-sm text-muted-foreground">
                       <div className="flex items-center gap-2">
                         <Badge>{batch.daysOfWeek.join(', ')}</Badge> 
-                        <Clock className="h-4 w-4 inline-block mr-1" /> 
-                        {batch.startTime} - {batch.endTime}
+                      </div>
+                      <div className="mt-2 pl-2 space-y-1">
+                        <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4" /> 
+                            <span>First Half: {batch.startTimeFirstHalf} - {batch.endTimeFirstHalf}</span>
+                        </div>
+                        {batch.startTimeSecondHalf && batch.endTimeSecondHalf && (
+                             <div className="flex items-center gap-2">
+                                <Clock className="h-4 w-4" /> 
+                                <span>Second Half: {batch.startTimeSecondHalf} - {batch.endTimeSecondHalf}</span>
+                            </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>

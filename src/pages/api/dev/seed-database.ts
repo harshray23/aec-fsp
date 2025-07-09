@@ -50,8 +50,8 @@ const sampleStudents: (Omit<Student, 'id' | 'uid'> & {password: string})[] = [
 ];
 
 const sampleBatchDefinitions: Omit<Batch, 'id' | 'teacherIds' | 'studentIds'>[] = [
-  { name: 'FSP-CSE-JAVA-A', departments: ['cse', 'it'], topic: 'Core Java', startDate: new Date('2024-08-01').toISOString(), endDate: new Date('2024-11-30').toISOString(), daysOfWeek: ['Monday', 'Wednesday', 'Friday'], startTime: '09:30', endTime: '12:30', roomNumber: 'R301', status: 'Scheduled' },
-  { name: 'FSP-IT-2024-B', departments: ['it', 'ece'], topic: 'Cloud Computing', startDate: new Date('2024-08-01').toISOString(), endDate: new Date('2024-12-15').toISOString(), daysOfWeek: ['Tuesday', 'Thursday'], startTime: '14:00', endTime: '15:30', roomNumber: 'R302', status: 'Scheduled' },
+  { name: 'FSP-CSE-JAVA-A', departments: ['cse', 'it'], topic: 'Core Java', startDate: new Date('2024-08-01').toISOString(), endDate: new Date('2024-11-30').toISOString(), daysOfWeek: ['Monday', 'Wednesday', 'Friday'], startTimeFirstHalf: '09:30', endTimeFirstHalf: '11:00', startTimeSecondHalf: '11:15', endTimeSecondHalf: '12:45', roomNumber: 'R301', status: 'Scheduled' },
+  { name: 'FSP-IT-2024-B', departments: ['it', 'ece'], topic: 'Cloud Computing', startDate: new Date('2024-08-01').toISOString(), endDate: new Date('2024-12-15').toISOString(), daysOfWeek: ['Tuesday', 'Thursday'], startTimeFirstHalf: '14:00', endTimeFirstHalf: '15:30', roomNumber: 'R302', status: 'Scheduled' },
 ];
 
 
