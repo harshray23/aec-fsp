@@ -34,6 +34,15 @@ const getStatusIcon = (status: "present" | "absent" | "late") => {
 
 const LOCAL_STORAGE_ANNOUNCEMENT_KEY = "aecFspAnnouncements";
 
+const formatStudentYear = (year?: number): string => {
+    if (!year) return "";
+    let suffix = "th";
+    if (year % 10 === 1 && year % 100 !== 11) suffix = "st";
+    else if (year % 10 === 2 && year % 100 !== 12) suffix = "nd";
+    else if (year % 10 === 3 && year % 100 !== 13) suffix = "rd";
+    return `${year}${suffix} Year`;
+}
+
 export default function StudentDashboardPage() {
   const [dashboardData, setDashboardData] = useState<StudentDashboardData>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -174,6 +183,10 @@ export default function StudentDashboardPage() {
   };
 
   const studentName = dashboardData.student?.name || "Student";
+  const studentYearText = formatStudentYear(dashboardData.student?.currentYear);
+  const pageDescription = studentYearText
+    ? `You are currently in your ${studentYearText}. Here's an overview of your FSP engagement.`
+    : "Here's an overview of your FSP engagement.";
 
   if (isLoading) {
     return (
@@ -207,7 +220,7 @@ export default function StudentDashboardPage() {
       />
       <PageHeader
         title={`Welcome, ${studentName}!`}
-        description="Here's an overview of your FSP engagement."
+        description={pageDescription}
         icon={GraduationCap}
       />
 
