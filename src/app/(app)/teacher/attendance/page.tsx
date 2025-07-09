@@ -267,10 +267,10 @@ export default function TeacherManageAttendancePage() {
       aoa.push(headerRow2); // Row 6
       
       students
-        .sort((a, b) => a.name.localeCompare(b.name))
+        .sort((a, b) => (a.rollNumber || '').localeCompare(b.rollNumber || ''))
         .forEach((student, index) => {
           const studentAttendance = attendanceMap.get(student.id);
-          const studentDept = student.department.toUpperCase();
+          const studentDept = DEPARTMENTS.find(d => d.value === student.department)?.value.toUpperCase() || student.department;
 
           const row: (string|number)[] = [
             index + 1,
@@ -362,9 +362,16 @@ export default function TeacherManageAttendancePage() {
                     <SelectValue placeholder={isLoadingBatches ? "Loading your batches..." : "Select an Assigned Batch"} />
                   </SelectTrigger>
                   <SelectContent>
-                    {assignedBatches.map(batch => (
-                      <SelectItem key={batch.id} value={batch.id}>{batch.name} ({DEPARTMENTS.find(d=>d.value === batch.department)?.label})</SelectItem>
-                    ))}
+                    {assignedBatches.map(batch => {
+                      const deptLabels = batch.departments
+                        .map(deptValue => DEPARTMENTS.find(d => d.value === deptValue)?.label || deptValue)
+                        .join(', ');
+                      return (
+                        <SelectItem key={batch.id} value={batch.id}>
+                          {batch.name} {deptLabels ? `(${deptLabels})` : ''}
+                        </SelectItem>
+                      );
+                    })}
                      {assignedBatches.length === 0 && !isLoadingBatches && <p className="p-2 text-sm text-muted-foreground">No batches assigned to you.</p>}
                   </SelectContent>
                 </Select>
