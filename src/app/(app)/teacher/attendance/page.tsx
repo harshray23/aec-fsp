@@ -219,7 +219,7 @@ export default function TeacherManageAttendancePage() {
 
       // 3. Process Data
       const uniqueDates = [...new Set(recordsForMonth.map(r => r.date.split('T')[0]))].sort();
-      const attendanceMap = new Map<string, Map<string, { M?: string, A?: string }>>();
+      const attendanceMap = new Map<string, Map<string, { M?: string; A?: string; remark?: string }>>();
 
       recordsForMonth.forEach(record => {
         const studentMap = attendanceMap.get(record.studentId) || new Map();
@@ -229,6 +229,15 @@ export default function TeacherManageAttendancePage() {
 
         if (record.batchHalf === 'first') dateMap.M = status;
         if (record.batchHalf === 'second') dateMap.A = status;
+        
+        // Combine remarks from both halves for the day
+        if (record.remarks) {
+            if (dateMap.remark && !dateMap.remark.includes(record.remarks)) {
+                dateMap.remark += `; ${record.remarks}`;
+            } else if (!dateMap.remark) {
+                 dateMap.remark = record.remarks;
+            }
+        }
         
         studentMap.set(dateStr, dateMap);
         attendanceMap.set(record.studentId, studentMap);
@@ -243,13 +252,13 @@ export default function TeacherManageAttendancePage() {
       aoa.push([`Teacher(s): ${teacherNames}`]);
       aoa.push([]);
 
-      const staticHeaders = ['Sl. No.', 'Student Name', 'University Roll No', 'Guardian Contact No', 'Department'];
+      const staticHeaders = ['Sl. No.', 'Student Name', 'University Roll No', 'Phone Number', 'Department'];
       const dateHeaders = uniqueDates.map(date => format(new Date(date.replace(/-/g, '/')), 'dd-MM-yyyy'));
       
-      const headerRow1 = [...staticHeaders, ...dateHeaders.flatMap(d => [d, ''])];
+      const headerRow1 = [...staticHeaders, ...dateHeaders.flatMap(d => [d, '', ''])];
       aoa.push(headerRow1);
 
-      const headerRow2 = [...staticHeaders.map(() => ''), ...uniqueDates.flatMap(() => ['M', 'A'])];
+      const headerRow2 = [...staticHeaders.map(() => ''), ...uniqueDates.flatMap(() => ['M', 'A', 'Remark'])];
       aoa.push(headerRow2);
       
       students
@@ -265,7 +274,7 @@ export default function TeacherManageAttendancePage() {
             index + 1,
             student.name,
             student.registrationNumber || 'N/A',
-            student.personalDetails?.fatherPhone || student.personalDetails?.motherPhone || 'N/A',
+            student.phoneNumber || 'N/A',
             studentDept,
           ];
 
@@ -273,6 +282,7 @@ export default function TeacherManageAttendancePage() {
             const attendance = studentAttendance?.get(date);
             row.push(attendance?.M || '-');
             row.push(attendance?.A || '-');
+            row.push(attendance?.remark || '');
           });
           aoa.push(row);
         });
@@ -282,13 +292,13 @@ export default function TeacherManageAttendancePage() {
 
       // Define merges
       const merges = [
-        { s: { r: 0, c: 0 }, e: { r: 0, c: staticHeaders.length + (uniqueDates.length * 2) - 1 } },
-        { s: { r: 1, c: 0 }, e: { r: 1, c: staticHeaders.length + (uniqueDates.length * 2) - 1 } },
-        { s: { r: 2, c: 0 }, e: { r: 2, c: staticHeaders.length + (uniqueDates.length * 2) - 1 } },
+        { s: { r: 0, c: 0 }, e: { r: 0, c: staticHeaders.length + (uniqueDates.length * 3) - 1 } },
+        { s: { r: 1, c: 0 }, e: { r: 1, c: staticHeaders.length + (uniqueDates.length * 3) - 1 } },
+        { s: { r: 2, c: 0 }, e: { r: 2, c: staticHeaders.length + (uniqueDates.length * 3) - 1 } },
       ];
       uniqueDates.forEach((_, i) => {
-        const col = staticHeaders.length + (i * 2);
-        merges.push({ s: { r: 4, c: col }, e: { r: 4, c: col + 1 } });
+        const col = staticHeaders.length + (i * 3);
+        merges.push({ s: { r: 4, c: col }, e: { r: 4, c: col + 2 } });
       });
       worksheet['!merges'] = merges;
       
