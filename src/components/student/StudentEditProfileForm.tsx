@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import type { Student } from "@/lib/types";
-import { Mail, Phone, Building, UserSquare2, Hash, ClipboardList, MapPin, User, HeartPulse, School } from "lucide-react";
+import { Mail, Phone, Building, UserSquare2, Hash, ClipboardList, MapPin, User, HeartPulse, School, GraduationCap, Calendar } from "lucide-react";
 import { DEPARTMENTS } from "@/lib/constants";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -52,6 +52,10 @@ const editStudentProfileSchema = z.object({
     motherOccupation: z.string().optional(),
     bloodGroup: z.string().optional(),
     schoolName: z.string().optional(),
+    dateOfBirth: z.string().optional(), // YYYY-MM-DD format from input type="date"
+    currentSemester: z.coerce.number().min(1, "Must be at least 1").max(8, "Must be at most 8").optional().or(z.literal("")),
+    fatherEmail: z.string().email({ message: "Invalid email address." }).optional().or(z.literal("")),
+    motherEmail: z.string().email({ message: "Invalid email address." }).optional().or(z.literal("")),
   }).optional(),
 });
 
@@ -93,6 +97,10 @@ export default function StudentEditProfileForm({ studentData, onSave, onCancel, 
           motherOccupation: studentData.personalDetails?.motherOccupation || "",
           bloodGroup: studentData.personalDetails?.bloodGroup || "",
           schoolName: studentData.personalDetails?.schoolName || "",
+          dateOfBirth: studentData.personalDetails?.dateOfBirth || "",
+          currentSemester: studentData.personalDetails?.currentSemester || "",
+          fatherEmail: studentData.personalDetails?.fatherEmail || "",
+          motherEmail: studentData.personalDetails?.motherEmail || "",
       }
     },
   });
@@ -171,10 +179,14 @@ export default function StudentEditProfileForm({ studentData, onSave, onCancel, 
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField control={form.control} name="personalDetails.dateOfBirth" render={({ field }) => (<FormItem><FormLabel className="flex items-center"><Calendar className="mr-2 h-4 w-4"/>Date of Birth</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="personalDetails.currentSemester" render={({ field }) => (<FormItem><FormLabel className="flex items-center"><GraduationCap className="mr-2 h-4 w-4"/>Current Semester</FormLabel><FormControl><Input type="number" min="1" max="8" placeholder="e.g., 3" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="personalDetails.fatherName" render={({ field }) => (<FormItem><FormLabel>Father's Name</FormLabel><FormControl><Input placeholder="Father's Name" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="personalDetails.motherName" render={({ field }) => (<FormItem><FormLabel>Mother's Name</FormLabel><FormControl><Input placeholder="Mother's Name" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="personalDetails.fatherPhone" render={({ field }) => (<FormItem><FormLabel>Father's Phone</FormLabel><FormControl><Input placeholder="Father's Phone Number" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="personalDetails.motherPhone" render={({ field }) => (<FormItem><FormLabel>Mother's Phone</FormLabel><FormControl><Input placeholder="Mother's Phone Number" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="personalDetails.fatherEmail" render={({ field }) => (<FormItem><FormLabel>Father's Email</FormLabel><FormControl><Input type="email" placeholder="Father's email address" {...field} /></FormControl><FormMessage /></FormItem>)} />
+                        <FormField control={form.control} name="personalDetails.motherEmail" render={({ field }) => (<FormItem><FormLabel>Mother's Email</FormLabel><FormControl><Input type="email" placeholder="Mother's email address" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="personalDetails.fatherOccupation" render={({ field }) => (<FormItem><FormLabel>Father's Occupation</FormLabel><FormControl><Input placeholder="Father's Occupation" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="personalDetails.motherOccupation" render={({ field }) => (<FormItem><FormLabel>Mother's Occupation</FormLabel><FormControl><Input placeholder="Mother's Occupation" {...field} /></FormControl><FormMessage /></FormItem>)} />
                         <FormField control={form.control} name="personalDetails.bloodGroup" render={({ field }) => (<FormItem><FormLabel className="flex items-center"><HeartPulse className="mr-2 h-4 w-4"/>Blood Group</FormLabel><FormControl><Input placeholder="e.g., O+" {...field} /></FormControl><FormMessage /></FormItem>)} />

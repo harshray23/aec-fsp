@@ -86,6 +86,10 @@ export interface Student extends User {
     motherOccupation?: string;
     bloodGroup?: string;
     schoolName?: string;
+    dateOfBirth?: string; // YYYY-MM-DD
+    currentSemester?: number;
+    fatherEmail?: string;
+    motherEmail?: string;
   };
 }
 
