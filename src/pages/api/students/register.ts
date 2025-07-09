@@ -24,9 +24,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     department,
     phoneNumber,
     whatsappNumber,
+    admissionYear,
+    currentYear,
   } = req.body as Partial<Student & { password?: string }>;
 
-  if (!studentId || !name || !email || !rollNumber || !registrationNumber || !department || !phoneNumber) {
+  if (!studentId || !name || !email || !rollNumber || !registrationNumber || !department || !phoneNumber || !admissionYear || !currentYear) {
     return res.status(400).json({ message: 'Missing required student registration fields.' });
   }
   if (!uid) {
@@ -64,6 +66,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       isEmailVerified: true, 
       isPhoneVerified: true,
       status: 'active',
+      admissionYear,
+      currentYear,
     };
     
     if (whatsappNumber) {

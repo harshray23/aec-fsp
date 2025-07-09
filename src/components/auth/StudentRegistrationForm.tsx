@@ -31,7 +31,7 @@ import type { Student } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { MailCheck, SmartphoneNfc, Loader2 } from "lucide-react"; // Added Loader2
 
-const currentYear = new Date().getFullYear();
+const currentClientYear = new Date().getFullYear();
 const studentRegistrationSchema = z.object({
   studentId: z.string()
     .regex(/^AEC\/\d{4}\/\d{4}$/, "Student ID must be in the format AEC/XXXX/YYYY.")
@@ -40,15 +40,17 @@ const studentRegistrationSchema = z.object({
       if (!yearPart) return false;
       const year = parseInt(yearPart, 10);
       // Let's allow a generous range, e.g., from 2010 to 5 years in the future
-      return year >= 2010 && year <= currentYear + 5;
+      return year >= 2010 && year <= currentClientYear + 5;
     }, {
-      message: `Please enter a valid registration year (e.g., between 2010 and ${currentYear + 5}).`
+      message: `Please enter a valid registration year (e.g., between 2010 and ${currentClientYear + 5}).`
     }),
   name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Invalid email address"),
   rollNumber: z.string().min(1, "Roll Number is required"),
   registrationNumber: z.string().min(1, "Registration Number is required"),
   department: z.string().min(1, "Department is required"),
+  admissionYear: z.string().min(1, "Admission year is required"),
+  currentYear: z.string().min(1, "Academic year is required"),
   phoneNumber: z.string().regex(/^\d{10}$/, "Phone number must be 10 digits"),
   whatsappNumber: z.string().regex(/^\d{10}$/, "WhatsApp number must be 10 digits").optional().or(z.literal('')),
   password: z.string().min(6, "Password must be at least 6 characters"),
@@ -80,6 +82,8 @@ export default function StudentRegistrationForm() {
       rollNumber: "",
       registrationNumber: "",
       department: "",
+      admissionYear: "",
+      currentYear: "",
       phoneNumber: "",
       whatsappNumber: "",
       password: "",
@@ -126,6 +130,8 @@ export default function StudentRegistrationForm() {
       // 3. If Firebase Auth creation is successful, register student details in Firestore via API
       const studentApiPayload = {
         ...values,
+        admissionYear: parseInt(values.admissionYear, 10),
+        currentYear: parseInt(values.currentYear, 10),
         uid: firebaseUser.uid, // Pass Firebase UID
         isEmailVerified: firebaseUser.emailVerified, // Pass Firebase email verification status
         isPhoneVerified: false, // Phone verification is still mock/manual for now
@@ -170,6 +176,14 @@ export default function StudentRegistrationForm() {
   // Email & Phone verification steps are removed as Firebase Auth handles email verification,
   // and phone verification would require a real SMS service for Firebase Phone Auth.
   // The flow is now: Fill Form -> Submit (creates Firebase Auth user & Firestore profile).
+
+  const admissionYearOptions = Array.from({ length: 5 }, (_, i) => String(currentClientYear - i));
+  const academicYearOptions = [
+      { value: "1", label: "1st Year" },
+      { value: "2", label: "2nd Year" },
+      { value: "3", label: "3rd Year" },
+      { value: "4", label: "4th Year" },
+  ];
 
   return (
     <Card className="w-full max-w-2xl shadow-2xl">
@@ -271,6 +285,46 @@ export default function StudentRegistrationForm() {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="admissionYear"
+                render={({ field }) => (
+                  <FormItem>
+                    <RHFFormLabel>Admission Year</RHFFormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger><SelectValue placeholder="Select admission year" /></SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {admissionYearOptions.map(year => (
+                          <SelectItem key={year} value={year}>{year}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+                />
+                <FormField
+                    control={form.control}
+                    name="currentYear"
+                    render={({ field }) => (
+                    <FormItem>
+                        <RHFFormLabel>Academic Year</RHFFormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                            <SelectTrigger><SelectValue placeholder="Select current academic year" /></SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {academicYearOptions.map(opt => (
+                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                            ))}
+                        </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
               <FormField
                 control={form.control}
                 name="phoneNumber"

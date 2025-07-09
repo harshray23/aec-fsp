@@ -53,6 +53,7 @@ export interface Student extends User {
   registrationNumber: string;
   department: string;
   section?: Section; // Made section optional
+  admissionYear?: number;
   currentYear?: number;
   status?: 'active' | 'passed_out';
   phoneNumber: string;
