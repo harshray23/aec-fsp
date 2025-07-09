@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input";
 import { CheckSquare, CalendarIcon, Save, Loader2, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import type { Student, Batch, AttendanceRecord } from "@/lib/types";
+import type { Student, Batch, AttendanceRecord, Teacher } from "@/lib/types";
 import { DEPARTMENTS, USER_ROLES } from "@/lib/constants";
 import * as XLSX from "xlsx";
 
@@ -25,6 +25,7 @@ export default function TeacherManageAttendancePage() {
   const { toast } = useToast();
   const [assignedBatches, setAssignedBatches] = useState<Batch[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
+  const [allTeachers, setAllTeachers] = useState<Teacher[]>([]);
   const [isLoadingBatches, setIsLoadingBatches] = useState(true);
   const [isLoadingStudents, setIsLoadingStudents] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -37,9 +38,8 @@ export default function TeacherManageAttendancePage() {
   
   const selectedBatch = useMemo(() => assignedBatches.find(b => b.id === selectedBatchId), [selectedBatchId, assignedBatches]);
 
-  // Fetch all batches on component mount and filter for the logged in teacher
   useEffect(() => {
-    const fetchBatches = async () => {
+    const fetchInitialData = async () => {
       setIsLoadingBatches(true);
       let teacherId = null;
       const storedUserJSON = localStorage.getItem("currentUser");
@@ -57,19 +57,27 @@ export default function TeacherManageAttendancePage() {
       }
       
       try {
-        const res = await fetch('/api/batches');
-        if (!res.ok) throw new Error("Failed to fetch batches");
-        const allBatches: Batch[] = await res.json();
-        // Filter for assigned batches
-        const teacherBatches = allBatches.filter(b => b.teacherIds?.includes(teacherId));
+        const [batchesRes, teachersRes] = await Promise.all([
+            fetch('/api/batches'),
+            fetch('/api/teachers')
+        ]);
+        
+        if (!batchesRes.ok) throw new Error("Failed to fetch batches");
+        const allBatches: Batch[] = await batchesRes.json();
+        const teacherBatches = allBatches.filter(b => b.teacherIds?.includes(teacherId!));
         setAssignedBatches(teacherBatches);
+
+        if (teachersRes.ok) {
+            setAllTeachers(await teachersRes.json());
+        }
+
       } catch (error: any) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       } finally {
         setIsLoadingBatches(false);
       }
     };
-    fetchBatches();
+    fetchInitialData();
   }, [toast]);
 
   // Fetch students and attendance records when batch, date, or half changes
@@ -180,7 +188,7 @@ export default function TeacherManageAttendancePage() {
     }
   };
   
-  const handleDownloadExcel = () => {
+  const handleDownloadExcel = async () => {
     if (!selectedBatch || !selectedDate || students.length === 0) {
       toast({
         title: "No Data to Export",
@@ -190,24 +198,124 @@ export default function TeacherManageAttendancePage() {
       return;
     }
 
-    const dataForExcel = students.map((student) => ({
-      'Student ID': student.studentId,
-      'Student Name': student.name,
-      'Status': attendanceRecords[student.id] ? attendanceRecords[student.id].charAt(0).toUpperCase() + attendanceRecords[student.id].slice(1) : 'Not Marked',
-      'Remarks': remarksRecords[student.id] || '',
-    }));
-    
-    const worksheet = XLSX.utils.json_to_sheet(dataForExcel);
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, `Attendance ${format(selectedDate, "yyyy-MM-dd")}`);
-    
-    const fileName = `Attendance_${selectedBatch.name.replace(/\s/g, '_')}_${format(selectedDate, "yyyy-MM-dd")}_${selectedHalf}_half.xlsx`;
-    XLSX.writeFile(workbook, fileName);
+    toast({ title: "Generating Report...", description: "Fetching all attendance data for the month. This may take a moment." });
 
-    toast({
-        title: "Download Started",
-        description: `Your file ${fileName} is being downloaded.`,
-    })
+    try {
+      // 1. Define Date Range (current month of selectedDate)
+      const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+      const endOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
+
+      // 2. Fetch all attendance for the batch (could be optimized with date range in API)
+      const attendanceRes = await fetch(`/api/attendance?batchId=${selectedBatch.id}`);
+      if (!attendanceRes.ok) {
+        throw new Error("Failed to fetch full attendance data for report.");
+      }
+      const allRecordsForBatch: AttendanceRecord[] = await attendanceRes.json();
+      
+      const recordsForMonth = allRecordsForBatch.filter(r => {
+        const recordDate = new Date(r.date);
+        return recordDate >= startOfMonth && recordDate <= endOfMonth;
+      });
+
+      // 3. Process Data
+      const uniqueDates = [...new Set(recordsForMonth.map(r => r.date.split('T')[0]))].sort();
+      const attendanceMap = new Map<string, Map<string, { M?: string, A?: string }>>();
+
+      recordsForMonth.forEach(record => {
+        const studentMap = attendanceMap.get(record.studentId) || new Map();
+        const dateStr = record.date.split('T')[0];
+        const dateMap = studentMap.get(dateStr) || {};
+        const status = record.status.charAt(0).toUpperCase();
+
+        if (record.batchHalf === 'first') dateMap.M = status;
+        if (record.batchHalf === 'second') dateMap.A = status;
+        
+        studentMap.set(dateStr, dateMap);
+        attendanceMap.set(record.studentId, studentMap);
+      });
+
+      // 4. Build Excel Data (Array of Arrays)
+      const aoa: (string | number)[][] = [];
+      const teacherNames = selectedBatch.teacherIds.map(id => allTeachers.find(t => t.id === id)?.name).filter(Boolean).join(', ');
+
+      aoa.push(['Attendance Sheet']);
+      aoa.push([`${selectedBatch.topic} (Room: ${selectedBatch.roomNumber || 'N/A'})`]);
+      aoa.push([`Teacher(s): ${teacherNames}`]);
+      aoa.push([]);
+
+      const staticHeaders = ['Sl. No.', 'Student Name', 'University Roll No', 'Guardian Contact No', 'Department'];
+      const dateHeaders = uniqueDates.map(date => format(new Date(date.replace(/-/g, '/')), 'dd-MM-yyyy'));
+      
+      const headerRow1 = [...staticHeaders, ...dateHeaders.flatMap(d => [d, ''])];
+      aoa.push(headerRow1);
+
+      const headerRow2 = [...staticHeaders.map(() => ''), ...uniqueDates.flatMap(() => ['M', 'A'])];
+      aoa.push(headerRow2);
+      
+      students
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .forEach((student, index) => {
+          const studentAttendance = attendanceMap.get(student.id);
+          const studentDept = DEPARTMENTS.find(d => d.value === student.department)?.label
+                .split(' ')
+                .filter(word => word.match(/^[A-Z&]+$/))
+                .join('') || student.department;
+
+          const row: (string|number)[] = [
+            index + 1,
+            student.name,
+            student.registrationNumber || 'N/A',
+            student.personalDetails?.fatherPhone || student.personalDetails?.motherPhone || 'N/A',
+            studentDept,
+          ];
+
+          uniqueDates.forEach(date => {
+            const attendance = studentAttendance?.get(date);
+            row.push(attendance?.M || '-');
+            row.push(attendance?.A || '-');
+          });
+          aoa.push(row);
+        });
+
+      // 5. Create Worksheet and Download
+      const worksheet = XLSX.utils.aoa_to_sheet(aoa);
+
+      // Define merges
+      const merges = [
+        { s: { r: 0, c: 0 }, e: { r: 0, c: staticHeaders.length + (uniqueDates.length * 2) - 1 } },
+        { s: { r: 1, c: 0 }, e: { r: 1, c: staticHeaders.length + (uniqueDates.length * 2) - 1 } },
+        { s: { r: 2, c: 0 }, e: { r: 2, c: staticHeaders.length + (uniqueDates.length * 2) - 1 } },
+      ];
+      uniqueDates.forEach((_, i) => {
+        const col = staticHeaders.length + (i * 2);
+        merges.push({ s: { r: 4, c: col }, e: { r: 4, c: col + 1 } });
+      });
+      worksheet['!merges'] = merges;
+      
+      // Auto-fit columns
+      const columnWidths = aoa[5].map((_, colIndex) => {
+          let maxLength = 0;
+          aoa.forEach(row => {
+              if (row[colIndex] && String(row[colIndex]).length > maxLength) {
+                  maxLength = String(row[colIndex]).length;
+              }
+          });
+          return { wch: maxLength + 2 }; // +2 for padding
+      });
+      worksheet['!cols'] = columnWidths;
+
+
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendance Report');
+
+      const fileName = `Attendance_Report_${selectedBatch.name.replace(/\s/g, '_')}_${format(selectedDate, "MMM_yyyy")}.xlsx`;
+      XLSX.writeFile(workbook, fileName);
+
+      toast({ title: "Report Generated", description: `Downloaded ${fileName}` });
+
+    } catch (error: any) {
+      toast({ title: "Report Error", description: error.message, variant: "destructive" });
+    }
   };
 
 
@@ -220,7 +328,7 @@ export default function TeacherManageAttendancePage() {
         actions={
           <Button onClick={handleDownloadExcel} disabled={!selectedBatchId || !selectedDate || students.length === 0}>
             <Download className="mr-2 h-4 w-4" />
-            Download as Excel
+            Download Monthly Report
           </Button>
         }
       />
