@@ -1,7 +1,7 @@
 
 "use client"; 
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -80,6 +80,11 @@ export default function ViewStudentsPage() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [studentToEdit, setStudentToEdit] = useState<Student | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Filter out passed_out students on the client side
+  const activeStudents = useMemo(() => {
+    return students.filter(s => s.status !== 'passed_out');
+  }, [students]);
 
   // Fetch batches once on mount
   useEffect(() => {
@@ -161,11 +166,11 @@ export default function ViewStudentsPage() {
         description: "This export includes only the students currently visible on the page. For a full export, a backend process is recommended.",
         variant: "default",
     });
-    if (students.length === 0) {
+    if (activeStudents.length === 0) {
       toast({ title: "No Data", description: "No students to export with the current filters.", variant: "destructive" });
       return;
     }
-    const dataForExcel = students.map(student => ({ /* ... mapping logic ... */ }));
+    const dataForExcel = activeStudents.map(student => ({ /* ... mapping logic ... */ }));
     const worksheet = XLSX.utils.json_to_sheet(dataForExcel);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
@@ -291,7 +296,7 @@ export default function ViewStudentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {students.map((student) => (
+              {activeStudents.map((student) => (
                 <TableRow key={student.id}>
                   <TableCell>{student.studentId}</TableCell>
                   <TableCell className="font-medium">{student.name}</TableCell>
@@ -326,7 +331,7 @@ export default function ViewStudentsPage() {
             </TableBody>
           </Table>
           )}
-          {students.length === 0 && !isLoading && (
+          {activeStudents.length === 0 && !isLoading && (
             <div className="text-center text-muted-foreground h-24 flex items-center justify-center">
                 No students found with the current filters.
             </div>

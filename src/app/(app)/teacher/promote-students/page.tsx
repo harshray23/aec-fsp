@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
@@ -41,6 +42,7 @@ export default function PromoteStudentsPage() {
   const [selectedYear, setSelectedYear] = useState<string>("all");
 
   const [isPromotionDialogOpen, setIsPromotionDialogOpen] = useState(false);
+  const [promotionAction, setPromotionAction] = useState<'promote' | 'pass_out'>('promote');
 
   useEffect(() => {
     const fetchStudents = async () => {
@@ -61,6 +63,7 @@ export default function PromoteStudentsPage() {
 
   const filteredStudents = useMemo(() => {
     return allStudents.filter(student => {
+      if (student.status === 'passed_out') return false; // Hide passed out students
       const departmentMatch = selectedDepartment === "all" || student.department === selectedDepartment;
       const yearMatch = selectedYear === "all" || String(student.currentYear || '') === selectedYear;
       return departmentMatch && yearMatch;
@@ -82,6 +85,18 @@ export default function PromoteStudentsPage() {
       setSelectedStudents(prev => prev.filter(id => id !== studentId));
     }
   };
+  
+  const openPromotionDialog = () => {
+    if (selectedStudents.length === 0) return;
+    const firstStudent = allStudents.find(s => s.id === selectedStudents[0]);
+    // A simple check assuming all selected students are from the same year (as per UI filter)
+    if (firstStudent?.currentYear === 4) {
+      setPromotionAction('pass_out');
+    } else {
+      setPromotionAction('promote');
+    }
+    setIsPromotionDialogOpen(true);
+  };
 
   const handlePromote = async () => {
     if (selectedStudents.length === 0) {
@@ -89,38 +104,41 @@ export default function PromoteStudentsPage() {
       return;
     }
     
-    // Logic to determine target year
-    // For simplicity, we assume all selected students are from the same year.
-    // A more robust implementation might group by year and promote separately.
     const firstSelectedStudent = allStudents.find(s => s.id === selectedStudents[0]);
-    if (!firstSelectedStudent || !firstSelectedStudent.currentYear) {
+    if (!firstSelectedStudent) {
         toast({ title: "Error", description: "Cannot determine current year of selected students.", variant: "destructive" });
         return;
     }
-    const currentYear = firstSelectedStudent.currentYear;
-    if (currentYear >= 4) {
-        toast({ title: "Cannot Promote", description: "Final year students cannot be promoted further.", variant: "destructive" });
-        setIsPromotionDialogOpen(false);
-        return;
-    }
-    const targetYear = currentYear + 1;
+    const currentYear = firstSelectedStudent.currentYear || 0;
+    const isPassOutAction = currentYear === 4;
+
+    const payload = {
+        studentIds: selectedStudents,
+        action: isPassOutAction ? 'pass_out' : 'promote',
+        targetYear: isPassOutAction ? null : currentYear + 1,
+    };
     
     setIsPromoting(true);
     try {
         const response = await fetch('/api/students/promote', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ studentIds: selectedStudents, targetYear }),
+            body: JSON.stringify(payload),
         });
         const result = await response.json();
         if (!response.ok) {
             throw new Error(result.message || 'Failed to promote students.');
         }
         toast({ title: "Success", description: result.message });
-        // Refresh student list
+        
+        // Refresh student list in the frontend to reflect changes immediately
         const updatedStudents = allStudents.map(s => {
             if (selectedStudents.includes(s.id)) {
-                return { ...s, currentYear: targetYear };
+                return { 
+                    ...s, 
+                    currentYear: isPassOutAction ? s.currentYear : payload.targetYear,
+                    status: isPassOutAction ? 'passed_out' : s.status,
+                };
             }
             return s;
         });
@@ -167,8 +185,15 @@ export default function PromoteStudentsPage() {
                 ))}
               </SelectContent>
             </Select>
-             <Button onClick={() => setIsPromotionDialogOpen(true)} disabled={selectedStudents.length === 0}>
-                <TrendingUp className="mr-2 h-4 w-4" /> Promote {selectedStudents.length} Student(s)
+             <Button onClick={openPromotionDialog} disabled={selectedStudents.length === 0}>
+                <TrendingUp className="mr-2 h-4 w-4" /> 
+                <span>
+                    {selectedStudents.length > 0
+                        ? allStudents.find(s => s.id === selectedStudents[0])?.currentYear === 4
+                            ? `Mark ${selectedStudents.length} as Passed Out`
+                            : `Promote ${selectedStudents.length} Student(s)`
+                        : "Promote Students"}
+                </span>
             </Button>
           </div>
         </CardHeader>
@@ -220,16 +245,19 @@ export default function PromoteStudentsPage() {
       <AlertDialog open={isPromotionDialogOpen} onOpenChange={setIsPromotionDialogOpen}>
         <AlertDialogContent>
             <AlertDialogHeader>
-                <AlertDialogTitle>Confirm Promotion</AlertDialogTitle>
+                <AlertDialogTitle>Confirm Action</AlertDialogTitle>
                 <AlertDialogDescription>
-                    You are about to promote {selectedStudents.length} student(s). This will update their academic year. This action can be complex to reverse. Are you sure you want to proceed?
+                    {promotionAction === 'promote'
+                        ? `You are about to promote ${selectedStudents.length} student(s). This will update their academic year. Are you sure?`
+                        : `You are about to mark ${selectedStudents.length} final year student(s) as "Passed Out". Their status will be updated accordingly. Are you sure?`
+                    }
                 </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction onClick={handlePromote} disabled={isPromoting}>
                     {isPromoting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Confirm & Promote
+                    {promotionAction === 'promote' ? 'Confirm & Promote' : 'Mark as Passed Out'}
                 </AlertDialogAction>
             </AlertDialogFooter>
         </AlertDialogContent>

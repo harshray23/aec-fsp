@@ -62,7 +62,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       department,
       phoneNumber,
       isEmailVerified: true, 
-      isPhoneVerified: true, 
+      isPhoneVerified: true,
+      status: 'active',
     };
     
     if (whatsappNumber) {

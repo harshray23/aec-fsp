@@ -54,6 +54,7 @@ export interface Student extends User {
   department: string;
   section?: Section; // Made section optional
   currentYear?: number;
+  status?: 'active' | 'passed_out';
   phoneNumber: string;
   whatsappNumber?: string;
   batchIds?: string[]; // IDs of the batches the student is assigned to
