@@ -1,4 +1,3 @@
-
 "use client";
 
 import Link from "next/link";
@@ -71,7 +70,7 @@ export default function RoleSelector() {
       
       <div className="text-center mb-12">
         <div className="flex justify-center items-center gap-4 mb-4">
-          <AppLogo width="80" height="80" />
+          <AppLogo src="/logo1.avif" width="80" height="80" />
         </div>
         <h1 className="text-4xl font-bold tracking-tight text-foreground">
           AEC FSP

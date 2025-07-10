@@ -1,21 +1,26 @@
-
-import Image from "next/image";
-import { cn } from "@/lib/utils";
+import Image from 'next/image';
+import {cn} from '@/lib/utils';
 
 interface AppLogoProps {
+  src?: string;
   width?: number | `${number}` | undefined;
   height?: number | `${number}` | undefined;
   className?: string;
 }
 
-export function AppLogo({ width = 40, height = 40, className }: AppLogoProps) {
+export function AppLogo({
+  src = '/aec.jpg',
+  width = 40,
+  height = 40,
+  className,
+}: AppLogoProps) {
   return (
     <Image
-      src="/aec.jpg"
+      src={src}
       alt="Asansol Engineering College Logo"
       width={width}
       height={height}
-      className={cn("rounded-md", className)}
+      className={cn('rounded-md', className)}
       priority
     />
   );

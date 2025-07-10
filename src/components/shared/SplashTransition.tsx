@@ -1,4 +1,3 @@
-
 "use client";
 
 import { AppLogo } from "@/components/shared/AppLogo";
@@ -11,7 +10,7 @@ export function SplashTransition() {
         <h1 className="text-4xl font-bold tracking-tight text-foreground">
           Welcome
         </h1>
-        <AppLogo width="160" height="160" />
+        <AppLogo src="/aec.jpg" width="1000" height="1000" className="max-w-xs md:max-w-sm" />
       </div>
     </div>
   );
