@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BookUser, Users, MoreHorizontal, Trash2, Edit, Home, Loader2, Link as LinkIcon, Clipboard } from "lucide-react"; 
+import { BookUser, Users, MoreHorizontal, Trash2, Edit, Home, Link as LinkIcon, Clipboard } from "lucide-react"; 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
 import { isAfter, startOfDay } from "date-fns";
+import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 
 export default function AdminBatchOverviewPage() {
   const { toast } = useToast();
@@ -163,7 +164,7 @@ export default function AdminBatchOverviewPage() {
         <Card className="shadow-lg">
           <CardHeader><CardTitle>All Batches</CardTitle></CardHeader>
           <CardContent className="flex justify-center items-center h-64">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <LoadingSpinner size={60} />
           </CardContent>
         </Card>
       </div>

@@ -45,9 +45,10 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import type { Student, AcademicTest } from "@/lib/types";
 import { DEPARTMENTS } from "@/lib/constants";
-import { BookCopy, Loader2, User, Download, PlusCircle, Edit, Trash2 } from "lucide-react";
+import { BookCopy, User, Download, PlusCircle, Edit, Trash2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import * as XLSX from "xlsx";
+import { LoadingSpinner } from "@/components/shared/LoadingSpinner";
 
 const testSchema = z.object({
   id: z.string().optional(),
@@ -361,7 +362,7 @@ export default function ManageAcademicsPage() {
         <CardContent>
           {isLoading ? (
             <div className="flex justify-center items-center h-40">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <LoadingSpinner />
             </div>
           ) : (
             <Table>
@@ -480,7 +481,7 @@ export default function ManageAcademicsPage() {
                 <DialogFooter>
                     <DialogClose asChild><Button variant="outline" disabled={isSaving}>Cancel</Button></DialogClose>
                     <Button onClick={handleSaveChanges} disabled={isSaving}>
-                        {isSaving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        {isSaving && <LoadingSpinner size={20} />}
                         {isSaving ? "Saving..." : "Save All Changes"}
                     </Button>
                 </DialogFooter>

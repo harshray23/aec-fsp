@@ -6,11 +6,12 @@ import { useParams, useRouter } from 'next/navigation';
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import BatchEditForm from "@/components/admin/BatchEditForm";
-import { Edit, Loader2 } from "lucide-react";
+import { Edit } from "lucide-react";
 import type { Batch } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 
 export default function AdminEditBatchPage() {
   const router = useRouter();
@@ -82,11 +83,11 @@ export default function AdminEditBatchPage() {
   if (isLoading) {
     return (
       <div className="space-y-8">
-        <PageHeader title="Loading Batch Details..." icon={Loader2} />
+        <PageHeader title="Loading Batch Details..." icon={Edit} />
         <Card className="max-w-2xl mx-auto shadow-lg">
           <CardHeader><CardTitle>Edit Batch</CardTitle></CardHeader>
           <CardContent className="flex justify-center items-center h-64">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+            <LoadingSpinner size={60} />
           </CardContent>
         </Card>
       </div>
@@ -140,7 +141,7 @@ export default function AdminEditBatchPage() {
                       onClick={() => setIsCompleteDialogOpen(true)}
                       disabled={batch.status === 'Completed' || isCompleting}
                   >
-                      {isCompleting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                      {isCompleting ? <LoadingSpinner size={20} /> : null}
                       {batch.status === 'Completed' ? 'Already Completed' : 'Mark as Completed'}
                   </Button>
               </div>
@@ -158,7 +159,7 @@ export default function AdminEditBatchPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleMarkAsCompleted} disabled={isCompleting}>
-              {isCompleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isCompleting && <LoadingSpinner size={20} />}
               Confirm
             </AlertDialogAction>
           </AlertDialogFooter>
