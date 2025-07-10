@@ -1,5 +1,6 @@
 
 import Image from "next/image";
+import { cn } from "@/lib/utils";
 
 interface AppLogoProps {
   width?: number | `${number}` | undefined;
@@ -10,12 +11,12 @@ interface AppLogoProps {
 export function AppLogo({ width = 40, height = 40, className }: AppLogoProps) {
   return (
     <Image
-      src="/logo1.avif" // This is the path to your logo in the public folder
-      alt="AEC FSP App Logo"
+      src="/aec.jpg"
+      alt="Asansol Engineering College Logo"
       width={width}
       height={height}
-      className={className}
-      priority // Add priority if the logo is above the fold
+      className={cn("rounded-md", className)}
+      priority
     />
   );
 }
