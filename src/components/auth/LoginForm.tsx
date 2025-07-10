@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import React, { useEffect } from "react"; 
+import React, { useEffect, useState } from "react"; 
 import { getAuth, signInWithEmailAndPassword, type User as FirebaseUser } from "firebase/auth";
 import { app as firebaseApp } from "@/firebase";
 
@@ -24,6 +24,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useToast } from "@/hooks/use-toast";
 import { USER_ROLES, type UserRole } from "@/lib/constants";
 import type { Host, Admin, Teacher } from "@/lib/types";
+import { LoadingSpinner } from "../shared/LoadingSpinner";
 
 
 const loginFormSchema = z.object({
@@ -39,6 +40,7 @@ export default function LoginForm() {
   const { toast } = useToast();
   const role = searchParams.get("role") as UserRole | null;
   const auth = getAuth(firebaseApp);
+  const [isLoginSuccess, setIsLoginSuccess] = useState(false);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginFormSchema),
@@ -126,7 +128,11 @@ export default function LoginForm() {
         title: "Login Successful!",
         description: `Welcome back, ${finalUserData.name || 'User'}! Redirecting...`,
       });
-      router.push(successRedirectPath);
+
+      setIsLoginSuccess(true);
+      setTimeout(() => {
+        router.push(successRedirectPath);
+      }, 3000); // Redirect after 3 seconds
 
     } catch (error: any) {
       console.error("Login/Profile Fetch error:", error);
@@ -154,6 +160,18 @@ export default function LoginForm() {
       });
     }
   };
+
+  if (isLoginSuccess) {
+    return (
+      <Card className="w-full max-w-md shadow-2xl">
+        <CardContent className="flex flex-col items-center justify-center p-6 min-h-[300px]">
+          <LoadingSpinner size={120} />
+          <p className="text-lg font-medium text-foreground mt-4">Login Successful</p>
+          <p className="text-muted-foreground">Redirecting to your dashboard...</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   if (!role) {
      return <p>Invalid role. Redirecting...</p>;
