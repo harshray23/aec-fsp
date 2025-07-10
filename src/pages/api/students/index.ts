@@ -11,7 +11,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (req.method === 'GET') {
     try {
-      const { department, searchTerm, limit = '20', startAfter } = req.query;
+      const { department, searchTerm, limit = '20', startAfter, status } = req.query;
       const parsedLimit = parseInt(limit as string, 10);
       
       // If a search term is provided, handle search separately.
@@ -56,6 +56,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         query = query.where('department', '==', department);
       }
       
+      if (status && typeof status === 'string') {
+        query = query.where('status', '==', status);
+      }
+
       if (startAfter && typeof startAfter === 'string') {
         const lastVisibleDoc = await db.collection('students').doc(startAfter).get();
         if (lastVisibleDoc.exists) {
