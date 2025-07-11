@@ -113,7 +113,7 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
       topic: batchData?.topic || "",
       teacherIds: batchData?.teacherIds || [],
       departments: batchData?.departments || [],
-      year: batchData?.year || "",
+      year: batchData?.year || "all",
       studentIds: batchData?.studentIds || [],
       startDate: batchData?.startDate ? parseISO(batchData.startDate) : undefined,
       endDate: batchData?.endDate ? parseISO(batchData.endDate) : undefined,
@@ -133,7 +133,7 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
         topic: batchData.topic || "",
         teacherIds: batchData.teacherIds || [],
         departments: batchData.departments || [],
-        year: batchData.year || "",
+        year: batchData.year || "all",
         studentIds: batchData.studentIds || [],
         startDate: batchData.startDate ? parseISO(batchData.startDate) : undefined,
         endDate: batchData.endDate ? parseISO(batchData.endDate) : undefined,
@@ -194,7 +194,7 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
         !watchedDepartments || watchedDepartments.length === 0 || watchedDepartments.includes(student.department);
     
     const yearMatch = (student: Student) =>
-        !watchedYear || String(student.currentYear || '') === watchedYear;
+        !watchedYear || watchedYear === "all" || String(student.currentYear || '') === watchedYear;
 
     return allStudents.filter(student => departmentMatch(student) && yearMatch(student) && student.status !== 'passed_out');
   }, [allStudents, watchedDepartments, watchedYear]);
@@ -383,14 +383,14 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
                 <FormItem>
                     <FormLabel>Filter by Academic Year</FormLabel>
                     <FormDescription>Select a year to see available students.</FormDescription>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                         <SelectTrigger>
                         <SelectValue placeholder="Select an academic year" />
                         </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                        <SelectItem value="">All Years</SelectItem>
+                        <SelectItem value="all">All Years</SelectItem>
                         {academicYearOptions.map((opt) => (
                         <SelectItem key={opt.value} value={opt.value}>
                             {opt.label}
