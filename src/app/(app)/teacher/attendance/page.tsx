@@ -437,9 +437,9 @@ export default function TeacherManageAttendancePage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Student ID</TableHead>
                       <TableHead>Student Name</TableHead>
-                      <TableHead>Section</TableHead>
+                      <TableHead>Roll No.</TableHead>
+                      <TableHead>Department</TableHead>
                       <TableHead className="text-center">Status</TableHead>
                       <TableHead>Remarks</TableHead>
                     </TableRow>
@@ -447,9 +447,9 @@ export default function TeacherManageAttendancePage() {
                   <TableBody>
                     {students.map((student) => (
                       <TableRow key={student.id}>
-                        <TableCell>{student.studentId}</TableCell>
                         <TableCell className="font-medium">{student.name}</TableCell>
-                        <TableCell>{student.section}</TableCell>
+                        <TableCell>{student.rollNumber}</TableCell>
+                        <TableCell>{DEPARTMENTS.find(d => d.value === student.department)?.label || student.department}</TableCell>
                         <TableCell className="text-center">
                           <RadioGroup 
                             onValueChange={(value) => handleAttendanceChange(student.id, value as AttendanceStatus)} 
