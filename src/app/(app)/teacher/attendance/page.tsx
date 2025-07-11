@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { CheckSquare, CalendarIcon, Save, Loader2, Download } from "lucide-react";
+import { CheckSquare, CalendarIcon, Save, Loader2, Download, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import type { Student, Batch, AttendanceRecord, Teacher } from "@/lib/types";
@@ -140,6 +140,16 @@ export default function TeacherManageAttendancePage() {
   
   const handleRemarkChange = (studentId: string, remark: string) => {
     setRemarksRecords(prev => ({ ...prev, [studentId]: remark }));
+  };
+  
+  const handleMarkAllPresent = () => {
+    if (students.length === 0) return;
+    const newAttendanceRecords: Record<string, AttendanceStatus> = {};
+    students.forEach(student => {
+      newAttendanceRecords[student.id] = 'present';
+    });
+    setAttendanceRecords(newAttendanceRecords);
+    toast({ title: "All Present", description: "All students have been marked as present. You can now make exceptions." });
   };
 
   const handleSaveAttendance = async () => {
@@ -425,12 +435,21 @@ export default function TeacherManageAttendancePage() {
             </div>
           ) : selectedBatch && selectedDate ? (
             <>
-              <p className="mb-4 text-sm font-medium">
-                Marking attendance for: <span className="text-primary">{selectedBatch.name}</span> on <span className="text-primary">{format(selectedDate, "PPP")}</span>.
-                Topic: <span className="text-primary">{selectedBatch.topic}</span>.
-                {selectedHalf === 'first' && <span> Time: <span className="text-primary">{selectedBatch.startTimeFirstHalf} - {selectedBatch.endTimeFirstHalf}</span>.</span>}
-                {selectedHalf === 'second' && <span> Time: <span className="text-primary">{selectedBatch.startTimeSecondHalf} - {selectedBatch.endTimeSecondHalf}</span>.</span>}
-              </p>
+              <div className="p-4 border rounded-md bg-muted/50 mb-6">
+                <p className="font-semibold text-primary">{selectedBatch.name}</p>
+                <p className="text-sm text-muted-foreground">
+                    Topic: <span className="font-medium">{selectedBatch.topic}</span>
+                    <span className="mx-2">|</span>
+                    Date: <span className="font-medium">{format(selectedDate, "PPP")}</span>
+                    <span className="mx-2">|</span>
+                    Time: <span className="font-medium">
+                        {selectedHalf === 'first' 
+                            ? `${selectedBatch.startTimeFirstHalf} - ${selectedBatch.endTimeFirstHalf}`
+                            : `${selectedBatch.startTimeSecondHalf} - ${selectedBatch.endTimeSecondHalf}`}
+                    </span>
+                </p>
+              </div>
+              
               {students.length > 0 ? (
                 <>
                 <div className="max-h-[60vh] overflow-auto">
@@ -483,10 +502,16 @@ export default function TeacherManageAttendancePage() {
                   </TableBody>
                 </Table>
                 </div>
-                <Button onClick={handleSaveAttendance} disabled={isSaving} className="mt-6 w-full md:w-auto">
-                  {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-                  {isSaving ? 'Saving...' : 'Save Attendance'}
-                </Button>
+                <div className="mt-6 flex flex-wrap gap-2">
+                  <Button onClick={handleSaveAttendance} disabled={isSaving}>
+                    {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                    {isSaving ? 'Saving...' : 'Save Attendance'}
+                  </Button>
+                  <Button variant="outline" onClick={handleMarkAllPresent} disabled={isSaving}>
+                    <Check className="mr-2 h-4 w-4" />
+                    Mark All Present
+                  </Button>
+                </div>
                 </>
               ) : (
                 <p className="text-center text-muted-foreground py-4">No students found in the selected batch, or students have not yet been assigned.</p>
