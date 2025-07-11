@@ -31,6 +31,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 
 const batchEditSchema = z.object({
@@ -38,6 +39,7 @@ const batchEditSchema = z.object({
   topic: z.string().min(2, "Topic must be at least 2 characters"),
   teacherIds: z.array(z.string()).min(1, "At least one teacher is required."),
   departments: z.array(z.string()).min(1, "At least one department is required"),
+  year: z.string().optional(),
   studentIds: z.array(z.string()).optional(),
   startDate: z.date({ required_error: "Start date is required." }),
   endDate: z.date({ required_error: "End date is required." }),
@@ -79,6 +81,14 @@ interface BatchEditFormProps {
   redirectPathAfterSuccess?: string;
 }
 
+const academicYearOptions = [
+    { value: "1", label: "1st Year" },
+    { value: "2", label: "2nd Year" },
+    { value: "3", label: "3rd Year" },
+    { value: "4", label: "4th Year" },
+];
+
+
 export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: BatchEditFormProps) {
   const router = useRouter();
   const { toast } = useToast();
@@ -103,6 +113,7 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
       topic: batchData?.topic || "",
       teacherIds: batchData?.teacherIds || [],
       departments: batchData?.departments || [],
+      year: batchData?.year || "",
       studentIds: batchData?.studentIds || [],
       startDate: batchData?.startDate ? parseISO(batchData.startDate) : undefined,
       endDate: batchData?.endDate ? parseISO(batchData.endDate) : undefined,
@@ -122,6 +133,7 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
         topic: batchData.topic || "",
         teacherIds: batchData.teacherIds || [],
         departments: batchData.departments || [],
+        year: batchData.year || "",
         studentIds: batchData.studentIds || [],
         startDate: batchData.startDate ? parseISO(batchData.startDate) : undefined,
         endDate: batchData.endDate ? parseISO(batchData.endDate) : undefined,
@@ -175,27 +187,30 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
   }, [toast]);
 
   const watchedDepartments = form.watch("departments");
+  const watchedYear = form.watch("year");
 
   const availableStudents = useMemo(() => {
-    if (!watchedDepartments || watchedDepartments.length === 0) {
-        return [];
-    }
-    return allStudents.filter(student => watchedDepartments.includes(student.department));
-  }, [allStudents, watchedDepartments]);
+    const departmentMatch = (student: Student) => 
+        !watchedDepartments || watchedDepartments.length === 0 || watchedDepartments.includes(student.department);
+    
+    const yearMatch = (student: Student) =>
+        !watchedYear || String(student.currentYear || '') === watchedYear;
+
+    return allStudents.filter(student => departmentMatch(student) && yearMatch(student) && student.status !== 'passed_out');
+  }, [allStudents, watchedDepartments, watchedYear]);
   
   useEffect(() => {
     if (isFirstRender.current) {
         isFirstRender.current = false;
         return;
     }
-    // When departments change, filter the existing selection of students
-    // to ensure only students from the currently selected departments remain selected.
+    // When departments or year change, filter the existing selection of students
     const currentStudentIds = form.getValues("studentIds") || [];
     const availableStudentIds = availableStudents.map(s => s.id);
     const newStudentIds = currentStudentIds.filter(id => availableStudentIds.includes(id));
     form.setValue("studentIds", newStudentIds, { shouldDirty: true });
     
-  }, [watchedDepartments, form, availableStudents]);
+  }, [watchedDepartments, watchedYear, form, availableStudents]);
   
   
   const handleCopyToClipboard = () => {
@@ -307,54 +322,88 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
             )}
         />
         
-        <FormField
-            control={form.control}
-            name="departments"
-            render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Assign Departments</FormLabel>
-                    <FormDescription>Select the departments this batch is for. This will filter the available students below.</FormDescription>
-                     <ScrollArea className="h-40 w-full rounded-md border">
-                        <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
-                            {DEPARTMENTS.map((dept) => (
-                            <FormField
-                                key={dept.value}
-                                control={form.control}
-                                name="departments"
-                                render={({ field }) => {
-                                return (
-                                    <FormItem
+        <Card>
+          <CardHeader>
+            <CardTitle>Student Filtering</CardTitle>
+            <CardDescription>Filter which students are available for assignment below.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <FormField
+                control={form.control}
+                name="departments"
+                render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Filter by Departments</FormLabel>
+                        <FormDescription>Select one or more departments to see available students.</FormDescription>
+                        <ScrollArea className="h-40 w-full rounded-md border">
+                            <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2">
+                                {DEPARTMENTS.map((dept) => (
+                                <FormField
                                     key={dept.value}
-                                    className="flex flex-row items-center space-x-3 space-y-0"
-                                    >
-                                    <FormControl>
-                                        <Checkbox
-                                        checked={field.value?.includes(dept.value)}
-                                        onCheckedChange={(checked) => {
-                                            return checked
-                                            ? field.onChange([...(field.value || []), dept.value])
-                                            : field.onChange(
-                                                (field.value || []).filter(
-                                                    (value) => value !== dept.value
-                                                )
-                                                );
-                                        }}
-                                        />
-                                    </FormControl>
-                                    <FormLabel className="font-normal">
-                                        {dept.label}
-                                    </FormLabel>
-                                    </FormItem>
-                                );
-                                }}
-                            />
-                            ))}
-                        </div>
-                    </ScrollArea>
+                                    control={form.control}
+                                    name="departments"
+                                    render={({ field }) => {
+                                    return (
+                                        <FormItem
+                                        key={dept.value}
+                                        className="flex flex-row items-center space-x-3 space-y-0"
+                                        >
+                                        <FormControl>
+                                            <Checkbox
+                                            checked={field.value?.includes(dept.value)}
+                                            onCheckedChange={(checked) => {
+                                                return checked
+                                                ? field.onChange([...(field.value || []), dept.value])
+                                                : field.onChange(
+                                                    (field.value || []).filter(
+                                                        (value) => value !== dept.value
+                                                    )
+                                                    );
+                                            }}
+                                            />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">
+                                            {dept.label}
+                                        </FormLabel>
+                                        </FormItem>
+                                    );
+                                    }}
+                                />
+                                ))}
+                            </div>
+                        </ScrollArea>
+                        <FormMessage />
+                    </FormItem>
+                )}
+            />
+             <FormField
+                control={form.control}
+                name="year"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Filter by Academic Year</FormLabel>
+                    <FormDescription>Select a year to see available students.</FormDescription>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                        <SelectTrigger>
+                        <SelectValue placeholder="Select an academic year" />
+                        </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                        <SelectItem value="">All Years</SelectItem>
+                        {academicYearOptions.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                            {opt.label}
+                        </SelectItem>
+                        ))}
+                    </SelectContent>
+                    </Select>
                     <FormMessage />
                 </FormItem>
-            )}
-        />
+                )}
+            />
+          </CardContent>
+        </Card>
 
         <FormField
           control={form.control}
@@ -363,7 +412,7 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
             <FormItem>
               <FormLabel>Assign Students</FormLabel>
               <FormDescription>
-                Manually assign students to this batch or use the shareable link.
+                Manually assign students to this batch or use the shareable link. The list is based on the filters above.
               </FormDescription>
               <FormControl>
                 <Button
@@ -439,7 +488,7 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
           <DialogHeader>
             <DialogTitle>Assign Students</DialogTitle>
             <DialogDescription>
-              Select students from the chosen departments to add to this batch.
+              Select students matching your filters to add to this batch.
             </DialogDescription>
           </DialogHeader>
           <div className="flex-grow overflow-hidden">
@@ -447,7 +496,7 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
               <div className="flex justify-center items-center h-full">
                 <Loader2 className="animate-spin" />
               </div>
-            ) : watchedDepartments.length > 0 ? (
+            ) : watchedDepartments.length > 0 || watchedYear ? (
               <ScrollArea className="h-full">
                 <div className="p-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2">
                   {availableStudents.map((student) => (
@@ -476,7 +525,7 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
                   ))}
                   {availableStudents.length === 0 && (
                     <p className="text-muted-foreground col-span-full text-center py-4">
-                      No students found for the selected department(s).
+                      No students found for the selected filter(s).
                     </p>
                   )}
                 </div>
@@ -484,9 +533,9 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
             ) : (
               <div className="flex items-center justify-center h-full">
                 <Alert>
-                  <AlertTitle>Select a department first</AlertTitle>
+                  <AlertTitle>Select a filter first</AlertTitle>
                   <AlertDescription>
-                    Please select one or more departments on the main form to see the list of available students.
+                    Please select one or more departments and/or a year on the main form to see the list of available students.
                   </AlertDescription>
                 </Alert>
               </div>

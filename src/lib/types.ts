@@ -131,6 +131,7 @@ export interface Batch {
   status: "Scheduled" | "Ongoing" | "Completed";
   roomNumber?: string;
   departments: string[];
+  year?: string;
 }
 
 export interface AttendanceRecord {
