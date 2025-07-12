@@ -134,9 +134,21 @@ export default function RoleSelector() {
       </div>
 
       <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-4xl">
-        <Image src="/iiimg1.jpg" alt="Campus image 1" width={400} height={300} className="rounded-lg shadow-md object-cover w-full h-48" data-ai-hint="university campus" />
-        <Image src="/iiimg2.jpg" alt="Campus image 2" width={400} height={300} className="rounded-lg shadow-md object-cover w-full h-48" data-ai-hint="university students" />
-        <Image src="/iiimg3.jpg" alt="Campus image 3" width={400} height={300} className="rounded-lg shadow-md object-cover w-full h-48" data-ai-hint="university classroom" />
+        <div className="text-center">
+          <Image src="/iiimg1.jpg" alt="Campus image 1" width={400} height={300} className="rounded-lg shadow-md object-cover w-full h-48" data-ai-hint="university campus" />
+          <h3 className="font-semibold mt-2 text-foreground">Harsh Ray</h3>
+          <p className="text-sm text-muted-foreground">Backend and automation Engineer</p>
+        </div>
+        <div className="text-center">
+          <Image src="/iiimg2.jpg" alt="Campus image 2" width={400} height={300} className="rounded-lg shadow-md object-cover w-full h-48" data-ai-hint="university students" />
+          <h3 className="font-semibold mt-2 text-foreground">Sanjay Sharma</h3>
+          <p className="text-sm text-muted-foreground">Backend and database engineer</p>
+        </div>
+        <div className="text-center">
+          <Image src="/iiimg3.jpg" alt="Campus image 3" width={400} height={300} className="rounded-lg shadow-md object-cover w-full h-48" data-ai-hint="university classroom" />
+          <h3 className="font-semibold mt-2 text-foreground">Harsh Agarwalla</h3>
+          <p className="text-sm text-muted-foreground">testing and frontend Engineer</p>
+        </div>
       </div>
       
       <footer className="mt-8 text-center text-muted-foreground text-sm">
