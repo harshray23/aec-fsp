@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { AppLogo } from "@/components/shared/AppLogo";
 import { GraduationCap, Briefcase, UserCog, UserRound } from "lucide-react"; 
 import { USER_ROLES, type UserRole } from "@/lib/constants";
+import Image from "next/image";
 
 interface RoleCardProps {
   role: UserRole;
@@ -130,8 +131,14 @@ export default function RoleSelector() {
       <div className="text-center mt-12 text-sm text-muted-foreground">
         <p>Developed by Sanjay</p>
       </div>
+
+      <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-4xl">
+        <Image src="/iiimg1.jpg" alt="Campus image 1" width={400} height={300} className="rounded-lg shadow-md object-cover w-full h-48" data-ai-hint="university campus" />
+        <Image src="/iiimg2.jpg" alt="Campus image 2" width={400} height={300} className="rounded-lg shadow-md object-cover w-full h-48" data-ai-hint="university students" />
+        <Image src="/iiimg3.jpg" alt="Campus image 3" width={400} height={300} className="rounded-lg shadow-md object-cover w-full h-48" data-ai-hint="university classroom" />
+      </div>
       
-      <footer className="mt-4 text-center text-muted-foreground text-sm">
+      <footer className="mt-8 text-center text-muted-foreground text-sm">
         <p>&copy; {new Date().getFullYear()} Asansol Engineering College. All rights reserved.</p>
       </footer>
     </div>
