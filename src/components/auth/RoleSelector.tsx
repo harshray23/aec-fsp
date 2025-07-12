@@ -137,17 +137,17 @@ export default function RoleSelector() {
         <div className="text-center">
           <Image src="/iiimg1.jpg" alt="Campus image 1" width={400} height={300} className="rounded-lg shadow-md object-cover w-full h-48" data-ai-hint="university campus" />
           <h3 className="font-semibold mt-2 text-foreground">Harsh Ray</h3>
-          <p className="text-sm text-muted-foreground">Backend and automation Engineer</p>
+          <p className="text-sm text-muted-foreground">Backend and Automation Engineer</p>
         </div>
         <div className="text-center">
           <Image src="/iiimg2.jpg" alt="Campus image 2" width={400} height={300} className="rounded-lg shadow-md object-cover w-full h-48" data-ai-hint="university students" />
           <h3 className="font-semibold mt-2 text-foreground">Sanjay Sharma</h3>
-          <p className="text-sm text-muted-foreground">Backend and database engineer</p>
+          <p className="text-sm text-muted-foreground">Backend and Database Engineer</p>
         </div>
         <div className="text-center">
           <Image src="/iiimg3.jpg" alt="Campus image 3" width={400} height={300} className="rounded-lg shadow-md object-cover w-full h-48" data-ai-hint="university classroom" />
           <h3 className="font-semibold mt-2 text-foreground">Harsh Agarwalla</h3>
-          <p className="text-sm text-muted-foreground">testing and frontend Engineer</p>
+          <p className="text-sm text-muted-foreground">Testing and Frontend Engineer</p>
         </div>
       </div>
       
