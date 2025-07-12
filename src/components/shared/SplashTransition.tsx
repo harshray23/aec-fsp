@@ -15,7 +15,7 @@ export function SplashTransition() {
             -- Asansol Engineering College
           </p>
         </div>
-        <AppLogo src="/aec.jpg" width="1000" height="1000" className="max-w-xs md:max-w-sm" />
+        <AppLogo src="/aec.png" width="1000" height="1000" className="max-w-xs md:max-w-sm" />
       </div>
     </div>
   );
