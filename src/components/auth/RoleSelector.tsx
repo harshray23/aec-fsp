@@ -129,25 +129,32 @@ export default function RoleSelector() {
         />
       </div>
 
-      <div className="text-center mt-12 text-sm text-foreground bg-white py-2 px-4 rounded-md shadow">
-        <p>Developed by</p>
-      </div>
-
-      <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-4xl">
-        <div className="text-center">
-          <Image src="/iiimg1.jpg" alt="Campus image 1" width={400} height={300} className="rounded-lg shadow-md object-cover w-full h-48" data-ai-hint="university campus" />
-          <h3 className="font-semibold mt-2 text-foreground">Harsh Ray</h3>
-          <p className="text-sm text-muted-foreground">Backend and Automation Engineer</p>
-        </div>
-        <div className="text-center">
-          <Image src="/iiimg2.jpg" alt="Campus image 2" width={400} height={300} className="rounded-lg shadow-md object-cover w-full h-48" data-ai-hint="university students" />
-          <h3 className="font-semibold mt-2 text-foreground">Sanjay Sharma</h3>
-          <p className="text-sm text-muted-foreground">Backend and database engineer</p>
-        </div>
-        <div className="text-center">
-          <Image src="/iiimg3.jpg" alt="Campus image 3" width={400} height={300} className="rounded-lg shadow-md object-cover w-full h-48" data-ai-hint="university classroom" />
-          <h3 className="font-semibold mt-2 text-foreground">Harsh Agarwalla</h3>
-          <p className="text-sm text-muted-foreground">Testing and frontend Engineer</p>
+      <div className="text-center mt-16 w-full max-w-4xl">
+        <h2 className="text-2xl font-semibold tracking-tight text-foreground">
+          Developed By
+        </h2>
+        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="text-center overflow-hidden">
+             <Image src="/iiimg1.jpg" alt="Harsh Ray" width={400} height={300} className="w-full h-48 object-cover" data-ai-hint="developer portrait" />
+             <CardContent className="p-4">
+                <h3 className="font-semibold text-lg text-foreground">Harsh Ray</h3>
+                <p className="text-sm text-muted-foreground">Backend and Automation Engineer</p>
+             </CardContent>
+          </Card>
+           <Card className="text-center overflow-hidden">
+             <Image src="/iiimg2.jpg" alt="Sanjay Sharma" width={400} height={300} className="w-full h-48 object-cover" data-ai-hint="developer portrait" />
+             <CardContent className="p-4">
+                <h3 className="font-semibold text-lg text-foreground">Sanjay Sharma</h3>
+                <p className="text-sm text-muted-foreground">Backend and Database Engineer</p>
+             </CardContent>
+          </Card>
+           <Card className="text-center overflow-hidden">
+             <Image src="/iiimg3.jpg" alt="Harsh Agarwalla" width={400} height={300} className="w-full h-48 object-cover" data-ai-hint="developer portrait" />
+             <CardContent className="p-4">
+                <h3 className="font-semibold text-lg text-foreground">Harsh Agarwalla</h3>
+                <p className="text-sm text-muted-foreground">Testing and Frontend Engineer</p>
+             </CardContent>
+          </Card>
         </div>
       </div>
       
