@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from "next/link";
@@ -128,8 +129,8 @@ export default function RoleSelector() {
         />
       </div>
 
-      <div className="text-center mt-12 text-sm text-muted-foreground">
-        <p>Developed by Sanjay</p>
+      <div className="text-center mt-12 text-sm text-foreground bg-white py-2 px-4 rounded-md shadow">
+        <p>Developed by</p>
       </div>
 
       <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-4xl">
