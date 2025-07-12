@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   images: {
+    domains: [
+      'localhost',
+      '9003-firebase-studio-1748625231387.cluster-fkltigo73ncaixtmokrzxhwsfc.cloudworkstations.dev',
+    ],
     remotePatterns: [
       {
         protocol: 'https',
@@ -17,14 +21,6 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
-      {
-        protocol: 'http',
-        hostname: 'localhost',
-      },
-      {
-        protocol: 'https',
-        hostname: '*.cluster-fkltigo73ncaixtmokrzxhwsfc.cloudworkstations.dev'
-      }
     ],
   },
   allowedDevOrigins: [
@@ -48,6 +44,3 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
-
-
-
