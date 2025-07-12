@@ -126,7 +126,12 @@ export default function RoleSelector() {
           onSelect={handleNonStudentRoleSelect}
         />
       </div>
-      <footer className="mt-12 text-center text-muted-foreground text-sm">
+
+      <div className="text-center mt-12 text-sm text-muted-foreground">
+        <p>Developed by Sanjay</p>
+      </div>
+      
+      <footer className="mt-4 text-center text-muted-foreground text-sm">
         <p>&copy; {new Date().getFullYear()} Asansol Engineering College. All rights reserved.</p>
       </footer>
     </div>
