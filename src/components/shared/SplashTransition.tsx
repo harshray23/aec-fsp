@@ -5,7 +5,7 @@ export function SplashTransition() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background text-foreground">
       <div className="animate-pulse flex flex-col items-center justify-center gap-4">
-        <AppLogo src="/AEC.jpg" width="1000" height="1000" />
+        <AppLogo src="/AEC.jpg" width="500" height="500" />
         <div className="text-center">
           <h1 className="text-2xl font-semibold tracking-tight text-primary">
             Welcome to FSP Portal of
