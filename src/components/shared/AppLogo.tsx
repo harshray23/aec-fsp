@@ -9,7 +9,7 @@ interface AppLogoProps {
 }
 
 export function AppLogo({
-  src = '/aec.png',
+  src = '/aec.jpg',
   width = 40,
   height = 40,
   className,
