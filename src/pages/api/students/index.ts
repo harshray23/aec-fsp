@@ -50,14 +50,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       // Default path: Paginated list without search term.
-      let query: Query = db.collection('students').orderBy('studentId');
+      let query: Query = db.collection('students');
+      
+      // When filtering by status, we should not order by another field unless an index is guaranteed.
+      if (status && typeof status === 'string') {
+        query = query.where('status', '==', status);
+      } else {
+        query = query.orderBy('studentId');
+      }
 
       if (department && department !== 'all' && typeof department === 'string') {
         query = query.where('department', '==', department);
-      }
-      
-      if (status && typeof status === 'string') {
-        query = query.where('status', '==', status);
       }
 
       if (startAfter && typeof startAfter === 'string') {
