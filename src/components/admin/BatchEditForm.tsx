@@ -103,8 +103,6 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
   const [tempSelectedStudentIds, setTempSelectedStudentIds] = useState<string[]>([]);
 
   const isEditMode = !!batchData?.id;
-  const isFirstRender = React.useRef(true);
-
 
   const form = useForm<BatchEditFormValues>({
     resolver: zodResolver(batchEditSchema),
@@ -188,6 +186,7 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
 
   const watchedDepartments = form.watch("departments");
   const watchedYear = form.watch("year");
+  const watchedStudentIds = form.watch("studentIds") || [];
 
   const availableStudents = useMemo(() => {
     const departmentMatch = (student: Student) => 
@@ -195,23 +194,21 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
     
     const yearMatch = (student: Student) =>
         !watchedYear || watchedYear === "all" || String(student.currentYear || '') === watchedYear;
-
-    return allStudents.filter(student => departmentMatch(student) && yearMatch(student) && student.status !== 'passed_out');
-  }, [allStudents, watchedDepartments, watchedYear]);
-  
-  useEffect(() => {
-    if (isFirstRender.current) {
-        isFirstRender.current = false;
-        return;
-    }
-    // When departments or year change, filter the existing selection of students
-    const currentStudentIds = form.getValues("studentIds") || [];
-    const availableStudentIds = availableStudents.map(s => s.id);
-    const newStudentIds = currentStudentIds.filter(id => availableStudentIds.includes(id));
-    form.setValue("studentIds", newStudentIds, { shouldDirty: true });
     
-  }, [watchedDepartments, watchedYear, form, availableStudents]);
-  
+    // Get all students currently assigned to the batch (from original data)
+    const assignedStudentIds = batchData?.studentIds || [];
+    const assignedStudents = allStudents.filter(s => assignedStudentIds.includes(s.id));
+    
+    // Get all students that match the current department/year filters
+    const studentsMatchingFilter = allStudents.filter(student => departmentMatch(student) && yearMatch(student) && student.status !== 'passed_out');
+
+    // Combine them, ensuring no duplicates
+    const combined = new Map<string, Student>();
+    assignedStudents.forEach(s => combined.set(s.id, s));
+    studentsMatchingFilter.forEach(s => combined.set(s.id, s));
+
+    return Array.from(combined.values());
+  }, [allStudents, watchedDepartments, watchedYear, batchData]);
   
   const handleCopyToClipboard = () => {
     navigator.clipboard.writeText(enrollmentLink).then(() => {
@@ -425,7 +422,7 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
                   }}
                 >
                   <Users className="mr-2 h-4 w-4" />
-                  Assign Students ({field.value?.length || 0} selected)
+                  Assign Students ({watchedStudentIds.length} selected)
                 </Button>
               </FormControl>
               <FormMessage />
