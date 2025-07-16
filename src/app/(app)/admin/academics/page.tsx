@@ -97,7 +97,8 @@ export default function ManageAcademicsPage() {
       try {
         const res = await fetch("/api/students");
         if (!res.ok) throw new Error("Failed to fetch students");
-        setAllStudents(await res.json());
+        const data = await res.json();
+        setAllStudents(data.students || []); // Correctly access the nested array
       } catch (error: any) {
         toast({ title: "Error", description: error.message, variant: "destructive" });
       } finally {
