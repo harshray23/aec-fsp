@@ -1,9 +1,10 @@
+
 "use client"; 
 
 import { DashboardLayout } from "@/components/shared/DashboardLayout";
 import type { NavItem, User, Student, Teacher, Admin, Host } from "@/lib/types";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, UserPlus, BookUser, CalendarDays, BarChart3, Settings, GraduationCap, ShieldAlert, Briefcase, UserCog, UserCircle, CheckSquare, MonitorPlay, ServerCog, FileCog, UserCheck, CalendarCheck2, Megaphone, PlusCircle, BookCopy, TrendingUp, UserX } from "lucide-react"; 
+import { LayoutDashboard, Users, UserPlus, BookUser, CalendarDays, BarChart3, Settings, GraduationCap, ShieldAlert, Briefcase, UserCog, UserCircle, CheckSquare, MonitorPlay, ServerCog, FileCog, UserCheck, CalendarCheck2, Megaphone, PlusCircle, BookCopy, TrendingUp, UserX, ListChecks } from "lucide-react"; 
 import React, { useState, useEffect } from "react";
 import { USER_ROLES } from "@/lib/constants";
 
@@ -32,6 +33,7 @@ const getNavItems = (role: "student" | "teacher" | "admin" | "host" | "guest"): 
         { href: "/teacher/profile", label: "My Profile", icon: UserCircle, tooltip: "View your profile" },
         { href: "/teacher/my-assigned-batches", label: "My Assigned Batches", icon: BookUser, tooltip: "View batches assigned to you" },
         { href: "/teacher/attendance", label: "Manage Attendance", icon: CheckSquare, tooltip: "Mark student attendance" },
+        { href: "/teacher/view-attendance", label: "View Attendance", icon: ListChecks, tooltip: "View detailed attendance reports" },
         { href: "/teacher/promote-students", label: "Promote Students", icon: TrendingUp, tooltip: "Promote students to next year" },
         { href: "/teacher/timetables", label: "View Timetables", icon: CalendarDays, tooltip: "View timetables for assigned batches" }, 
         { href: "/teacher/reports", label: "Reports", icon: BarChart3, tooltip: "View reports for assigned batches" },
@@ -63,6 +65,7 @@ const getNavItems = (role: "student" | "teacher" | "admin" | "host" | "guest"): 
           ]
         },
         { href: "/admin/academics", label: "Manage Academics", icon: BookCopy, tooltip: "Manage student test scores" },
+        { href: "/admin/view-attendance", label: "View Attendance", icon: ListChecks, tooltip: "View detailed attendance reports" },
         { href: "/admin/timetables", label: "Timetable Overview", icon: CalendarDays, tooltip: "View all timetables" },
         { href: "/admin/reports", label: "View Reports", icon: BarChart3, tooltip: "View system-wide reports" }, 
         { href: "/admin/settings", label: "System Settings", icon: Settings, tooltip: "Configure system settings" },
