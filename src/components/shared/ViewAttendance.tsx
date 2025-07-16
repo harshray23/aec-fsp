@@ -63,6 +63,7 @@ export function ViewAttendance({ role }: ViewAttendanceProps) {
     const [allBatches, setAllBatches] = useState<Batch[]>([]);
     const [allStudents, setAllStudents] = useState<Student[]>([]);
     const [allAttendanceRecords, setAllAttendanceRecords] = useState<AttendanceRecord[]>([]);
+    const [dailyAttendanceDetails, setDailyAttendanceDetails] = useState<DailyAttendanceDetail[]>([]);
 
     // Loading states
     const [isLoading, setIsLoading] = useState(true);
@@ -76,7 +77,6 @@ export function ViewAttendance({ role }: ViewAttendanceProps) {
     const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
     const [selectedBatchForDetails, setSelectedBatchForDetails] = useState<Batch | null>(null);
     const [detailsDate, setDetailsDate] = useState<Date | undefined>(undefined);
-    const [dailyAttendanceDetails, setDailyAttendanceDetails] = useState<DailyAttendanceDetail[]>([]);
     
     // Set initial date range on client-side to prevent hydration mismatch
     useEffect(() => {
@@ -369,9 +369,8 @@ export function ViewAttendance({ role }: ViewAttendanceProps) {
                         </DialogHeader>
 
                         <Card className="flex-shrink-0">
-                            <CardContent className="p-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                            <CardContent className="p-3 grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
                                 <p className="flex items-center gap-2"><BookOpen className="h-4 w-4 text-primary"/> <strong>Topic:</strong> {selectedBatchForDetails.topic}</p>
-                                <p className="flex items-center gap-2"><Users className="h-4 w-4 text-primary"/> <strong>Teachers:</strong> N/A</p>
                                 <p className="flex items-center gap-2"><Clock className="h-4 w-4 text-primary"/> <strong>1st Half:</strong> {selectedBatchForDetails.startTimeFirstHalf} - {selectedBatchForDetails.endTimeFirstHalf}</p>
                                 {selectedBatchForDetails.startTimeSecondHalf && <p className="flex items-center gap-2"><Clock className="h-4 w-4 text-primary"/> <strong>2nd Half:</strong> {selectedBatchForDetails.startTimeSecondHalf} - {selectedBatchForDetails.endTimeSecondHalf}</p>}
                             </CardContent>
@@ -425,3 +424,4 @@ export function ViewAttendance({ role }: ViewAttendanceProps) {
 }
 
     
+
