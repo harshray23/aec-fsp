@@ -157,21 +157,24 @@ export default function RoleSelector() {
                   <Image src="/iiimg1.jpg" alt="Harsh Ray" width={400} height={300} className="w-full h-48 object-cover" data-ai-hint="developer portrait" />
                   <CardContent className="p-4">
                       <h3 className="font-semibold text-lg text-foreground">Harsh Ray</h3>
-                      <p className="text-sm text-muted-foreground">Backend and Automation Engineer</p>
+                      <p className="text-sm font-medium text-primary">AIML</p>
+                      <p className="text-sm text-muted-foreground mt-1">Backend and Automation Engineer</p>
                   </CardContent>
                 </Card>
                 <Card className="text-center overflow-hidden">
                   <Image src="/iiimg2.jpg" alt="Sanjay Sharma" width={400} height={300} className="w-full h-48 object-cover" data-ai-hint="developer portrait" />
                   <CardContent className="p-4">
                       <h3 className="font-semibold text-lg text-foreground">Sanjay Sharma</h3>
-                      <p className="text-sm text-muted-foreground">Backend and Database Engineer</p>
+                       <p className="text-sm font-medium text-primary">CSE</p>
+                      <p className="text-sm text-muted-foreground mt-1">Backend and Database Engineer</p>
                   </CardContent>
                 </Card>
                 <Card className="text-center overflow-hidden">
                   <Image src="/iiimg3.jpg" alt="Harsh Agarwalla" width={400} height={300} className="w-full h-48 object-cover" data-ai-hint="developer portrait" />
                   <CardContent className="p-4">
                       <h3 className="font-semibold text-lg text-foreground">Harsh Agarwalla</h3>
-                      <p className="text-sm text-muted-foreground">Testing and Frontend Engineer</p>
+                       <p className="text-sm font-medium text-primary">IT</p>
+                      <p className="text-sm text-muted-foreground mt-1">Testing and Frontend Engineer</p>
                   </CardContent>
                 </Card>
               </div>
