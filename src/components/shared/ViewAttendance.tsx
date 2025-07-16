@@ -76,6 +76,7 @@ export function ViewAttendance({ role }: ViewAttendanceProps) {
     const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
     const [selectedBatchForDetails, setSelectedBatchForDetails] = useState<Batch | null>(null);
     const [detailsDate, setDetailsDate] = useState<Date | undefined>(undefined);
+    const [dailyAttendanceDetails, setDailyAttendanceDetails] = useState<DailyAttendanceDetail[]>([]);
     
     // Set initial date range on client-side to prevent hydration mismatch
     useEffect(() => {
