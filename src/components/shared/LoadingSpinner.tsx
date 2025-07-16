@@ -1,7 +1,8 @@
 "use client";
 
 import React from 'react';
-import Image from 'next/image';
+import Lottie from "lottie-react";
+import loadingAnimation from "../../../public/loading.json";
 import { cn } from '@/lib/utils';
 
 interface LoadingSpinnerProps {
@@ -9,15 +10,13 @@ interface LoadingSpinnerProps {
   size?: number;
 }
 
-export function LoadingSpinner({ className, size = 50 }: LoadingSpinnerProps) {
+export function LoadingSpinner({ className, size = 120 }: LoadingSpinnerProps) {
   return (
     <div className={cn("flex items-center justify-center", className)}>
-      <Image
-        src="/AEC.jpg"
-        alt="Loading..."
-        width={size}
-        height={size}
-        className="animate-pulse rounded-md"
+      <Lottie
+        animationData={loadingAnimation}
+        loop={true}
+        style={{ width: size, height: size }}
       />
     </div>
   );
