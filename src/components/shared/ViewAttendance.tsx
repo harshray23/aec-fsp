@@ -70,16 +70,21 @@ export function ViewAttendance({ role }: ViewAttendanceProps) {
 
     // Filter states
     const [selectedBatchId, setSelectedBatchId] = useState<string>("all");
-    const [dateRange, setDateRange] = useState<DateRange | undefined>({
-        from: subDays(new Date(), 29),
-        to: new Date(),
-    });
+    const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
     // Dialog states
     const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
     const [selectedBatchForDetails, setSelectedBatchForDetails] = useState<Batch | null>(null);
-    const [detailsDate, setDetailsDate] = useState<Date>(new Date());
-    const [dailyAttendanceDetails, setDailyAttendanceDetails] = useState<DailyAttendanceDetail[]>([]);
+    const [detailsDate, setDetailsDate] = useState<Date | undefined>(undefined);
+    
+    // Set initial date range on client-side to prevent hydration mismatch
+    useEffect(() => {
+        setDateRange({
+            from: subDays(new Date(), 29),
+            to: new Date(),
+        });
+        setDetailsDate(new Date());
+    }, []);
 
     useEffect(() => {
         const fetchInitialData = async () => {
@@ -105,8 +110,14 @@ export function ViewAttendance({ role }: ViewAttendanceProps) {
                 if (role === 'teacher' && teacherId) {
                     batches = batches.filter(b => b.teacherIds?.includes(teacherId as string));
                 }
+                
+                // Admins see all batches, teachers only see their assigned ones.
+                const userSpecificBatches = role === 'admin' 
+                    ? batches 
+                    : batches.filter(b => b.teacherIds?.includes(teacherId as string));
 
-                setAllBatches(batches);
+
+                setAllBatches(userSpecificBatches);
                 setAllStudents((await studentsRes.json()).students);
                 setAllAttendanceRecords(await attendanceRes.json());
 
@@ -178,7 +189,7 @@ export function ViewAttendance({ role }: ViewAttendanceProps) {
     
      // Effect to fetch details for the dialog
     useEffect(() => {
-        if (!isDetailsDialogOpen || !selectedBatchForDetails) return;
+        if (!isDetailsDialogOpen || !selectedBatchForDetails || !detailsDate) return;
         
         const fetchDetails = () => {
             setIsDetailsLoading(true);
@@ -225,6 +236,7 @@ export function ViewAttendance({ role }: ViewAttendanceProps) {
     };
 
     const handleDateChangeInDialog = (direction: 'prev' | 'next') => {
+        if (!detailsDate) return;
         const interval = eachDayOfInterval({
             start: dateRange?.from || new Date(),
             end: dateRange?.to || new Date(),
@@ -267,6 +279,7 @@ export function ViewAttendance({ role }: ViewAttendanceProps) {
                                 id="date"
                                 variant={"outline"}
                                 className={"w-full justify-start text-left font-normal"}
+                                disabled={!dateRange}
                             >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
                                 {dateRange?.from ? (
@@ -301,7 +314,7 @@ export function ViewAttendance({ role }: ViewAttendanceProps) {
                     <CardDescription>Calculated attendance percentages based on the selected filters.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {isLoading ? (
+                    {isLoading || !dateRange ? (
                         <div className="flex justify-center items-center h-40"><LoadingSpinner /></div>
                     ) : (
                         <Table>
@@ -364,9 +377,9 @@ export function ViewAttendance({ role }: ViewAttendanceProps) {
                         </Card>
 
                         <div className="flex items-center justify-between p-2 border-b">
-                             <Button variant="outline" size="icon" onClick={() => handleDateChangeInDialog('prev')}><ChevronLeft /></Button>
-                             <div className="font-semibold text-lg">{format(detailsDate, 'PPP')}</div>
-                             <Button variant="outline" size="icon" onClick={() => handleDateChangeInDialog('next')}><ChevronRight /></Button>
+                             <Button variant="outline" size="icon" onClick={() => handleDateChangeInDialog('prev')} disabled={!detailsDate}><ChevronLeft /></Button>
+                             <div className="font-semibold text-lg">{detailsDate ? format(detailsDate, 'PPP') : 'Select a date'}</div>
+                             <Button variant="outline" size="icon" onClick={() => handleDateChangeInDialog('next')} disabled={!detailsDate}><ChevronRight /></Button>
                         </div>
                         
                         <div className="flex-grow overflow-y-auto">
