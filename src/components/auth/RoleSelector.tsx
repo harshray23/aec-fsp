@@ -6,9 +6,18 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { AppLogo } from "@/components/shared/AppLogo";
-import { GraduationCap, Briefcase, UserCog, UserRound } from "lucide-react"; 
+import { GraduationCap, Briefcase, UserCog, UserRound, Code } from "lucide-react"; 
 import { USER_ROLES, type UserRole } from "@/lib/constants";
 import Image from "next/image";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+
 
 interface RoleCardProps {
   role: UserRole;
@@ -128,34 +137,46 @@ export default function RoleSelector() {
           onSelect={handleNonStudentRoleSelect}
         />
       </div>
-
+      
       <div className="text-center mt-16 w-full max-w-4xl">
-        <h2 className="text-2xl font-semibold tracking-tight text-foreground">
-          Developed By
-        </h2>
-        <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card className="text-center overflow-hidden">
-             <Image src="/iiimg1.jpg" alt="Harsh Ray" width={400} height={300} className="w-full h-48 object-cover" data-ai-hint="developer portrait" />
-             <CardContent className="p-4">
-                <h3 className="font-semibold text-lg text-foreground">Harsh Ray</h3>
-                <p className="text-sm text-muted-foreground">Backend and Automation Engineer</p>
-             </CardContent>
-          </Card>
-           <Card className="text-center overflow-hidden">
-             <Image src="/iiimg2.jpg" alt="Sanjay Sharma" width={400} height={300} className="w-full h-48 object-cover" data-ai-hint="developer portrait" />
-             <CardContent className="p-4">
-                <h3 className="font-semibold text-lg text-foreground">Sanjay Sharma</h3>
-                <p className="text-sm text-muted-foreground">Backend and Database Engineer</p>
-             </CardContent>
-          </Card>
-           <Card className="text-center overflow-hidden">
-             <Image src="/iiimg3.jpg" alt="Harsh Agarwalla" width={400} height={300} className="w-full h-48 object-cover" data-ai-hint="developer portrait" />
-             <CardContent className="p-4">
-                <h3 className="font-semibold text-lg text-foreground">Harsh Agarwalla</h3>
-                <p className="text-sm text-muted-foreground">Testing and Frontend Engineer</p>
-             </CardContent>
-          </Card>
-        </div>
+         <Dialog>
+            <DialogTrigger asChild>
+              <Button variant="outline">
+                <Code className="mr-2 h-4 w-4"/> Developed By
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-4xl">
+              <DialogHeader>
+                <DialogTitle className="text-2xl text-center">Meet the Developers</DialogTitle>
+                <DialogDescription className="text-center">
+                  This project was brought to life by a dedicated team of student developers.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <Card className="text-center overflow-hidden">
+                  <Image src="/iiimg1.jpg" alt="Harsh Ray" width={400} height={300} className="w-full h-48 object-cover" data-ai-hint="developer portrait" />
+                  <CardContent className="p-4">
+                      <h3 className="font-semibold text-lg text-foreground">Harsh Ray</h3>
+                      <p className="text-sm text-muted-foreground">Backend and Automation Engineer</p>
+                  </CardContent>
+                </Card>
+                <Card className="text-center overflow-hidden">
+                  <Image src="/iiimg2.jpg" alt="Sanjay Sharma" width={400} height={300} className="w-full h-48 object-cover" data-ai-hint="developer portrait" />
+                  <CardContent className="p-4">
+                      <h3 className="font-semibold text-lg text-foreground">Sanjay Sharma</h3>
+                      <p className="text-sm text-muted-foreground">Backend and Database Engineer</p>
+                  </CardContent>
+                </Card>
+                <Card className="text-center overflow-hidden">
+                  <Image src="/iiimg3.jpg" alt="Harsh Agarwalla" width={400} height={300} className="w-full h-48 object-cover" data-ai-hint="developer portrait" />
+                  <CardContent className="p-4">
+                      <h3 className="font-semibold text-lg text-foreground">Harsh Agarwalla</h3>
+                      <p className="text-sm text-muted-foreground">Testing and Frontend Engineer</p>
+                  </CardContent>
+                </Card>
+              </div>
+            </DialogContent>
+          </Dialog>
       </div>
       
       <footer className="mt-8 text-center text-muted-foreground text-sm">
