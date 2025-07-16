@@ -139,6 +139,11 @@ export function ViewAttendance({ role }: ViewAttendanceProps) {
         fetchAttendanceSummary();
     }, [selectedBatchId, selectedHalf, dateRange, toast, role, allBatches]);
 
+    const handleViewDetailsClick = (batchId: string) => {
+        const path = role === 'admin' ? `/admin/batches/edit/${batchId}` : `/teacher/batches/view/${batchId}`;
+        router.push(path);
+    };
+
 
     return (
         <div className="space-y-6">
@@ -240,7 +245,7 @@ export function ViewAttendance({ role }: ViewAttendanceProps) {
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-right">
-                                            <Button variant="outline" size="sm" onClick={() => router.push(`/${role}/batches/view/${summary.batchId}`)}>
+                                            <Button variant="outline" size="sm" onClick={() => handleViewDetailsClick(summary.batchId)}>
                                                 <Eye className="mr-2 h-4 w-4" /> View Details
                                             </Button>
                                         </TableCell>
