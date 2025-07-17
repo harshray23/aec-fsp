@@ -35,7 +35,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   for (const studentData of students) {
     const {
       studentId, name, email, rollNumber, registrationNumber, department,
-      admissionYear, currentYear, phoneNumber, section, whatsappNumber
+      admissionYear, currentYear, phoneNumber, whatsappNumber
     } = studentData;
 
     // --- Validation ---
@@ -74,7 +74,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         rollNumber,
         registrationNumber,
         department,
-        section: section || null,
         admissionYear: parseInt(admissionYear, 10),
         currentYear: parseInt(currentYear, 10),
         phoneNumber,

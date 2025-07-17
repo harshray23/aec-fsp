@@ -14,7 +14,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const REQUIRED_COLUMNS = [
   "studentId", "name", "email", "rollNumber", "registrationNumber", 
-  "department", "admissionYear", "currentYear", "phoneNumber", "section"
+  "department", "admissionYear", "currentYear", "phoneNumber", "whatsappNumber"
 ];
 
 export default function BulkCreateStudentsPage() {
