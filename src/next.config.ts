@@ -9,6 +9,16 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'placehold.co',
+        port: '',
+        pathname: '/**',
+      },
+    ],
+  },
   allowedDevOrigins: [
     'https://9003-firebase-studio-1748625231387.cluster-fkltigo73ncaixtmokrzxhwsfc.cloudworkstations.dev',
   ],
@@ -16,7 +26,7 @@ const nextConfig: NextConfig = {
     return [
       {
         // This regex matches all static file types in the public folder
-        source: '/:path*(?:svg|jpg|jpeg|png|gif|ico|webp|avif|woff2)',
+        source: '/:path*(?:svg|jpg|jpeg|png|gif|ico|webp|avif)',
         headers: [
           {
             key: 'Cache-Control',
