@@ -160,7 +160,16 @@ export default function BulkCreateStudentsPage() {
           <CardTitle className="flex items-center gap-2"><FileSpreadsheet/>Template Column Guide</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground space-y-1">
-          {REQUIRED_COLUMNS.map(col => <p key={col}>- <strong className="text-foreground">{col}</strong>: The student's {col.replace(/([A-Z])/g, ' $1').toLowerCase()}.</p>)}
+          <p>- <strong className="text-foreground">studentId</strong>: The student's student id.</p>
+          <p>- <strong className="text-foreground">name</strong>: The student's name.</p>
+          <p>- <strong className="text-foreground">email</strong>: The student's email.</p>
+          <p>- <strong className="text-foreground">rollNumber</strong>: The student's roll number.</p>
+          <p>- <strong className="text-foreground">registrationNumber</strong>: The student's registration number.</p>
+          <p>- <strong className="text-foreground">department</strong>: The student's department.</p>
+          <p>- <strong className="text-foreground">admissionYear</strong>: The student's admission year.</p>
+          <p>- <strong className="text-foreground">currentYear</strong>: The student's current year.</p>
+          <p>- <strong className="text-foreground">phoneNumber</strong>: The student's phone number.</p>
+          <p>- <strong className="text-foreground">whatsappNumber</strong>: The student's whatsapp number.</p>
           <p className="pt-2 text-primary">Note: 'department' value must be a valid key from the system (e.g., 'cse', 'it', 'ece').</p>
         </CardContent>
       </Card>
