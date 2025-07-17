@@ -6,17 +6,17 @@ import { USER_ROLES } from '@/lib/constants';
 
 const DEFAULT_PASSWORD = "Password@123";
 
-// Helper to find a value in an object with case-insensitive and variant keys
+// Helper function to find a value in an object with case-insensitive and variant keys
 function findValue(obj: any, keys: string[]): any {
     for (const key of keys) {
         if (obj[key] !== undefined) {
             return obj[key];
         }
     }
-    // Fallback to case-insensitive search
-    const lowerCaseKeys = keys.map(k => k.toLowerCase());
+    // Fallback to case-insensitive and character-agnostic search
+    const lowerCaseKeys = keys.map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''));
     for (const objKey in obj) {
-        const lowerObjKey = objKey.toLowerCase();
+        const lowerObjKey = objKey.toLowerCase().replace(/[^a-z0-9]/g, '');
         const index = lowerCaseKeys.indexOf(lowerObjKey);
         if (index !== -1) {
             return obj[objKey];
