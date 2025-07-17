@@ -100,37 +100,38 @@ export default function ViewStudentsPage() {
     fetchBatches();
   }, [toast]);
 
-  const fetchStudents = useCallback(async (isNewQuery = false) => {
+  const fetchStudents = useCallback(async (isNewQuery: boolean) => {
     if (isNewQuery) {
-        setIsLoading(true);
+      setIsLoading(true);
     } else {
-        setIsFetchingMore(true);
+      setIsFetchingMore(true);
     }
+  
     try {
-        const params = new URLSearchParams();
-        if (selectedDepartment !== "all") params.append("department", selectedDepartment);
-        if (debouncedSearchTerm) params.append("searchTerm", debouncedSearchTerm);
-        params.append("limit", String(PAGE_SIZE));
-
-        // Use the cursor only if it's not a new query (i.e., we are loading more)
-        if (!isNewQuery && lastVisibleId) {
-            params.append("startAfter", lastVisibleId);
-        }
-
-        const res = await fetch(`/api/students?${params.toString()}`);
-        if (!res.ok) throw new Error("Failed to fetch students.");
-        
-        const data = await res.json();
-        
-        setStudents(prev => isNewQuery ? data.students : [...prev, ...data.students]);
-        setLastVisibleId(data.lastVisibleId);
-        setHasMore(data.students.length === PAGE_SIZE);
-
+      const params = new URLSearchParams();
+      if (selectedDepartment !== "all") params.append("department", selectedDepartment);
+      if (debouncedSearchTerm) params.append("searchTerm", debouncedSearchTerm);
+      params.append("limit", String(PAGE_SIZE));
+  
+      const cursor = isNewQuery ? null : lastVisibleId;
+      if (cursor) {
+        params.append("startAfter", cursor);
+      }
+  
+      const res = await fetch(`/api/students?${params.toString()}`);
+      if (!res.ok) throw new Error("Failed to fetch students.");
+  
+      const data = await res.json();
+  
+      setStudents(prev => isNewQuery ? data.students : [...prev, ...data.students]);
+      setLastVisibleId(data.lastVisibleId);
+      setHasMore(!!data.lastVisibleId && data.students.length === PAGE_SIZE);
+  
     } catch (error: any) {
-        toast({ title: "Error", description: `Could not load students: ${error.message}`, variant: "destructive" });
+      toast({ title: "Error", description: `Could not load students: ${error.message}`, variant: "destructive" });
     } finally {
-        setIsLoading(false);
-        setIsFetchingMore(false);
+      setIsLoading(false);
+      setIsFetchingMore(false);
     }
   }, [selectedDepartment, debouncedSearchTerm, lastVisibleId, toast]);
 
