@@ -27,13 +27,19 @@ export default function BulkCreateStudentsPage() {
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
       const selectedFile = event.target.files[0];
-      if (selectedFile && (selectedFile.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || selectedFile.type === 'text/csv')) {
+      const allowedTypes = [
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+          'text/csv', // .csv
+          'application/vnd.oasis.opendocument.spreadsheet', // .ods
+          'text/tab-separated-values' // .tsv
+      ];
+      if (selectedFile && allowedTypes.includes(selectedFile.type)) {
         setFile(selectedFile);
         setUploadResult(null); // Clear previous results
       } else {
         toast({
           title: "Invalid File Type",
-          description: "Please upload a .xlsx or .csv file.",
+          description: "Please upload a .xlsx, .csv, .ods, or .tsv file.",
           variant: "destructive",
         });
       }
@@ -112,8 +118,8 @@ export default function BulkCreateStudentsPage() {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid w-full max-w-sm items-center gap-1.5">
-            <Label htmlFor="student-file">Select File (.xlsx, .csv)</Label>
-            <Input id="student-file" type="file" accept=".xlsx, .csv" onChange={handleFileChange} />
+            <Label htmlFor="student-file">Select File (.xlsx, .csv, .ods, .tsv)</Label>
+            <Input id="student-file" type="file" accept=".xlsx, .csv, .ods, .tsv" onChange={handleFileChange} />
           </div>
           <Button onClick={handleUpload} disabled={!file || isUploading}>
             {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
@@ -156,7 +162,7 @@ export default function BulkCreateStudentsPage() {
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground grid grid-cols-2 gap-x-6 gap-y-1">
           {REQUIRED_COLUMNS_FOR_TEMPLATE.map(col => <p key={col}>- <strong className="text-foreground">{col}</strong></p>)}
-          <p className="pt-2 text-primary col-span-2">Note: 'Department' value must be a valid key from the system (e.g., 'CSE', 'IT', 'ECE'). The 'Timestamp' column will be ignored.</p>
+          <p className="pt-2 text-primary col-span-2">Note: 'Department' value must be a valid key from the system (e.g., 'CSE', 'IT', 'ECE'). The 'Timestamp' and 'Email Address' columns will be ignored.</p>
         </CardContent>
       </Card>
     </div>
