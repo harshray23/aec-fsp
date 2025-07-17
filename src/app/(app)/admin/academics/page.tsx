@@ -95,7 +95,7 @@ export default function ManageAcademicsPage() {
     const fetchStudents = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch("/api/students");
+        const res = await fetch("/api/students?limit=99999");
         if (!res.ok) throw new Error("Failed to fetch students");
         const data = await res.json();
         setAllStudents(data.students || []); // Correctly access the nested array
