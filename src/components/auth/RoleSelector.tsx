@@ -119,12 +119,6 @@ export default function RoleSelector() {
               >
                 Login as Student
               </Button>
-              <p className="mt-3 text-sm text-muted-foreground">
-                New Student?{" "}
-                <Link href={`/register/student`} className="font-medium text-primary hover:underline">
-                  Register here
-                </Link>
-              </p>
             </CardContent>
           </Card>
 

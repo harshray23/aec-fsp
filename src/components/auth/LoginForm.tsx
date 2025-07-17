@@ -234,14 +234,7 @@ export default function LoginForm() {
             </Button>
           </form>
         </Form>
-        {role === USER_ROLES.STUDENT && (
-          <div className="mt-6 text-center text-sm">
-            Don&apos;t have an account?{" "}
-            <Link href="/register/student" className="font-medium text-primary hover:underline">
-              Register here
-            </Link>
-          </div>
-        )}
+        
          <div className="mt-4 text-center text-sm">
             <Link href="/" className="font-medium text-muted-foreground hover:text-primary hover:underline">
               Back to Role Selection

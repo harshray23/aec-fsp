@@ -4,7 +4,7 @@
 import { DashboardLayout } from "@/components/shared/DashboardLayout";
 import type { NavItem, User, Student, Teacher, Admin, Host } from "@/lib/types";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, UserPlus, BookUser, CalendarDays, BarChart3, Settings, GraduationCap, ShieldAlert, Briefcase, UserCog, UserCircle, CheckSquare, MonitorPlay, ServerCog, FileCog, UserCheck, CalendarCheck2, Megaphone, PlusCircle, BookCopy, TrendingUp, UserX, ListChecks } from "lucide-react"; 
+import { LayoutDashboard, Users, UserPlus, BookUser, CalendarDays, BarChart3, Settings, GraduationCap, ShieldAlert, Briefcase, UserCog, UserCircle, CheckSquare, MonitorPlay, ServerCog, FileCog, UserCheck, CalendarCheck2, Megaphone, PlusCircle, BookCopy, TrendingUp, UserX, ListChecks, UploadCloud } from "lucide-react"; 
 import React, { useState, useEffect } from "react";
 import { USER_ROLES } from "@/lib/constants";
 
@@ -48,6 +48,8 @@ const getNavItems = (role: "student" | "teacher" | "admin" | "host" | "guest"): 
           icon: UserCog,
           tooltip: "Manage users",
           children: [
+             { href: "/admin/users/create", label: "Register User", icon: UserPlus, tooltip: "Create a new Admin or Teacher" },
+             { href: "/admin/users/bulk-create", label: "Bulk Create Students", icon: UploadCloud, tooltip: "Upload a file to create students" },
              { href: "/admin/users/teachers", label: "Manage Teachers", icon: Briefcase, tooltip: "Manage teacher accounts" },
              { href: "/admin/users/admins", label: "Manage Admins", icon: ShieldAlert, tooltip: "Manage admin accounts" },
              { href: "/admin/users/students", label: "View Students", icon: GraduationCap, tooltip: "View student accounts" },
