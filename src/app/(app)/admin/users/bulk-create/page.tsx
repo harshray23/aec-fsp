@@ -156,7 +156,7 @@ export default function BulkCreateStudentsPage() {
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground grid grid-cols-2 gap-x-6 gap-y-1">
           {REQUIRED_COLUMNS_FOR_TEMPLATE.map(col => <p key={col}>- <strong className="text-foreground">{col}</strong></p>)}
-          <p className="pt-2 text-primary col-span-2">Note: 'Department' value must be a valid key from the system (e.g., 'cse', 'it', 'ece'). The 'Timestamp' column will be ignored.</p>
+          <p className="pt-2 text-primary col-span-2">Note: 'Department' value must be a valid key from the system (e.g., 'CSE', 'IT', 'ECE'). The 'Timestamp' column will be ignored.</p>
         </CardContent>
       </Card>
     </div>

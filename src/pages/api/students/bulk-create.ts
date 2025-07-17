@@ -6,23 +6,6 @@ import { USER_ROLES } from '@/lib/constants';
 
 const DEFAULT_PASSWORD = "Password@123";
 
-// This maps the user-facing column names from the Excel file to the internal database field names.
-const COLUMN_MAP: { [key: string]: keyof Student | string } = {
-  "Timestamp": "timestamp",
-  "Student Name": "name",
-  "Student ID": "studentId",
-  "University Roll No.": "rollNumber",
-  "University Registration No.": "registrationNumber",
-  "Department": "department",
-  "Admission Year": "admissionYear",
-  "Current Academic Year": "currentYear",
-  "Email": "email",
-  "Email Address": "email",
-  "WhatsApp No.": "whatsappNumber",
-  "Phone No.": "phoneNumber",
-};
-
-
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method Not Allowed' });
@@ -44,30 +27,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     errors: [] as string[],
   };
   
-  // Pre-fetch all existing roll numbers and emails to check for duplicates in one go.
   const existingStudents = await db.collection('students').get();
   const existingRollNumbers = new Set(existingStudents.docs.map(doc => doc.data().rollNumber));
   const existingEmails = new Set(existingStudents.docs.map(doc => doc.data().email));
 
   for (const row of students) {
-    // Map Excel columns to our student object keys
-    const studentData: any = {};
-    for (const key in COLUMN_MAP) {
-      if (row[key] !== undefined) {
-        studentData[COLUMN_MAP[key]] = row[key];
-      }
-    }
+    // Exact mapping from user's Excel file columns
+    const studentData = {
+      name: row["Student Name"],
+      studentId: row["Student ID"],
+      rollNumber: row["University Roll No."],
+      registrationNumber: row["University Registration No."],
+      department: row["Department"],
+      admissionYear: row["Admission Year"],
+      currentYear: row["Current Academic Year"],
+      email: row["Email"] || row["Email Address"], // Use 'Email' first, fallback to 'Email Address'
+      whatsappNumber: row["WhatsApp No."],
+      phoneNumber: row["Phone No."],
+    };
 
     const {
       studentId, name, email, rollNumber, registrationNumber, department: rawDepartment,
       admissionYear, currentYear, phoneNumber, whatsappNumber
     } = studentData;
 
-    // Convert department from spreadsheet (e.g., "CSE") to system value (e.g., "cse")
     const department = rawDepartment ? String(rawDepartment).trim().toLowerCase() : undefined;
 
-
-    // --- Validation ---
     if (!studentId || !name || !email || !rollNumber || !registrationNumber || !department || !admissionYear || !currentYear || !phoneNumber) {
       results.errorCount++;
       results.errors.push(`Skipped row (missing required data): Name: ${name || 'N/A'}, Roll: ${rollNumber || 'N/A'}`);
@@ -85,15 +70,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     try {
-      // 1. Create user in Firebase Authentication
       const userRecord = await adminAuth.createUser({
         email: email,
         password: DEFAULT_PASSWORD,
         displayName: name,
-        emailVerified: true, // Assuming admin-provided emails are valid
+        emailVerified: true,
       });
 
-      // 2. Prepare data for Firestore
       const newStudentData: Omit<Student, 'id'> = {
         uid: userRecord.uid,
         studentId,
@@ -102,21 +85,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         role: USER_ROLES.STUDENT,
         rollNumber,
         registrationNumber,
-        department, // Use the processed, lowercase department value
+        department,
         admissionYear: parseInt(admissionYear, 10),
         currentYear: parseInt(currentYear, 10),
         phoneNumber: String(phoneNumber),
         whatsappNumber: String(whatsappNumber || ''),
         isEmailVerified: true,
-        isPhoneVerified: false, // Phone verification not done in bulk upload
+        isPhoneVerified: false,
         status: 'active',
         batchIds: [],
       };
       
-      // 3. Add to Firestore using UID as document ID
       await db.collection('students').doc(userRecord.uid).set(newStudentData);
 
-      // Add to sets to prevent duplicate uploads within the same file
       existingRollNumbers.add(rollNumber);
       existingEmails.add(email);
 
