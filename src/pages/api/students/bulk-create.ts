@@ -8,6 +8,7 @@ const DEFAULT_PASSWORD = "Password@123";
 
 // This maps the user-facing column names from the Excel file to the internal database field names.
 const COLUMN_MAP: { [key: string]: keyof Student | string } = {
+  "Timestamp": "timestamp",
   "Student Name": "name",
   "Student ID": "studentId",
   "University Roll No.": "rollNumber",
@@ -16,7 +17,7 @@ const COLUMN_MAP: { [key: string]: keyof Student | string } = {
   "Admission Year": "admissionYear",
   "Current Academic Year": "currentYear",
   "Email": "email",
-  "Email Address": "email", // Handle alternate email column
+  "Email Address": "email",
   "WhatsApp No.": "whatsappNumber",
   "Phone No.": "phoneNumber",
 };
