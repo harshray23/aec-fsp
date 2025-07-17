@@ -13,7 +13,7 @@ import * as XLSX from "xlsx";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const REQUIRED_COLUMNS_FOR_TEMPLATE = [
-  "Timestamp", "Student Name", "Student ID", "University Roll No.", "University Registration No.", 
+  "Student Name", "Student ID", "University Roll No.", "University Registration No.", 
   "Department", "Admission Year", "Current Academic Year", "Email", "WhatsApp No.", "Phone No."
 ];
 

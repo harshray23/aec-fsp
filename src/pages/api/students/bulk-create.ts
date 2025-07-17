@@ -61,7 +61,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       department: findValue(row, ["Department"]),
       admissionYear: findValue(row, ["Admission Year"]),
       currentYear: findValue(row, ["Current Academic Year"]),
-      email: findValue(row, ["Email"]),
+      email: findValue(row, ["Email"]), // Prioritize "Email"
       whatsappNumber: findValue(row, ["WhatsApp No.", "WhatsApp No"]),
       phoneNumber: findValue(row, ["Phone No.", "Phone No"]),
     };
