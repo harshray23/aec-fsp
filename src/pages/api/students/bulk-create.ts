@@ -6,6 +6,22 @@ import { USER_ROLES } from '@/lib/constants';
 
 const DEFAULT_PASSWORD = "Password@123";
 
+// This maps the user-facing column names from the Excel file to the internal database field names.
+const COLUMN_MAP: { [key: string]: keyof Student | string } = {
+  "Student Name": "name",
+  "Student ID": "studentId",
+  "University Roll No.": "rollNumber",
+  "University Registration No.": "registrationNumber",
+  "Department": "department",
+  "Admission Year": "admissionYear",
+  "Current Academic Year": "currentYear",
+  "Email": "email",
+  "Email Address": "email", // Handle duplicate email column
+  "WhatsApp No.": "whatsappNumber",
+  "Phone No.": "phoneNumber",
+};
+
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method Not Allowed' });
@@ -26,13 +42,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     errorCount: 0,
     errors: [] as string[],
   };
-
+  
   // Pre-fetch all existing roll numbers and emails to check for duplicates in one go.
   const existingStudents = await db.collection('students').get();
   const existingRollNumbers = new Set(existingStudents.docs.map(doc => doc.data().rollNumber));
   const existingEmails = new Set(existingStudents.docs.map(doc => doc.data().email));
 
-  for (const studentData of students) {
+  for (const row of students) {
+    // Map Excel columns to our student object keys
+    const studentData: any = {};
+    for (const key in COLUMN_MAP) {
+      if (row[key] !== undefined) {
+        studentData[COLUMN_MAP[key]] = row[key];
+      }
+    }
+
     const {
       studentId, name, email, rollNumber, registrationNumber, department,
       admissionYear, currentYear, phoneNumber, whatsappNumber
@@ -76,8 +100,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         department,
         admissionYear: parseInt(admissionYear, 10),
         currentYear: parseInt(currentYear, 10),
-        phoneNumber,
-        whatsappNumber: whatsappNumber || '',
+        phoneNumber: String(phoneNumber),
+        whatsappNumber: String(whatsappNumber || ''),
         isEmailVerified: true,
         isPhoneVerified: false, // Phone verification not done in bulk upload
         status: 'active',

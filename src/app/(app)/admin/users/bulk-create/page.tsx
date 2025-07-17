@@ -12,10 +12,11 @@ import { UploadCloud, Download, Loader2, FileSpreadsheet, AlertTriangle } from "
 import * as XLSX from "xlsx";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-const REQUIRED_COLUMNS = [
-  "studentId", "name", "email", "rollNumber", "registrationNumber", 
-  "department", "admissionYear", "currentYear", "phoneNumber", "whatsappNumber"
+const REQUIRED_COLUMNS_FOR_TEMPLATE = [
+  "Timestamp", "Student Name", "Student ID", "University Roll No.", "University Registration No.", 
+  "Department", "Admission Year", "Current Academic Year", "Email", "WhatsApp No.", "Phone No."
 ];
+
 
 export default function BulkCreateStudentsPage() {
   const { toast } = useToast();
@@ -55,13 +56,6 @@ export default function BulkCreateStudentsPage() {
         const worksheet = workbook.Sheets[sheetName];
         const json = XLSX.utils.sheet_to_json(worksheet);
 
-        // Validate headers
-        const headers = Object.keys(json[0] || {});
-        const missingHeaders = REQUIRED_COLUMNS.filter(col => !headers.includes(col));
-        if (missingHeaders.length > 0) {
-          throw new Error(`The uploaded file is missing required columns: ${missingHeaders.join(', ')}`);
-        }
-
         const response = await fetch('/api/students/bulk-create', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -91,7 +85,7 @@ export default function BulkCreateStudentsPage() {
   };
 
   const handleDownloadTemplate = () => {
-    const ws = XLSX.utils.aoa_to_sheet([REQUIRED_COLUMNS]);
+    const ws = XLSX.utils.aoa_to_sheet([REQUIRED_COLUMNS_FOR_TEMPLATE]);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "StudentsTemplate");
     XLSX.writeFile(wb, "student_upload_template.xlsx");
@@ -158,19 +152,11 @@ export default function BulkCreateStudentsPage() {
        <Card className="border-amber-500">
         <CardHeader>
           <CardTitle className="flex items-center gap-2"><FileSpreadsheet/>Template Column Guide</CardTitle>
+          <CardDescription>Your spreadsheet must have the following columns. The order does not matter.</CardDescription>
         </CardHeader>
-        <CardContent className="text-sm text-muted-foreground space-y-1">
-          <p>- <strong className="text-foreground">studentId</strong>: The student's student id.</p>
-          <p>- <strong className="text-foreground">name</strong>: The student's name.</p>
-          <p>- <strong className="text-foreground">email</strong>: The student's email.</p>
-          <p>- <strong className="text-foreground">rollNumber</strong>: The student's roll number.</p>
-          <p>- <strong className="text-foreground">registrationNumber</strong>: The student's registration number.</p>
-          <p>- <strong className="text-foreground">department</strong>: The student's department.</p>
-          <p>- <strong className="text-foreground">admissionYear</strong>: The student's admission year.</p>
-          <p>- <strong className="text-foreground">currentYear</strong>: The student's current year.</p>
-          <p>- <strong className="text-foreground">phoneNumber</strong>: The student's phone number.</p>
-          <p>- <strong className="text-foreground">whatsappNumber</strong>: The student's whatsapp number.</p>
-          <p className="pt-2 text-primary">Note: 'department' value must be a valid key from the system (e.g., 'cse', 'it', 'ece').</p>
+        <CardContent className="text-sm text-muted-foreground grid grid-cols-2 gap-x-6 gap-y-1">
+          {REQUIRED_COLUMNS_FOR_TEMPLATE.map(col => <p key={col}>- <strong className="text-foreground">{col}</strong></p>)}
+          <p className="pt-2 text-primary col-span-2">Note: 'Department' value must be a valid key from the system (e.g., 'cse', 'it', 'ece'). The 'Timestamp' column will be ignored.</p>
         </CardContent>
       </Card>
     </div>
