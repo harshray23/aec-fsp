@@ -6,6 +6,26 @@ import { USER_ROLES } from '@/lib/constants';
 
 const DEFAULT_PASSWORD = "Password@123";
 
+// Helper to find a value in an object with case-insensitive and variant keys
+function findValue(obj: any, keys: string[]): any {
+    for (const key of keys) {
+        if (obj[key] !== undefined) {
+            return obj[key];
+        }
+    }
+    // Fallback to case-insensitive search
+    const lowerCaseKeys = keys.map(k => k.toLowerCase());
+    for (const objKey in obj) {
+        const lowerObjKey = objKey.toLowerCase();
+        const index = lowerCaseKeys.indexOf(lowerObjKey);
+        if (index !== -1) {
+            return obj[objKey];
+        }
+    }
+    return undefined;
+}
+
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method Not Allowed' });
@@ -32,26 +52,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const existingEmails = new Set(existingStudents.docs.map(doc => doc.data().email));
 
   for (const row of students) {
-    // Exact mapping from user's Excel file columns
-    // The library automatically removes periods from headers, so "University Roll No." becomes "University Roll No"
+    // Robustly find values by checking for multiple possible header variations
     const studentData = {
-      name: row["Student Name"],
-      studentId: row["Student ID"],
-      rollNumber: row["University Roll No"], // Corrected: Removed the period.
-      registrationNumber: row["University Registration No"], // Corrected: Removed the period.
-      department: row["Department"],
-      admissionYear: row["Admission Year"],
-      currentYear: row["Current Academic Year"],
-      email: row["Email"],
-      whatsappNumber: row["WhatsApp No"], // Corrected: Removed the period.
-      phoneNumber: row["Phone No"], // Corrected: Removed the period.
+      name: findValue(row, ["Student Name"]),
+      studentId: findValue(row, ["Student ID"]),
+      rollNumber: findValue(row, ["University Roll No.", "University Roll No"]),
+      registrationNumber: findValue(row, ["University Registration No.", "University Registration No"]),
+      department: findValue(row, ["Department"]),
+      admissionYear: findValue(row, ["Admission Year"]),
+      currentYear: findValue(row, ["Current Academic Year"]),
+      email: findValue(row, ["Email"]),
+      whatsappNumber: findValue(row, ["WhatsApp No.", "WhatsApp No"]),
+      phoneNumber: findValue(row, ["Phone No.", "Phone No"]),
     };
+
 
     const {
       studentId, name, email, rollNumber, registrationNumber, department: rawDepartment,
       admissionYear, currentYear, phoneNumber, whatsappNumber
     } = studentData;
-
+    
     const department = rawDepartment ? String(rawDepartment).trim().toLowerCase() : undefined;
 
     if (!studentId || !name || !email || !rollNumber || !registrationNumber || !department || !admissionYear || !currentYear || !phoneNumber) {
