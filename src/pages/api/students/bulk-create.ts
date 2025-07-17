@@ -16,7 +16,7 @@ const COLUMN_MAP: { [key: string]: keyof Student | string } = {
   "Admission Year": "admissionYear",
   "Current Academic Year": "currentYear",
   "Email": "email",
-  "Email Address": "email", // Handle duplicate email column
+  "Email Address": "email", // Handle alternate email column
   "WhatsApp No.": "whatsappNumber",
   "Phone No.": "phoneNumber",
 };
@@ -58,9 +58,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const {
-      studentId, name, email, rollNumber, registrationNumber, department,
+      studentId, name, email, rollNumber, registrationNumber, department: rawDepartment,
       admissionYear, currentYear, phoneNumber, whatsappNumber
     } = studentData;
+
+    // Convert department from spreadsheet (e.g., "CSE") to system value (e.g., "cse")
+    const department = rawDepartment ? String(rawDepartment).trim().toLowerCase() : undefined;
+
 
     // --- Validation ---
     if (!studentId || !name || !email || !rollNumber || !registrationNumber || !department || !admissionYear || !currentYear || !phoneNumber) {
@@ -97,7 +101,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         role: USER_ROLES.STUDENT,
         rollNumber,
         registrationNumber,
-        department,
+        department, // Use the processed, lowercase department value
         admissionYear: parseInt(admissionYear, 10),
         currentYear: parseInt(currentYear, 10),
         phoneNumber: String(phoneNumber),
