@@ -33,17 +33,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   for (const row of students) {
     // Exact mapping from user's Excel file columns
+    // The library automatically removes periods from headers, so "University Roll No." becomes "University Roll No"
     const studentData = {
       name: row["Student Name"],
       studentId: row["Student ID"],
-      rollNumber: row["University Roll No."],
-      registrationNumber: row["University Registration No."],
+      rollNumber: row["University Roll No"], // Corrected: Removed the period.
+      registrationNumber: row["University Registration No"], // Corrected: Removed the period.
       department: row["Department"],
       admissionYear: row["Admission Year"],
       currentYear: row["Current Academic Year"],
-      email: row["Email"] || row["Email Address"], // Use 'Email' first, fallback to 'Email Address'
-      whatsappNumber: row["WhatsApp No."],
-      phoneNumber: row["Phone No."],
+      email: row["Email"],
+      whatsappNumber: row["WhatsApp No"], // Corrected: Removed the period.
+      phoneNumber: row["Phone No"], // Corrected: Removed the period.
     };
 
     const {
