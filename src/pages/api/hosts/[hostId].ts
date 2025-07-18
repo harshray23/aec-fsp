@@ -50,6 +50,33 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
       break;
 
+    case 'PUT':
+      try {
+        if (!hostRef) {
+          return res.status(404).json({ message: 'Host not found to update.' });
+        }
+
+        const { name, phoneNumber, whatsappNumber } = req.body;
+        const updateData: Partial<Host> = {};
+
+        if (name !== undefined) updateData.name = name;
+        if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
+        if (whatsappNumber !== undefined) updateData.whatsappNumber = whatsappNumber;
+
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({ message: 'No fields provided for update.' });
+        }
+
+        await hostRef.update(updateData);
+        const updatedDoc = await hostRef.get();
+        res.status(200).json({ message: `Host ${hostId} updated successfully.`, host: { id: hostRef.id, ...updatedDoc.data() } });
+
+      } catch (error) {
+        console.error(`Error updating host ${hostId}:`, error);
+        res.status(500).json({ message: 'Internal server error while updating host.' });
+      }
+      break;
+
     case 'DELETE':
       try {
         if (!hostRef) {
@@ -82,7 +109,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       break;
 
     default:
-      res.setHeader('Allow', ['GET', 'DELETE']);
+      res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
       res.status(405).json({ message: `Method ${req.method} Not Allowed` });
   }
 }

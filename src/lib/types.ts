@@ -12,6 +12,8 @@ export interface Host extends User {
   role: "host";
   uid?: string; // Firebase Authentication User ID
   status: UserApprovalStatus;
+  phoneNumber?: string;
+  whatsappNumber?: string;
 }
 
 export interface AcademicTest {
@@ -169,4 +171,13 @@ export interface Announcement {
   message: string;
   timestamp: number;
   sender: string; // e.g., "Management"
+}
+
+export interface ActivityLog {
+  id: string;
+  timestamp: string; // ISO Date string
+  user: string; // Name of the user who performed the action
+  role: UserRole;
+  action: string;
+  details: string;
 }

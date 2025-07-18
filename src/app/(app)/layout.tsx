@@ -85,6 +85,7 @@ const getNavItems = (role: "student" | "teacher" | "admin" | "host" | "guest"): 
           icon: MonitorPlay,
           tooltip: "Monitor system components",
           children: [
+            { href: "/host/monitoring/activity", label: "Activity Monitor", icon: BarChart3, tooltip: "View system activity" },
             { href: "/host/monitoring/website", label: "Website Status", icon: FileCog, tooltip: "Monitor website health" },
             { href: "/host/monitoring/batches", label: "Batch Monitor", icon: BookUser, tooltip: "Monitor batches" },
             { href: "/host/monitoring/timetables", label: "Timetable Monitor", icon: CalendarDays, tooltip: "Monitor timetables" },
