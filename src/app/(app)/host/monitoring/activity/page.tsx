@@ -1,50 +1,16 @@
 
 "use client";
 
-import React, { useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { BarChart3, Clock, User, Shield, Briefcase, GraduationCap } from "lucide-react";
+import { BarChart3, Clock, User, Shield, Briefcase, GraduationCap, Loader2 } from "lucide-react";
 import type { ActivityLog } from '@/lib/types';
 import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Legend, Bar } from 'recharts';
 import { format, subDays, eachDayOfInterval } from "date-fns";
 import { Badge } from '@/components/ui/badge';
-
-// Mock data for demonstration purposes
-const generateMockActivities = (): ActivityLog[] => {
-  const activities: ActivityLog[] = [];
-  const users = [
-    { name: "Admin User", role: "admin" as const },
-    { name: "Teacher One", role: "teacher" as const },
-    { name: "Student A", role: "student" as const },
-    { name: "Management User", role: "host" as const }
-  ];
-  const actions = [
-    { action: "User Login", details: "Successfully logged in." },
-    { action: "Batch Update", details: "Updated batch FSP-CSE-2024." },
-    { action: "Attendance Marked", details: "Attendance marked for 45 students." },
-    { action: "Report Downloaded", details: "Downloaded batch attendance report." },
-    { action: "User Approved", details: "Approved new teacher registration." },
-  ];
-
-  for (let i = 0; i < 150; i++) {
-    const user = users[Math.floor(Math.random() * users.length)];
-    const action = actions[Math.floor(Math.random() * actions.length)];
-    const date = subDays(new Date(), Math.floor(Math.random() * 30));
-    activities.push({
-      id: `act_${i}`,
-      timestamp: date.toISOString(),
-      user: user.name,
-      role: user.role,
-      action: action.action,
-      details: action.details
-    });
-  }
-  return activities.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-};
-
-const mockActivities = generateMockActivities();
+import { useToast } from '@/hooks/use-toast';
 
 const getRoleIcon = (role: string) => {
   switch (role) {
@@ -57,6 +23,33 @@ const getRoleIcon = (role: string) => {
 };
 
 export default function ActivityMonitorPage() {
+  const { toast } = useToast();
+  const [activities, setActivities] = useState<ActivityLog[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchActivities = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch('/api/activity');
+        if (!response.ok) {
+          throw new Error('Failed to fetch activity logs.');
+        }
+        const data: ActivityLog[] = await response.json();
+        setActivities(data);
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive"
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchActivities();
+  }, [toast]);
+
   const activityByDay = useMemo(() => {
     const interval = eachDayOfInterval({
       start: subDays(new Date(), 29),
@@ -68,7 +61,7 @@ export default function ActivityMonitorPage() {
       dailyCounts.set(format(day, "yyyy-MM-dd"), 0);
     });
 
-    mockActivities.forEach(activity => {
+    activities.forEach(activity => {
       const day = format(new Date(activity.timestamp), "yyyy-MM-dd");
       if (dailyCounts.has(day)) {
         dailyCounts.set(day, dailyCounts.get(day)! + 1);
@@ -76,10 +69,10 @@ export default function ActivityMonitorPage() {
     });
 
     return Array.from(dailyCounts.entries()).map(([date, count]) => ({
-      date: format(new Date(date), "dd MMM"),
+      date: format(new Date(date.replace(/-/g, '/')), "dd MMM"), // Use replace for better Safari compatibility
       activities: count
     }));
-  }, []);
+  }, [activities]);
 
   return (
     <div className="space-y-8">
@@ -95,21 +88,25 @@ export default function ActivityMonitorPage() {
           <CardDescription>A chart showing the number of activities per day.</CardDescription>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={activityByDay}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="date" />
-              <YAxis />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--background))',
-                  borderColor: 'hsl(var(--border))'
-                }}
-              />
-              <Legend />
-              <Bar dataKey="activities" fill="hsl(var(--primary))" name="Activities" />
-            </BarChart>
-          </ResponsiveContainer>
+          {isLoading ? (
+            <div className="flex justify-center items-center h-[300px]"><Loader2 className="h-8 w-8 animate-spin" /></div>
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={activityByDay}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis allowDecimals={false} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--background))',
+                    borderColor: 'hsl(var(--border))'
+                  }}
+                />
+                <Legend />
+                <Bar dataKey="activities" fill="hsl(var(--primary))" name="Activities" />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </CardContent>
       </Card>
       
@@ -119,38 +116,50 @@ export default function ActivityMonitorPage() {
           <CardDescription>A detailed list of the most recent system activities.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="max-h-[60vh] overflow-y-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Timestamp</TableHead>
-                  <TableHead>User</TableHead>
-                  <TableHead>Action</TableHead>
-                  <TableHead>Details</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {mockActivities.slice(0, 50).map(log => ( // Show latest 50 activities
-                  <TableRow key={log.id}>
-                    <TableCell className="text-muted-foreground text-xs">
-                      {format(new Date(log.timestamp), "dd MMM, hh:mm a")}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getRoleIcon(log.role)}
-                        <div>
-                          <p className="font-medium">{log.user}</p>
-                          <Badge variant="outline" className="capitalize">{log.role === 'host' ? 'Management' : log.role}</Badge>
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{log.action}</TableCell>
-                    <TableCell className="text-muted-foreground">{log.details}</TableCell>
+          {isLoading ? (
+             <div className="flex justify-center items-center h-48"><Loader2 className="h-8 w-8 animate-spin" /></div>
+          ) : (
+            <div className="max-h-[60vh] overflow-y-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Timestamp</TableHead>
+                    <TableHead>User</TableHead>
+                    <TableHead>Action</TableHead>
+                    <TableHead>Details</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {activities.length > 0 ? (
+                    activities.map(log => (
+                      <TableRow key={log.id}>
+                        <TableCell className="text-muted-foreground text-xs">
+                          {format(new Date(log.timestamp), "dd MMM, hh:mm a")}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {getRoleIcon(log.role)}
+                            <div>
+                              <p className="font-medium">{log.user}</p>
+                              <Badge variant="outline" className="capitalize">{log.role === 'host' ? 'Management' : log.role}</Badge>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>{log.action}</TableCell>
+                        <TableCell className="text-muted-foreground">{log.details}</TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                     <TableRow>
+                        <TableCell colSpan={4} className="h-24 text-center">
+                            No activity recorded yet.
+                        </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
