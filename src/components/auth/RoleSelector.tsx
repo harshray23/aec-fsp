@@ -140,7 +140,7 @@ export default function RoleSelector() {
           />
         </div>
         
-        <div className="text-center mt-16 w-full max-w-4xl">
+        <div className="text-center mt-12 md:mt-16 w-full max-w-4xl">
            <Dialog>
               <DialogTrigger asChild>
                 <Button variant="outline" className="bg-background/80 backdrop-blur-sm">
@@ -154,7 +154,7 @@ export default function RoleSelector() {
                     This project was brought to life by a dedicated team of student developers.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                   <Card className="text-center overflow-hidden">
                     <Image src="/iiimg1.jpg" alt="Harsh Ray" width={400} height={300} className="w-full h-48 object-cover" data-ai-hint="developer portrait" />
                     <CardContent className="p-4">
