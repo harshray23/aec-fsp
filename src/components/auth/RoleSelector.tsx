@@ -140,14 +140,14 @@ export default function RoleSelector() {
           />
         </div>
         
-        <div className="text-center mt-12 md:mt-16 w-full max-w-4xl">
+        <div className="text-center mt-8 md:mt-12 w-full max-w-4xl">
            <Dialog>
               <DialogTrigger asChild>
                 <Button variant="outline" className="bg-background/80 backdrop-blur-sm">
                   <Code className="mr-2 h-4 w-4"/> Developed By
                 </Button>
               </DialogTrigger>
-              <DialogContent className="max-w-4xl">
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle className="text-2xl text-center">Meet the Developers</DialogTitle>
                   <DialogDescription className="text-center">
