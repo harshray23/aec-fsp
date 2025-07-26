@@ -100,7 +100,7 @@ export default function ViewStudentsPage() {
     fetchBatches();
   }, [toast]);
 
-  const fetchStudents = useCallback(async (isNewQuery: boolean) => {
+  const fetchStudents = useCallback(async (isNewQuery: boolean, cursor?: string | null) => {
     if (isNewQuery) {
       setIsLoading(true);
     } else {
@@ -113,7 +113,6 @@ export default function ViewStudentsPage() {
       if (debouncedSearchTerm) params.append("searchTerm", debouncedSearchTerm);
       params.append("limit", String(PAGE_SIZE));
   
-      const cursor = isNewQuery ? null : lastVisibleId;
       if (cursor) {
         params.append("startAfter", cursor);
       }
@@ -133,12 +132,12 @@ export default function ViewStudentsPage() {
       setIsLoading(false);
       setIsFetchingMore(false);
     }
-  }, [selectedDepartment, debouncedSearchTerm, lastVisibleId, toast]);
+  }, [selectedDepartment, debouncedSearchTerm, toast]);
 
   // Effect to fetch students when filters change
   useEffect(() => {
-    fetchStudents(true); // `true` indicates a new query, so it should reset the list
-  }, [debouncedSearchTerm, selectedDepartment]); // Removed fetchStudents from dependency array
+    fetchStudents(true, null); // `true` for new query, `null` for no cursor
+  }, [debouncedSearchTerm, selectedDepartment, fetchStudents]);
   
   const getBatchInfo = (batchIds?: string[]) => {
     if (!batchIds || batchIds.length === 0) return <Badge variant="outline">N/A</Badge>;
@@ -339,7 +338,7 @@ export default function ViewStudentsPage() {
           )}
           {hasMore && !isLoading && (
             <div className="mt-6 text-center">
-                <Button onClick={() => fetchStudents(false)} disabled={isFetchingMore}>
+                <Button onClick={() => fetchStudents(false, lastVisibleId)} disabled={isFetchingMore}>
                     {isFetchingMore ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     {isFetchingMore ? "Loading..." : "Load More"}
                 </Button>
