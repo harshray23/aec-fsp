@@ -15,15 +15,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const parsedLimit = parseInt(limit as string, 10);
       
       // If a search term is provided, handle search separately.
-      // A robust, scalable search usually requires a dedicated search service like Algolia or Typesense.
-      // This implementation performs multiple queries and merges them, which does not support pagination easily.
       if (searchTerm && typeof searchTerm === 'string' && searchTerm.trim().length > 0) {
         const term = searchTerm.trim();
         const studentsMap = new Map<string, Student>();
 
-        // Firestore does not support case-insensitive searches or full-text search on multiple fields natively.
-        // This is a workaround that searches for an exact match on a few fields.
-        // For a better search experience, a dedicated search service is needed.
+        // This is a workaround for Firestore's lack of native multi-field text search.
         const queries = [
             db.collection('students').where('name', '==', term),
             db.collection('students').where('rollNumber', '==', term),
@@ -54,17 +50,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       // Default path: Paginated list without search term.
       let query: Query = db.collection('students');
-      
-      // When filtering by status, we should not order by another field unless an index is guaranteed.
+
       if (status && typeof status === 'string') {
         query = query.where('status', '==', status);
-      } else {
-        query = query.orderBy('studentId');
       }
-
+      
       if (department && department !== 'all' && typeof department === 'string') {
         query = query.where('department', '==', department);
       }
+      
+      // Always order by a consistent field to ensure stable pagination
+      query = query.orderBy('studentId');
 
       if (startAfter && typeof startAfter === 'string') {
         const lastVisibleDoc = await db.collection('students').doc(startAfter).get();
@@ -74,8 +70,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
 
       const finalQuery = query.limit(parsedLimit);
-
       const studentsSnapshot = await finalQuery.get();
+      
       const students: Student[] = studentsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
