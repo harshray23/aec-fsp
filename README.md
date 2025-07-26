@@ -1,5 +1,5 @@
-# Firebase Studio
+# AEC FSP
 
-This is a NextJS starter in Firebase Studio.
+This is a application for Asansol Engeneering College Tranning & Placement mangement 
 
 To get started, take a look at src/app/page.tsx.
