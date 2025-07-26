@@ -15,17 +15,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const parsedLimit = parseInt(limit as string, 10);
       
       // If a search term is provided, handle search separately.
-      // Note: A robust, scalable search usually requires a dedicated search service like Algolia or Typesense.
+      // A robust, scalable search usually requires a dedicated search service like Algolia or Typesense.
       // This implementation performs multiple queries and merges them, which does not support pagination easily.
       if (searchTerm && typeof searchTerm === 'string' && searchTerm.trim().length > 0) {
         const term = searchTerm.trim();
         const studentsMap = new Map<string, Student>();
 
+        // Firestore does not support case-insensitive searches or full-text search on multiple fields natively.
+        // This is a workaround that searches for an exact match on a few fields.
+        // For a better search experience, a dedicated search service is needed.
         const queries = [
-          db.collection('students').where('name', '>=', term).where('name', '<=', term + '\uf8ff'),
-          db.collection('students').where('rollNumber', '>=', term).where('rollNumber', '<=', term + '\uf8ff'),
-          db.collection('students').where('studentId', '>=', term).where('studentId', '<=', term + '\uf8ff'),
-          db.collection('students').where('email', '>=', term).where('email', '<=', term + '\uf8ff'),
+            db.collection('students').where('name', '==', term),
+            db.collection('students').where('rollNumber', '==', term),
+            db.collection('students').where('studentId', '==', term),
+            db.collection('students').where('email', '==', term),
         ];
         
         const snapshots = await Promise.all(queries.map(q => q.get()));
