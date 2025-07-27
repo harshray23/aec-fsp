@@ -48,7 +48,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         students = students.filter(student => student.department === department);
       }
       
-      return res.status(200).json({ students: students.slice(0, parsedLimit), lastVisibleId: null });
+      return res.status(200).json({ students: students.slice(0, parsedLimit), lastVisibleDoc: null });
     }
 
     // Default path: Paginated list without search term.
@@ -60,14 +60,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     if (department && department !== 'all' && typeof department === 'string') {
       query = query.where('department', '==', department);
+    } else {
+      // Only apply orderBy if we are not filtering by department, to avoid composite index requirement
+      query = query.orderBy('studentId');
     }
     
-    query = query.orderBy('studentId');
 
     if (startAfter && typeof startAfter === 'string') {
-      // The cursor is now a JSON string of the last document's relevant fields.
-      const lastVisibleDocData = JSON.parse(startAfter);
-      query = query.startAfter(lastVisibleDocData.studentId);
+        const lastVisibleDocData = JSON.parse(startAfter);
+        const docRef = db.collection('students').doc(lastVisibleDocData.id);
+        const docSnap = await docRef.get();
+        if (docSnap.exists) {
+            query = query.startAfter(docSnap);
+        }
     }
 
     const finalQuery = query.limit(parsedLimit);
@@ -81,8 +86,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let lastVisibleDoc = null;
     if (studentsSnapshot.docs.length > 0) {
         const lastDoc = studentsSnapshot.docs[studentsSnapshot.docs.length - 1];
-        // We only need the field we are ordering by for the cursor.
-        lastVisibleDoc = { studentId: lastDoc.data().studentId };
+        lastVisibleDoc = { id: lastDoc.id, studentId: lastDoc.data().studentId };
     }
 
     res.status(200).json({ students, lastVisibleDoc });
