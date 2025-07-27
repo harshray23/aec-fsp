@@ -58,8 +58,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       query = query.where('status', '==', status);
     }
     
-    // IMPORTANT: This was the source of the error. A compound query requires a composite index.
-    // By filtering on department first and then ordering, we simplify the query.
     if (department && department !== 'all' && typeof department === 'string') {
       query = query.where('department', '==', department);
     }
@@ -67,12 +65,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     query = query.orderBy('studentId');
 
     if (startAfter && typeof startAfter === 'string') {
-      const lastVisibleDoc = await db.collection('students').doc(startAfter).get();
-      if (lastVisibleDoc.exists) {
-        query = query.startAfter(lastVisibleDoc);
-      } else {
-        console.warn(`startAfter document with ID ${startAfter} does not exist.`);
-      }
+      // The cursor is now a JSON string of the last document's relevant fields.
+      const lastVisibleDocData = JSON.parse(startAfter);
+      query = query.startAfter(lastVisibleDocData.studentId);
     }
 
     const finalQuery = query.limit(parsedLimit);
@@ -83,13 +78,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         ...doc.data(),
     } as Student));
 
-    const lastVisibleId = studentsSnapshot.docs.length > 0 ? studentsSnapshot.docs[studentsSnapshot.docs.length - 1].id : null;
+    let lastVisibleDoc = null;
+    if (studentsSnapshot.docs.length > 0) {
+        const lastDoc = studentsSnapshot.docs[studentsSnapshot.docs.length - 1];
+        // We only need the field we are ordering by for the cursor.
+        lastVisibleDoc = { studentId: lastDoc.data().studentId };
+    }
 
-    res.status(200).json({ students, lastVisibleId });
+    res.status(200).json({ students, lastVisibleDoc });
 
   } catch (error: any) {
     console.error('Error fetching students:', error);
-    // Provide a more descriptive error message if available from Firestore
     const errorMessage = error.details || error.message || 'Internal server error while fetching students.';
     res.status(500).json({ message: errorMessage });
   }

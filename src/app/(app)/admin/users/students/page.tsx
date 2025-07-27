@@ -68,7 +68,7 @@ export default function ViewStudentsPage() {
   const debouncedSearchTerm = useDebounce(searchTerm, 500); // 500ms debounce delay
 
   // State for pagination
-  const [lastVisibleId, setLastVisibleId] = useState<string | null>(null);
+  const [lastVisibleDoc, setLastVisibleDoc] = useState<any | null>(null);
   const [hasMore, setHasMore] = useState(true);
   const [isFetchingMore, setIsFetchingMore] = useState(false);
 
@@ -100,9 +100,10 @@ export default function ViewStudentsPage() {
     fetchBatches();
   }, [toast]);
 
-  const fetchStudents = useCallback(async (isNewQuery: boolean, cursor?: string | null) => {
+  const fetchStudents = useCallback(async (isNewQuery: boolean, cursor?: any | null) => {
     if (isNewQuery) {
       setIsLoading(true);
+      setStudents([]); // Clear students on a new query
     } else {
       setIsFetchingMore(true);
     }
@@ -114,17 +115,21 @@ export default function ViewStudentsPage() {
       params.append("limit", String(PAGE_SIZE));
   
       if (cursor) {
-        params.append("startAfter", cursor);
+        // We will pass the cursor as a stringified object if it exists
+        params.append("startAfter", JSON.stringify(cursor));
       }
   
       const res = await fetch(`/api/students?${params.toString()}`);
-      if (!res.ok) throw new Error("Failed to fetch students.");
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: "Failed to fetch students."}));
+        throw new Error(errorData.message);
+      }
   
       const data = await res.json();
   
       setStudents(prev => isNewQuery ? data.students : [...prev, ...data.students]);
-      setLastVisibleId(data.lastVisibleId);
-      setHasMore(!!data.lastVisibleId && data.students.length === PAGE_SIZE);
+      setLastVisibleDoc(data.lastVisibleDoc); // Use the full document for the cursor
+      setHasMore(!!data.lastVisibleDoc && data.students.length === PAGE_SIZE);
   
     } catch (error: any) {
       toast({ title: "Error", description: `Could not load students: ${error.message}`, variant: "destructive" });
@@ -338,7 +343,7 @@ export default function ViewStudentsPage() {
           )}
           {hasMore && !isLoading && (
             <div className="mt-6 text-center">
-                <Button onClick={() => fetchStudents(false, lastVisibleId)} disabled={isFetchingMore}>
+                <Button onClick={() => fetchStudents(false, lastVisibleDoc)} disabled={isFetchingMore}>
                     {isFetchingMore ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     {isFetchingMore ? "Loading..." : "Load More"}
                 </Button>
