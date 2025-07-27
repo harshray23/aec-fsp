@@ -175,7 +175,17 @@ export default function ViewStudentsPage() {
       toast({ title: "No Data", description: "No students to export with the current filters.", variant: "destructive" });
       return;
     }
-    const dataForExcel = activeStudents.map(student => ({ /* ... mapping logic ... */ }));
+    const dataForExcel = activeStudents.map(student => ({
+      'Student ID': student.studentId,
+      'Name': student.name,
+      'Email': student.email,
+      'Department': DEPARTMENTS.find(d => d.value === student.department)?.label || student.department,
+      'Section': student.section || 'N/A',
+      'Roll Number': student.rollNumber,
+      'Registration Number': student.registrationNumber,
+      'Phone Number': student.phoneNumber,
+      'Batch Count': student.batchIds?.length || 0,
+    }));
     const worksheet = XLSX.utils.json_to_sheet(dataForExcel);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
