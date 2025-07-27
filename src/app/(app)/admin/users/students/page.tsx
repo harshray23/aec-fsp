@@ -164,8 +164,6 @@ export default function ViewStudentsPage() {
   };
 
   const handleDownload = () => {
-    // Note: This download only includes currently loaded students.
-    // A proper scalable solution would be a backend job to generate the full report.
     toast({
         title: "Downloading loaded data",
         description: "This export includes only the students currently visible on the page. For a full export, a backend process is recommended.",
@@ -175,17 +173,26 @@ export default function ViewStudentsPage() {
       toast({ title: "No Data", description: "No students to export with the current filters.", variant: "destructive" });
       return;
     }
-    const dataForExcel = activeStudents.map(student => ({
-      'Student ID': student.studentId,
-      'Name': student.name,
-      'Email': student.email,
-      'Department': DEPARTMENTS.find(d => d.value === student.department)?.label || student.department,
-      'Section': student.section || 'N/A',
-      'Roll Number': student.rollNumber,
-      'Registration Number': student.registrationNumber,
-      'Phone Number': student.phoneNumber,
-      'Batch Count': student.batchIds?.length || 0,
-    }));
+    const dataForExcel = activeStudents.map(student => {
+        const batchNames = student.batchIds?.map(id => batches.find(b => b.id === id)?.name).filter(Boolean).join(', ') || 'N/A';
+        const academicYear = student.currentYear 
+            ? `${student.currentYear}${student.currentYear === 1 ? 'st' : student.currentYear === 2 ? 'nd' : student.currentYear === 3 ? 'rd' : 'th'}` 
+            : 'N/A';
+
+        return {
+            'Student ID': student.studentId,
+            'Name': student.name,
+            'Email': student.email,
+            'Department': DEPARTMENTS.find(d => d.value === student.department)?.label || student.department,
+            'Academic Year': academicYear,
+            'Section': student.section || 'N/A',
+            'Roll Number': student.rollNumber,
+            'Registration Number': student.registrationNumber,
+            'Phone Number': student.phoneNumber,
+            'Batch Name(s)': batchNames,
+        };
+    });
+
     const worksheet = XLSX.utils.json_to_sheet(dataForExcel);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Students");
