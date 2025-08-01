@@ -68,10 +68,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
 
     const {
-      studentId, name, email, rollNumber, registrationNumber, department: rawDepartment,
+      studentId, name, email: rawEmail, rollNumber, registrationNumber, department: rawDepartment,
       admissionYear, currentYear, phoneNumber, whatsappNumber
     } = studentData;
     
+    // Trim whitespace from email to prevent formatting errors
+    const email = rawEmail ? String(rawEmail).trim() : undefined;
     const department = rawDepartment ? String(rawDepartment).trim().toLowerCase() : undefined;
 
     if (!studentId || !name || !email || !rollNumber || !registrationNumber || !department || !admissionYear || !currentYear || !phoneNumber) {
@@ -129,6 +131,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       let errorMessage = `Failed for ${name} (${rollNumber}): ${error.message}`;
       if (error.code === 'auth/email-already-exists') {
         errorMessage = `Skipped (Email already exists in Auth): ${email}`;
+      }
+      if (error.code === 'auth/invalid-email') {
+        errorMessage = `Failed for ${name} (${rollNumber}): The email address is improperly formatted.`;
       }
       results.errors.push(errorMessage);
       console.error(`Failed to process student ${name} (${rollNumber}):`, error);
