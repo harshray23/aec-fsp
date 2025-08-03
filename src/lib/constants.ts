@@ -14,7 +14,7 @@ export const DEPARTMENTS = [
   { value: "csbs", label: "Computer Science & Business Systems (CSBS)" },
   { value: "bba", label: "Bachelor of Business Administration (BBA)" },
   { value: "bba_hm", label: "BBA in Hospital Management" },
-  { value: "ecs", label: "Electronics & Computer Science" },
+  { value: "ecs", label: "Electronics & Computer Science (ECS)" },
   { value: "bsc_ds", label: "B.Sc in Data Science" },
 ];
 

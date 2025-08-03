@@ -85,13 +85,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       query = query.where('department', '==', department);
     }
     
-    // IMPORTANT FIX: Only apply orderBy if no department filter is active.
-    // Firestore requires a composite index for where() + orderBy() on different fields.
-    // By removing the orderBy, we avoid the error. We can sort on the client if needed.
-    // A more robust solution is to order by the same field you filter by, if possible.
-    if (!department || department === 'all') {
-        query = query.orderBy('studentId');
-    }
+    // Order by studentId for consistent pagination
+    query = query.orderBy('studentId');
 
     if (startAfter && typeof startAfter === 'string') {
         const lastVisibleDocData = JSON.parse(startAfter);
@@ -108,15 +103,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const studentsSnapshot = await finalQuery.get();
     
     // Filter out passed_out students on the backend before sending
-    let students = studentsSnapshot.docs.map(doc => ({
+    const students = studentsSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
     } as Student)).filter(s => s.status !== 'passed_out');
-
-    // If we couldn't sort by the DB, sort results now.
-    if (department && department !== 'all') {
-      students.sort((a, b) => (a.studentId || '').localeCompare(b.studentId || ''));
-    }
 
     const limitedStudents = students.slice(0, parsedLimit);
 
