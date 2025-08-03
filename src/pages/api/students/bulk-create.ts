@@ -9,7 +9,7 @@ const DEFAULT_PASSWORD = "Password@123";
 // Helper function to find a value in an object with case-insensitive and variant keys
 function findValue(obj: any, keys: string[]): any {
     for (const key of keys) {
-        if (obj[key] !== undefined) {
+        if (obj[key] !== undefined && obj[key] !== null) {
             return obj[key];
         }
     }
@@ -30,30 +30,22 @@ function normalizeDepartment(input: string): string | undefined {
     const normalizedInput = input.trim().toLowerCase();
 
     for (const dept of DEPARTMENTS) {
-        // 1. Check against the short value (e.g., "cse")
         if (dept.value.toLowerCase() === normalizedInput) {
             return dept.value;
         }
-
-        // 2. Check against the abbreviation in parentheses (e.g., "(CSE)")
         const abbreviationMatch = dept.label.match(/\(([^)]+)\)/);
         if (abbreviationMatch && abbreviationMatch[1].trim().toLowerCase() === normalizedInput) {
             return dept.value;
         }
-
-        // 3. Check against the full label (e.g., "computer science & engineering (cse)")
         if (dept.label.toLowerCase() === normalizedInput) {
             return dept.value;
         }
-
-        // 4. Check against just the name part before the parenthesis
         const namePart = dept.label.split('(')[0].trim().toLowerCase();
         if (namePart === normalizedInput) {
             return dept.value;
         }
     }
     
-    // If no match, return undefined
     return undefined;
 }
 
@@ -84,7 +76,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const existingEmails = new Set(existingStudents.docs.map(doc => doc.data().email));
 
   for (const row of students) {
-    // Robustly find values by checking for multiple possible header variations
     const studentData = {
       name: findValue(row, ["Student Name"]),
       studentId: findValue(row, ["Student ID"]),
@@ -106,14 +97,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     // Trim whitespace from email to prevent formatting errors
     const email = rawEmail ? String(rawEmail).trim() : undefined;
-    const department = rawDepartment ? normalizeDepartment(String(rawDepartment)) : undefined;
-
-    if (!studentId || !name || !email || !rollNumber || !registrationNumber || !department || !admissionYear || !currentYear || !phoneNumber) {
-      results.errorCount++;
-      const reason = !department ? `Invalid department: "${rawDepartment}"` : "Missing required data";
-      results.errors.push(`Skipped row (Reason: ${reason}): Name: ${name || 'N/A'}, Roll: ${rollNumber || 'N/A'}`);
-      continue;
+    
+    // Pre-validation to prevent crashes
+    if (!studentId || !name || !email || !rollNumber || !registrationNumber || !rawDepartment || !admissionYear || !currentYear || !phoneNumber) {
+        results.errorCount++;
+        results.errors.push(`Skipped row (Missing required data): Name: ${name || 'N/A'}, Roll: ${rollNumber || 'N/A'}`);
+        continue;
     }
+    
+    const department = normalizeDepartment(String(rawDepartment));
+
+    if (!department) {
+        results.errorCount++;
+        results.errors.push(`Skipped row (Invalid department: "${rawDepartment}"): Name: ${name}, Roll: ${rollNumber}`);
+        continue;
+    }
+
     if (existingRollNumbers.has(rollNumber)) {
       results.errorCount++;
       results.errors.push(`Skipped (Roll number already exists): ${rollNumber}`);
