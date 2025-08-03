@@ -29,11 +29,11 @@ function normalizeDepartment(input: string): string | undefined {
     if (!input) return undefined;
     const normalizedInput = input.trim().toLowerCase();
 
-    // Direct match on value (e.g., "cse")
+    // Direct match on value (e.g., "cse" matches "CSE", "Cse", etc.)
     const matchByValue = DEPARTMENTS.find(d => d.value.toLowerCase() === normalizedInput);
     if (matchByValue) return matchByValue.value;
 
-    // Direct match on label (e.g., "computer science & engineering")
+    // Direct match on label (e.g., "computer science & engineering" matches "Computer Science & Engineering")
     const matchByLabel = DEPARTMENTS.find(d => d.label.toLowerCase() === normalizedInput);
     if (matchByLabel) return matchByLabel.value;
     
@@ -46,10 +46,6 @@ function normalizeDepartment(input: string): string | undefined {
         return false;
     });
     if (matchByAbbreviation) return matchByAbbreviation.value;
-    
-    // Fallback if no specific match is found but it might be a valid value
-    const potentialMatch = DEPARTMENTS.find(d => d.value.toLowerCase() === normalizedInput);
-    if(potentialMatch) return potentialMatch.value;
     
     // If no match, return undefined to indicate failure
     return undefined;
