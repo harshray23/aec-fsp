@@ -106,7 +106,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     // Trim whitespace from email to prevent formatting errors
     const email = rawEmail ? String(rawEmail).trim() : undefined;
-    const department = normalizeDepartment(rawDepartment ? String(rawDepartment) : "");
+    const department = rawDepartment ? normalizeDepartment(String(rawDepartment)) : undefined;
 
     if (!studentId || !name || !email || !rollNumber || !registrationNumber || !department || !admissionYear || !currentYear || !phoneNumber) {
       results.errorCount++;
