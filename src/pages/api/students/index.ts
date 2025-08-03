@@ -17,6 +17,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   try {
     const { department, searchTerm, limit = '20', startAfter, status } = req.query;
     const parsedLimit = parseInt(limit as string, 10);
+
+    // Special case for passed_out students: fetch all without pagination
+    if (status === 'passed_out') {
+      const passedOutSnapshot = await db.collection('students').where('status', '==', 'passed_out').get();
+      const students: Student[] = passedOutSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+      } as Student));
+      return res.status(200).json({ students, lastVisibleDoc: null });
+    }
     
     // If a search term is provided, handle search separately as it's a special case.
     if (searchTerm && typeof searchTerm === 'string' && searchTerm.trim().length > 0) {
@@ -53,11 +63,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Default path: Paginated list without search term.
     let query: Query = db.collection('students');
-
-    if (status && typeof status === 'string') {
-      query = query.where('status', '==', status);
-    }
     
+    // Explicitly filter out passed_out students for general queries
+    query = query.where('status', '!=', 'passed_out');
+
     if (department && department !== 'all' && typeof department === 'string') {
       query = query.where('department', '==', department);
     } else {
