@@ -2,7 +2,7 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { db, auth as adminAuth } from '@/lib/firebaseAdmin';
 import type { Student } from '@/lib/types';
-import { USER_ROLES } from '@/lib/constants';
+import { USER_ROLES, DEPARTMENTS } from '@/lib/constants';
 
 const DEFAULT_PASSWORD = "Password@123";
 
@@ -22,6 +22,36 @@ function findValue(obj: any, keys: string[]): any {
             return obj[objKey];
         }
     }
+    return undefined;
+}
+
+function normalizeDepartment(input: string): string | undefined {
+    if (!input) return undefined;
+    const normalizedInput = input.trim().toLowerCase();
+
+    // Direct match on value (e.g., "cse")
+    const matchByValue = DEPARTMENTS.find(d => d.value.toLowerCase() === normalizedInput);
+    if (matchByValue) return matchByValue.value;
+
+    // Direct match on label (e.g., "computer science & engineering")
+    const matchByLabel = DEPARTMENTS.find(d => d.label.toLowerCase() === normalizedInput);
+    if (matchByLabel) return matchByLabel.value;
+    
+    // Match abbreviation inside parentheses in the label
+    const matchByAbbreviation = DEPARTMENTS.find(d => {
+        const match = d.label.match(/\(([^)]+)\)/);
+        if (match && match[1]) {
+            return match[1].trim().toLowerCase() === normalizedInput;
+        }
+        return false;
+    });
+    if (matchByAbbreviation) return matchByAbbreviation.value;
+    
+    // Fallback if no specific match is found but it might be a valid value
+    const potentialMatch = DEPARTMENTS.find(d => d.value.toLowerCase() === normalizedInput);
+    if(potentialMatch) return potentialMatch.value;
+    
+    // If no match, return undefined to indicate failure
     return undefined;
 }
 
@@ -61,7 +91,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       department: findValue(row, ["Department"]),
       admissionYear: findValue(row, ["Admission Year"]),
       currentYear: findValue(row, ["Current Academic Year"]),
-      email: findValue(row, ["Email"]), // Prioritize "Email"
+      email: findValue(row, ["Email"]),
       whatsappNumber: findValue(row, ["WhatsApp No.", "WhatsApp No"]),
       phoneNumber: findValue(row, ["Phone No.", "Phone No"]),
     };
@@ -74,11 +104,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     // Trim whitespace from email to prevent formatting errors
     const email = rawEmail ? String(rawEmail).trim() : undefined;
-    const department = rawDepartment ? String(rawDepartment).trim().toLowerCase() : undefined;
+    const department = normalizeDepartment(rawDepartment ? String(rawDepartment) : "");
 
     if (!studentId || !name || !email || !rollNumber || !registrationNumber || !department || !admissionYear || !currentYear || !phoneNumber) {
       results.errorCount++;
-      results.errors.push(`Skipped row (missing required data): Name: ${name || 'N/A'}, Roll: ${rollNumber || 'N/A'}`);
+      const reason = !department ? `Invalid department: "${rawDepartment}"` : "Missing required data";
+      results.errors.push(`Skipped row (Reason: ${reason}): Name: ${name || 'N/A'}, Roll: ${rollNumber || 'N/A'}`);
       continue;
     }
     if (existingRollNumbers.has(rollNumber)) {
