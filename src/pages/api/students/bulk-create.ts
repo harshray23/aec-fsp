@@ -31,16 +31,25 @@ function normalizeDepartment(input: string): string | undefined {
 
     for (const dept of DEPARTMENTS) {
         const lowerDeptValue = dept.value.toLowerCase();
+        const lowerDeptLabel = dept.label.toLowerCase();
+        
+        // 1. Direct match with short form (e.g., 'cse' === 'cse')
         if (lowerDeptValue === normalizedInput) {
             return dept.value;
         }
-        
-        const lowerDeptLabel = dept.label.toLowerCase();
+
+        // 2. Direct match with full label (e.g., 'computer science & engineering (cse)' === 'computer science & engineering (cse)')
+        if (lowerDeptLabel === normalizedInput) {
+            return dept.value;
+        }
+
+        // 3. Match with short form inside parentheses (e.g., 'cse' in '(cse)')
         const abbreviationMatch = lowerDeptLabel.match(/\(([^)]+)\)/);
         if (abbreviationMatch && abbreviationMatch[1].trim().toLowerCase() === normalizedInput) {
             return dept.value;
         }
 
+        // 4. Match with the full name part before parentheses (e.g., 'computer science & engineering')
         const namePart = lowerDeptLabel.split('(')[0].trim();
         if (namePart === normalizedInput) {
             return dept.value;
