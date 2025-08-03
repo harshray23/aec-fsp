@@ -64,16 +64,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Default path: Paginated list without search term.
     let query: Query = db.collection('students');
     
-    // Explicitly filter out passed_out students for general queries
-    query = query.where('status', '!=', 'passed_out');
+    // Explicitly filter out passed_out students for general queries unless a specific status is requested
+    if (!status) {
+        query = query.where('status', '!=', 'passed_out');
+    }
 
     if (department && department !== 'all' && typeof department === 'string') {
       query = query.where('department', '==', department);
-    } else {
-      // Only apply orderBy if we are not filtering by department, to avoid composite index requirement
-      query = query.orderBy('studentId');
     }
     
+    // Order by a single field to avoid composite index issues.
+    query = query.orderBy('studentId');
 
     if (startAfter && typeof startAfter === 'string') {
         const lastVisibleDocData = JSON.parse(startAfter);
