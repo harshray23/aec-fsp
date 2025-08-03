@@ -79,13 +79,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Default path: Paginated list without search term.
     let query: Query = db.collection('students');
-
+    
+    // Apply department filter if present.
     if (department && department !== 'all' && typeof department === 'string') {
       query = query.where('department', '==', department);
     }
     
-    // Order by a single field to avoid composite index issues.
-    query = query.orderBy('studentId');
+    // IMPORTANT FIX: Only apply orderBy if no department filter is active.
+    // Firestore requires a composite index for where() + orderBy() on different fields.
+    // By removing the orderBy, we avoid the error. We can sort on the client if needed.
+    if (!department || department === 'all') {
+        query = query.orderBy('studentId');
+    }
 
     if (startAfter && typeof startAfter === 'string') {
         const lastVisibleDocData = JSON.parse(startAfter);
@@ -100,20 +105,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const studentsSnapshot = await finalQuery.get();
     
     // Filter out passed_out students on the backend before sending
-    const allFetchedStudents: Student[] = studentsSnapshot.docs.map(doc => ({
+    let students = studentsSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-    } as Student));
+    } as Student)).filter(s => s.status !== 'passed_out');
 
-    const students = allFetchedStudents.filter(s => s.status !== 'passed_out').slice(0, parsedLimit);
+    // If we couldn't sort by the DB, sort results now.
+    if (department && department !== 'all') {
+      students.sort((a, b) => (a.studentId || '').localeCompare(b.studentId || ''));
+    }
+
+    const limitedStudents = students.slice(0, parsedLimit);
 
     let lastVisibleDoc = null;
-    if (students.length > 0) {
-        const lastDocInPage = students[students.length - 1];
+    if (studentsSnapshot.docs.length > parsedLimit && limitedStudents.length > 0) {
+        const lastDocInPage = limitedStudents[limitedStudents.length - 1];
         lastVisibleDoc = { id: lastDocInPage.id, studentId: lastDocInPage.studentId };
     }
 
-    res.status(200).json({ students, lastVisibleDoc });
+    res.status(200).json({ students: limitedStudents, lastVisibleDoc });
 
   } catch (error: any) {
     console.error('Error fetching students:', error);
