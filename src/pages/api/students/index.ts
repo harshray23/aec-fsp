@@ -30,7 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     // Special case for dashboard simple count
     if (simple === 'true') {
-        const snapshot = await db.collection('students').where('status', '!=', 'passed_out').get();
+        const snapshot = await db.collection('students').get();
         const students: Student[] = snapshot.docs.map(doc => {
             const data = doc.data();
             // Only return the fields necessary for the dashboard count to be efficient
@@ -83,15 +83,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Apply department filter if present.
     if (department && department !== 'all' && typeof department === 'string') {
       query = query.where('department', '==', department);
+    } else {
+      // Only apply ordering if no department filter is active to avoid index issue.
+      query = query.orderBy('studentId');
     }
     
-    // Order by studentId for consistent pagination
-    query = query.orderBy('studentId');
-
     if (startAfter && typeof startAfter === 'string') {
         const lastVisibleDocData = JSON.parse(startAfter);
-        // We use the document ID to get a reference to the last document.
-        // This is the most reliable way to paginate.
         const docRef = db.collection('students').doc(lastVisibleDocData.id);
         const docSnap = await docRef.get();
         if (docSnap.exists) {
@@ -112,7 +110,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     let lastVisibleDoc = null;
     if (students.length > parsedLimit && limitedStudents.length > 0) {
-        // Correctly get the last document of the *page* we are returning
         const lastDocInPage = limitedStudents[limitedStudents.length - 1];
         lastVisibleDoc = { id: lastDocInPage.id, studentId: lastDocInPage.studentId };
     }
