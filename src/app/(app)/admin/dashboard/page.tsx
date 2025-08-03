@@ -27,7 +27,7 @@ export default function AdminDashboardPage() {
       setIsLoading(true);
       try {
         const [studentsRes, teachersRes, batchesRes, adminsRes] = await Promise.all([
-          fetch('/api/students?limit=99999'),
+          fetch('/api/students?limit=99999&simple=true'), // Simplified API call
           fetch('/api/teachers'),
           fetch('/api/batches'),
           fetch('/api/admins')

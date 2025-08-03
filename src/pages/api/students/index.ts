@@ -15,7 +15,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
   
   try {
-    const { department, searchTerm, limit = '20', startAfter, status } = req.query;
+    const { department, searchTerm, limit = '20', startAfter, status, simple } = req.query;
     const parsedLimit = parseInt(limit as string, 10);
 
     // Special case for passed_out students: fetch all without pagination
@@ -28,6 +28,20 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(200).json({ students, lastVisibleDoc: null });
     }
     
+    // Special case for dashboard simple count
+    if (simple === 'true') {
+        const snapshot = await db.collection('students').get();
+        const students: Student[] = snapshot.docs.map(doc => {
+            const data = doc.data();
+            // Only return the fields necessary for the dashboard count to be efficient
+            return {
+                id: doc.id,
+                academics: data.academics || {},
+            } as Partial<Student> as Student;
+        });
+        return res.status(200).json({ students, lastVisibleDoc: null });
+    }
+
     // If a search term is provided, handle search separately as it's a special case.
     if (searchTerm && typeof searchTerm === 'string' && searchTerm.trim().length > 0) {
       const term = searchTerm.trim().toLowerCase();
