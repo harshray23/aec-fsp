@@ -88,12 +88,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // IMPORTANT FIX: Only apply orderBy if no department filter is active.
     // Firestore requires a composite index for where() + orderBy() on different fields.
     // By removing the orderBy, we avoid the error. We can sort on the client if needed.
+    // A more robust solution is to order by the same field you filter by, if possible.
     if (!department || department === 'all') {
         query = query.orderBy('studentId');
     }
 
     if (startAfter && typeof startAfter === 'string') {
         const lastVisibleDocData = JSON.parse(startAfter);
+        // We use the document ID to get a reference to the last document.
+        // This is the most reliable way to paginate.
         const docRef = db.collection('students').doc(lastVisibleDocData.id);
         const docSnap = await docRef.get();
         if (docSnap.exists) {
@@ -118,10 +121,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const limitedStudents = students.slice(0, parsedLimit);
 
     let lastVisibleDoc = null;
-    if (studentsSnapshot.docs.length > parsedLimit && limitedStudents.length > 0) {
+    if (students.length > parsedLimit && limitedStudents.length > 0) {
+        // Correctly get the last document of the *page* we are returning
         const lastDocInPage = limitedStudents[limitedStudents.length - 1];
         lastVisibleDoc = { id: lastDocInPage.id, studentId: lastDocInPage.studentId };
     }
+
 
     res.status(200).json({ students: limitedStudents, lastVisibleDoc });
 
