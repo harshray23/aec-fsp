@@ -29,25 +29,31 @@ function normalizeDepartment(input: string): string | undefined {
     if (!input) return undefined;
     const normalizedInput = input.trim().toLowerCase();
 
-    // Direct match on value (e.g., "cse" matches "CSE", "Cse", etc.)
-    const matchByValue = DEPARTMENTS.find(d => d.value.toLowerCase() === normalizedInput);
-    if (matchByValue) return matchByValue.value;
-
-    // Direct match on label (e.g., "computer science & engineering" matches "Computer Science & Engineering")
-    const matchByLabel = DEPARTMENTS.find(d => d.label.toLowerCase() === normalizedInput);
-    if (matchByLabel) return matchByLabel.value;
-    
-    // Match abbreviation inside parentheses in the label
-    const matchByAbbreviation = DEPARTMENTS.find(d => {
-        const match = d.label.match(/\(([^)]+)\)/);
-        if (match && match[1]) {
-            return match[1].trim().toLowerCase() === normalizedInput;
+    for (const dept of DEPARTMENTS) {
+        // 1. Check against the short value (e.g., "cse")
+        if (dept.value.toLowerCase() === normalizedInput) {
+            return dept.value;
         }
-        return false;
-    });
-    if (matchByAbbreviation) return matchByAbbreviation.value;
+
+        // 2. Check against the abbreviation in parentheses (e.g., "(CSE)")
+        const abbreviationMatch = dept.label.match(/\(([^)]+)\)/);
+        if (abbreviationMatch && abbreviationMatch[1].trim().toLowerCase() === normalizedInput) {
+            return dept.value;
+        }
+
+        // 3. Check against the full label (e.g., "computer science & engineering (cse)")
+        if (dept.label.toLowerCase() === normalizedInput) {
+            return dept.value;
+        }
+
+        // 4. Check against just the name part before the parenthesis
+        const namePart = dept.label.split('(')[0].trim().toLowerCase();
+        if (namePart === normalizedInput) {
+            return dept.value;
+        }
+    }
     
-    // If no match, return undefined to indicate failure
+    // If no match, return undefined
     return undefined;
 }
 
