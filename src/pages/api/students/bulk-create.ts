@@ -27,20 +27,21 @@ function findValue(obj: any, keys: string[]): any {
 
 function normalizeDepartment(input: string): string | undefined {
     if (!input) return undefined;
-    const normalizedInput = input.trim().toLowerCase();
+    const normalizedInput = String(input).trim().toLowerCase();
 
     for (const dept of DEPARTMENTS) {
-        if (dept.value.toLowerCase() === normalizedInput) {
+        const lowerDeptValue = dept.value.toLowerCase();
+        if (lowerDeptValue === normalizedInput) {
             return dept.value;
         }
-        const abbreviationMatch = dept.label.match(/\(([^)]+)\)/);
+        
+        const lowerDeptLabel = dept.label.toLowerCase();
+        const abbreviationMatch = lowerDeptLabel.match(/\(([^)]+)\)/);
         if (abbreviationMatch && abbreviationMatch[1].trim().toLowerCase() === normalizedInput) {
             return dept.value;
         }
-        if (dept.label.toLowerCase() === normalizedInput) {
-            return dept.value;
-        }
-        const namePart = dept.label.split('(')[0].trim().toLowerCase();
+
+        const namePart = lowerDeptLabel.split('(')[0].trim();
         if (namePart === normalizedInput) {
             return dept.value;
         }
@@ -73,20 +74,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   
   const existingStudents = await db.collection('students').get();
   const existingRollNumbers = new Set(existingStudents.docs.map(doc => doc.data().rollNumber));
-  const existingEmails = new Set(existingStudents.docs.map(doc => doc.data().email));
+  const existingEmails = new Set(existingStudents.docs.map(doc => doc.data().email).filter(Boolean)); // Filter out null/undefined emails
 
   for (const row of students) {
+    // Ensure all values are safely converted to strings for consistent processing
     const studentData = {
-      name: findValue(row, ["Student Name"]),
-      studentId: findValue(row, ["Student ID"]),
-      rollNumber: findValue(row, ["University Roll No.", "University Roll No"]),
-      registrationNumber: findValue(row, ["University Registration No.", "University Registration No"]),
-      department: findValue(row, ["Department"]),
-      admissionYear: findValue(row, ["Admission Year"]),
-      currentYear: findValue(row, ["Current Academic Year"]),
-      email: findValue(row, ["Email"]),
-      whatsappNumber: findValue(row, ["WhatsApp No.", "WhatsApp No"]),
-      phoneNumber: findValue(row, ["Phone No.", "Phone No"]),
+      name: findValue(row, ["Student Name"]) ? String(findValue(row, ["Student Name"])) : undefined,
+      studentId: findValue(row, ["Student ID"]) ? String(findValue(row, ["Student ID"])) : undefined,
+      rollNumber: findValue(row, ["University Roll No.", "University Roll No"]) ? String(findValue(row, ["University Roll No.", "University Roll No"])) : undefined,
+      registrationNumber: findValue(row, ["University Registration No.", "University Registration No"]) ? String(findValue(row, ["University Registration No.", "University Registration No"])) : undefined,
+      department: findValue(row, ["Department"]) ? String(findValue(row, ["Department"])) : undefined,
+      admissionYear: findValue(row, ["Admission Year"]) ? String(findValue(row, ["Admission Year"])) : undefined,
+      currentYear: findValue(row, ["Current Academic Year"]) ? String(findValue(row, ["Current Academic Year"])) : undefined,
+      email: findValue(row, ["Email"]) ? String(findValue(row, ["Email"])) : undefined,
+      whatsappNumber: findValue(row, ["WhatsApp No.", "WhatsApp No"]) ? String(findValue(row, ["WhatsApp No.", "WhatsApp No"])) : undefined,
+      phoneNumber: findValue(row, ["Phone No.", "Phone No"]) ? String(findValue(row, ["Phone No.", "Phone No"])) : undefined,
     };
 
 
@@ -95,17 +97,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       admissionYear, currentYear, phoneNumber, whatsappNumber
     } = studentData;
     
-    // Trim whitespace from email to prevent formatting errors
-    const email = rawEmail ? String(rawEmail).trim() : undefined;
+    const email = rawEmail ? rawEmail.trim() : undefined;
     
-    // Pre-validation to prevent crashes
     if (!studentId || !name || !email || !rollNumber || !registrationNumber || !rawDepartment || !admissionYear || !currentYear || !phoneNumber) {
         results.errorCount++;
         results.errors.push(`Skipped row (Missing required data): Name: ${name || 'N/A'}, Roll: ${rollNumber || 'N/A'}`);
         continue;
     }
     
-    const department = normalizeDepartment(String(rawDepartment));
+    const department = normalizeDepartment(rawDepartment);
 
     if (!department) {
         results.errorCount++;
@@ -118,7 +118,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       results.errors.push(`Skipped (Roll number already exists): ${rollNumber}`);
       continue;
     }
-     if (existingEmails.has(email)) {
+     if (email && existingEmails.has(email)) { // Check only if email is not undefined
       results.errorCount++;
       results.errors.push(`Skipped (Email already exists): ${email}`);
       continue;
@@ -143,8 +143,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         department,
         admissionYear: parseInt(admissionYear, 10),
         currentYear: parseInt(currentYear, 10),
-        phoneNumber: String(phoneNumber),
-        whatsappNumber: String(whatsappNumber || ''),
+        phoneNumber: phoneNumber,
+        whatsappNumber: whatsappNumber || '',
         isEmailVerified: true,
         isPhoneVerified: false,
         status: 'active',
@@ -154,7 +154,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       await db.collection('students').doc(userRecord.uid).set(newStudentData);
 
       existingRollNumbers.add(rollNumber);
-      existingEmails.add(email);
+      if (email) existingEmails.add(email);
 
       results.successCount++;
 
