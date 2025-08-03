@@ -30,7 +30,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     // Special case for dashboard simple count
     if (simple === 'true') {
-        const snapshot = await db.collection('students').get();
+        const snapshot = await db.collection('students').where('status', '!=', 'passed_out').get();
         const students: Student[] = snapshot.docs.map(doc => {
             const data = doc.data();
             // Only return the fields necessary for the dashboard count to be efficient
@@ -67,7 +67,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       processSnapshot(rollNumberSnapshot);
       
       let students = Array.from(studentsMap.values());
-
+      
+      // Post-filter the search results
+      students = students.filter(student => student.status !== 'passed_out');
       if (department && department !== 'all' && typeof department === 'string') {
         students = students.filter(student => student.department === department);
       }
@@ -77,11 +79,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     // Default path: Paginated list without search term.
     let query: Query = db.collection('students');
-    
-    // Explicitly filter out passed_out students for general queries unless a specific status is requested
-    if (!status) {
-        query = query.where('status', '!=', 'passed_out');
-    }
 
     if (department && department !== 'all' && typeof department === 'string') {
       query = query.where('department', '==', department);
@@ -99,18 +96,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         }
     }
 
-    const finalQuery = query.limit(parsedLimit);
+    const finalQuery = query.limit(parsedLimit * 2); // Fetch more to account for client-side filtering
     const studentsSnapshot = await finalQuery.get();
     
-    const students: Student[] = studentsSnapshot.docs.map(doc => ({
+    // Filter out passed_out students on the backend before sending
+    const allFetchedStudents: Student[] = studentsSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
     } as Student));
 
+    const students = allFetchedStudents.filter(s => s.status !== 'passed_out').slice(0, parsedLimit);
+
     let lastVisibleDoc = null;
-    if (studentsSnapshot.docs.length > 0) {
-        const lastDoc = studentsSnapshot.docs[studentsSnapshot.docs.length - 1];
-        lastVisibleDoc = { id: lastDoc.id, studentId: lastDoc.data().studentId };
+    if (students.length > 0) {
+        const lastDocInPage = students[students.length - 1];
+        lastVisibleDoc = { id: lastDocInPage.id, studentId: lastDocInPage.studentId };
     }
 
     res.status(200).json({ students, lastVisibleDoc });
