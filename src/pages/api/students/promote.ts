@@ -1,6 +1,7 @@
 
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { db } from '@/lib/firebaseAdmin';
+import type { Student } from '@/lib/types';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
@@ -12,45 +13,55 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ message: 'Database not initialized' });
   }
 
-  const { studentIds, targetYear, action } = req.body;
+  const { studentIds, action } = req.body;
 
   if (!Array.isArray(studentIds) || studentIds.length === 0 || !action) {
     return res.status(400).json({ message: 'Missing required fields: studentIds (array) and action.' });
   }
 
+  if (action !== 'promote' && action !== 'pass_out') {
+    return res.status(400).json({ message: 'Invalid action. Must be "promote" or "pass_out".' });
+  }
+
   try {
     const writeBatch = db.batch();
+    const studentRefs = studentIds.map(id => db.collection('students').doc(id));
+    const studentDocs = await db.getAll(...studentRefs);
 
-    if (action === 'pass_out') {
-      studentIds.forEach(studentId => {
-        if (typeof studentId === 'string') {
-          const studentRef = db.collection('students').doc(studentId);
+    let promotedCount = 0;
+    let passedOutCount = 0;
+
+    for (const studentDoc of studentDocs) {
+      if (!studentDoc.exists) {
+        console.warn(`Student with ID ${studentDoc.id} not found, skipping.`);
+        continue;
+      }
+      
+      const studentData = studentDoc.data() as Student;
+      const studentRef = studentDoc.ref;
+
+      if (action === 'promote') {
+        if (studentData.currentYear && studentData.currentYear < 4) {
+          writeBatch.update(studentRef, { currentYear: studentData.currentYear + 1 });
+          promotedCount++;
+        } else if (studentData.currentYear === 4) {
+          // If a 4th year student was included in a 'promote' batch, mark them as passed out
           writeBatch.update(studentRef, { status: 'passed_out' });
+          passedOutCount++;
         }
-      });
-      await writeBatch.commit();
-      return res.status(200).json({ message: `${studentIds.length} student(s) successfully marked as passed out.` });
-
-    } else if (action === 'promote') {
-      if (!targetYear) {
-        return res.status(400).json({ message: 'Target year is required for promotion.' });
+      } else if (action === 'pass_out') {
+        writeBatch.update(studentRef, { status: 'passed_out' });
+        passedOutCount++;
       }
-      const parsedTargetYear = parseInt(targetYear, 10);
-      if (isNaN(parsedTargetYear) || parsedTargetYear <= 1 || parsedTargetYear > 4) {
-        return res.status(400).json({ message: 'Invalid target year. Must be 2, 3, or 4.' });
-      }
-
-      studentIds.forEach(studentId => {
-        if (typeof studentId === 'string') {
-          const studentRef = db.collection('students').doc(studentId);
-          writeBatch.update(studentRef, { currentYear: parsedTargetYear });
-        }
-      });
-      await writeBatch.commit();
-      return res.status(200).json({ message: `${studentIds.length} student(s) successfully promoted to year ${parsedTargetYear}.` });
-    } else {
-        return res.status(400).json({ message: 'Invalid action specified.' });
     }
+    
+    await writeBatch.commit();
+    
+    let message = 'Promotion process complete.';
+    if (promotedCount > 0) message += ` ${promotedCount} student(s) promoted.`;
+    if (passedOutCount > 0) message += ` ${passedOutCount} student(s) marked as passed out.`;
+
+    return res.status(200).json({ message });
 
   } catch (error) {
     console.error('Error processing student promotion/status change:', error);
