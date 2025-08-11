@@ -485,7 +485,7 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
           <DialogHeader>
             <DialogTitle>Assign Students</DialogTitle>
             <DialogDescription>
-              Select students matching your filters to add to this batch.
+              Select students to add to this batch. The list shows all students unless filtered on the main form.
             </DialogDescription>
           </DialogHeader>
           <div className="flex-grow overflow-hidden">
@@ -493,7 +493,7 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
               <div className="flex justify-center items-center h-full">
                 <Loader2 className="animate-spin" />
               </div>
-            ) : watchedDepartments.length > 0 || watchedYear ? (
+            ) : (
               <ScrollArea className="h-full">
                 <div className="p-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2">
                   {availableStudents.map((student) => (
@@ -527,15 +527,6 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
                   )}
                 </div>
               </ScrollArea>
-            ) : (
-              <div className="flex items-center justify-center h-full">
-                <Alert>
-                  <AlertTitle>Select a filter first</AlertTitle>
-                  <AlertDescription>
-                    Please select one or more departments and/or a year on the main form to see the list of available students.
-                  </AlertDescription>
-                </Alert>
-              </div>
             )}
           </div>
           <DialogFooter>
