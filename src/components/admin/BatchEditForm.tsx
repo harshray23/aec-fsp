@@ -189,34 +189,27 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
   const watchedStudentIds = form.watch("studentIds") || [];
 
   const availableStudents = useMemo(() => {
-    let filtered = allStudents.filter(student => student.status !== 'passed_out');
+    const activeStudents = allStudents.filter(student => student.status !== 'passed_out');
 
-    // Only filter by department if one or more departments are actually selected
-    if (watchedDepartments && watchedDepartments.length > 0) {
-        filtered = filtered.filter(student => watchedDepartments.includes(student.department));
-    }
+    const noDeptFilter = !watchedDepartments || watchedDepartments.length === 0;
+    const noYearFilter = !watchedYear || watchedYear === "all";
 
-    // Only filter by year if a specific year is selected
-    if (watchedYear && watchedYear !== "all") {
-        filtered = filtered.filter(student => String(student.currentYear || '') === watchedYear);
+    // If no filters are applied, return all active students.
+    if (noDeptFilter && noYearFilter) {
+      return activeStudents;
     }
     
-    // In edit mode, we want to ensure already-assigned students always appear in the list,
-    // regardless of the current filters.
-    if (isEditMode && batchData?.studentIds) {
-      const assignedStudents = allStudents.filter(s => batchData.studentIds.includes(s.id));
-      const combined = new Map<string, Student>();
-      
-      // Add filtered students first
-      filtered.forEach(s => combined.set(s.id, s));
-      // Then add assigned students, overwriting if they exist, to ensure they are included.
-      assignedStudents.forEach(s => combined.set(s.id, s));
-      
-      return Array.from(combined.values());
+    // Apply filters if they exist
+    let filtered = activeStudents;
+    if (!noDeptFilter) {
+      filtered = filtered.filter(student => watchedDepartments.includes(student.department));
+    }
+    if (!noYearFilter) {
+      filtered = filtered.filter(student => String(student.currentYear || '') === watchedYear);
     }
 
     return filtered;
-  }, [allStudents, watchedDepartments, watchedYear, batchData, isEditMode]);
+  }, [allStudents, watchedDepartments, watchedYear]);
   
   const handleCopyToClipboard = () => {
     navigator.clipboard.writeText(enrollmentLink).then(() => {
@@ -563,3 +556,4 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
     </>
   );
 }
+
