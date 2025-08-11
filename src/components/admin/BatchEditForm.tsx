@@ -189,26 +189,34 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
   const watchedStudentIds = form.watch("studentIds") || [];
 
   const availableStudents = useMemo(() => {
-    const departmentMatch = (student: Student) => 
-        !watchedDepartments || watchedDepartments.length === 0 || watchedDepartments.includes(student.department);
-    
-    const yearMatch = (student: Student) =>
-        !watchedYear || watchedYear === "all" || String(student.currentYear || '') === watchedYear;
-    
-    // Get all students currently assigned to the batch (from original data)
-    const assignedStudentIds = batchData?.studentIds || [];
-    const assignedStudents = allStudents.filter(s => assignedStudentIds.includes(s.id));
-    
-    // Get all students that match the current department/year filters
-    const studentsMatchingFilter = allStudents.filter(student => departmentMatch(student) && yearMatch(student) && student.status !== 'passed_out');
+    let filtered = allStudents.filter(student => student.status !== 'passed_out');
 
-    // Combine them, ensuring no duplicates
-    const combined = new Map<string, Student>();
-    assignedStudents.forEach(s => combined.set(s.id, s));
-    studentsMatchingFilter.forEach(s => combined.set(s.id, s));
+    // Only filter by department if one or more departments are actually selected
+    if (watchedDepartments && watchedDepartments.length > 0) {
+        filtered = filtered.filter(student => watchedDepartments.includes(student.department));
+    }
 
-    return Array.from(combined.values());
-  }, [allStudents, watchedDepartments, watchedYear, batchData]);
+    // Only filter by year if a specific year is selected
+    if (watchedYear && watchedYear !== "all") {
+        filtered = filtered.filter(student => String(student.currentYear || '') === watchedYear);
+    }
+    
+    // In edit mode, we want to ensure already-assigned students always appear in the list,
+    // regardless of the current filters.
+    if (isEditMode && batchData?.studentIds) {
+      const assignedStudents = allStudents.filter(s => batchData.studentIds.includes(s.id));
+      const combined = new Map<string, Student>();
+      
+      // Add filtered students first
+      filtered.forEach(s => combined.set(s.id, s));
+      // Then add assigned students, overwriting if they exist, to ensure they are included.
+      assignedStudents.forEach(s => combined.set(s.id, s));
+      
+      return Array.from(combined.values());
+    }
+
+    return filtered;
+  }, [allStudents, watchedDepartments, watchedYear, batchData, isEditMode]);
   
   const handleCopyToClipboard = () => {
     navigator.clipboard.writeText(enrollmentLink).then(() => {
