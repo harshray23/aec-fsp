@@ -1,5 +1,6 @@
 import React from 'react';
 import { AppLogo } from '@/components/shared/AppLogo';
+import { LoadingSpinner } from './LoadingSpinner';
 
 export function SplashTransition() {
   return (
@@ -12,8 +13,8 @@ export function SplashTransition() {
 
       {/* Content Container */}
       <div className="relative z-10 w-full flex flex-col items-center justify-center">
-        <div className="animate-pulse flex flex-col items-center justify-center gap-4">
-          <AppLogo src="/AEC.jpg" width="500" height="500" />
+        <div className="flex flex-col items-center justify-center gap-4">
+          <LoadingSpinner size={200} />
           <div className="text-center bg-black/30 backdrop-blur-sm p-6 rounded-lg">
             <h1 className="text-2xl font-semibold tracking-tight text-white">
               Welcome to FSP Portal of
