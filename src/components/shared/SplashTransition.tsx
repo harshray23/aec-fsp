@@ -14,8 +14,10 @@ export function SplashTransition() {
       {/* Content Container */}
       <div className="relative z-10 w-full flex flex-col items-center justify-center">
         <div className="flex flex-col items-center justify-center gap-4">
-          <LoadingSpinner size={200} />
-          <div className="text-center bg-black/30 backdrop-blur-sm p-6 rounded-lg">
+          <div className="animate-pulse">
+            <AppLogo width={150} height={150} />
+          </div>
+          <div className="text-center bg-black/30 backdrop-blur-sm p-6 rounded-lg mt-4">
             <h1 className="text-2xl font-semibold tracking-tight text-white">
               Welcome to FSP Portal of
             </h1>
