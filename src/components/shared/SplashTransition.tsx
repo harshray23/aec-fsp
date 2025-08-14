@@ -16,7 +16,7 @@ export function SplashTransition() {
       <div className="relative z-10 w-full flex flex-col items-center justify-center">
         <div className="flex flex-col items-center justify-center gap-4">
           <div className="animate-pulse">
-            <AppLogo width={180} height={180} />
+            <AppLogo width={240} height={240} />
           </div>
           <div className="text-center bg-black/30 backdrop-blur-sm p-6 rounded-lg mt-4">
             <h1 className="text-2xl font-semibold tracking-tight text-white">
