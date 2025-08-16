@@ -8,25 +8,28 @@ const DEFAULT_PASSWORD = "Password@123";
 
 // Helper function to find a value in an object with case-insensitive and variant keys
 function findValue(obj: any, keys: string[]): any {
-    if (!obj) return undefined; // Guard against null/undefined row object
+    if (!obj) return undefined;
+
+    // First, try a direct case-sensitive match
     for (const key of keys) {
-        if (obj[key] !== undefined && obj[key] !== null) {
+        if (obj[key] !== undefined) {
             return obj[key];
         }
     }
-    // Fallback to case-insensitive and character-agnostic search
+
+    // If not found, try a case-insensitive, character-agnostic match
     const lowerCaseKeys = keys.map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''));
     for (const objKey in obj) {
         if (Object.prototype.hasOwnProperty.call(obj, objKey)) {
             const lowerObjKey = objKey.toLowerCase().replace(/[^a-z0-9]/g, '');
-            const index = lowerCaseKeys.indexOf(lowerObjKey);
-            if (index !== -1) {
+            if (lowerCaseKeys.includes(lowerObjKey)) {
                 return obj[objKey];
             }
         }
     }
     return undefined;
 }
+
 
 function normalizeDepartment(input: string): string | undefined {
     if (!input) return undefined;
