@@ -67,8 +67,16 @@ export default function BulkCreateStudentsPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ students: json }),
         });
+        
+        // Error handling for non-JSON responses
+        const responseText = await response.text();
+        let result;
+        try {
+            result = JSON.parse(responseText);
+        } catch (parseError) {
+             throw new Error("The server returned an invalid response. Please check the server logs.");
+        }
 
-        const result = await response.json();
         if (!response.ok) {
           throw new Error(result.message || 'An unknown error occurred.');
         }
