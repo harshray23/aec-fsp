@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -293,19 +294,19 @@ export default function StudentProfilePage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                      {studentProfile.personalDetails ? (
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-2 text-sm text-muted-foreground">
                             <p><strong>Father's Name:</strong> {studentProfile.personalDetails.fatherName || 'N/A'}</p>
                             <p><strong>Mother's Name:</strong> {studentProfile.personalDetails.motherName || 'N/A'}</p>
                             <p><strong>Father's Phone:</strong> {studentProfile.personalDetails.fatherPhone || 'N/A'}</p>
                             <p><strong>Mother's Phone:</strong> {studentProfile.personalDetails.motherPhone || 'N/A'}</p>
-                             <p><strong>Father's Email:</strong> {studentProfile.personalDetails.fatherEmail || 'N/A'}</p>
+                            <p><strong>Father's Email:</strong> {studentProfile.personalDetails.fatherEmail || 'N/A'}</p>
                             <p><strong>Mother's Email:</strong> {studentProfile.personalDetails.motherEmail || 'N/A'}</p>
                             <p><strong>Father's Occupation:</strong> {studentProfile.personalDetails.fatherOccupation || 'N/A'}</p>
                             <p><strong>Mother's Occupation:</strong> {studentProfile.personalDetails.motherOccupation || 'N/A'}</p>
-                            <p className="flex items-center gap-2"><strong><HeartPulse className="h-4 w-4"/>Blood Group:</strong> {studentProfile.personalDetails.bloodGroup || 'N/A'}</p>
-                            <p className="flex items-center gap-2"><strong><School className="h-4 w-4"/>Last School:</strong> {studentProfile.personalDetails.schoolName || 'N/A'}</p>
-                            <p className="flex items-center gap-2"><strong><Calendar className="h-4 w-4"/>Date of Birth:</strong> {studentProfile.personalDetails.dateOfBirth ? format(parseISO(studentProfile.personalDetails.dateOfBirth), 'PPP') : 'N/A'}</p>
-                            <p className="flex items-center gap-2"><strong><GraduationCap className="h-4 w-4"/>Current Semester:</strong> {studentProfile.personalDetails.currentSemester || 'N/A'}</p>
+                            <p className="flex items-center gap-1.5"><HeartPulse className="h-4 w-4 text-primary"/><strong>Blood Group:</strong> {studentProfile.personalDetails.bloodGroup || 'N/A'}</p>
+                            <p className="flex items-center gap-1.5"><School className="h-4 w-4 text-primary"/><strong>Last School:</strong> {studentProfile.personalDetails.schoolName || 'N/A'}</p>
+                            <p className="flex items-center gap-1.5"><Calendar className="h-4 w-4 text-primary"/><strong>Date of Birth:</strong> {studentProfile.personalDetails.dateOfBirth ? format(parseISO(studentProfile.personalDetails.dateOfBirth), 'PPP') : 'N/A'}</p>
+                            <p className="flex items-center gap-1.5"><GraduationCap className="h-4 w-4 text-primary"/><strong>Current Semester:</strong> {studentProfile.personalDetails.currentSemester || 'N/A'}</p>
                         </div>
                     ) : (
                         <p className="text-sm text-muted-foreground">No parent/guardian details added yet.</p>
@@ -424,3 +425,4 @@ export default function StudentProfilePage() {
     </div>
   );
 }
+
