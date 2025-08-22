@@ -19,8 +19,6 @@ const actions = [
   { href: "/teacher/reports", label: "View Performance Reports", icon: BarChart3 },
 ];
 
-const LOCAL_STORAGE_ANNOUNCEMENT_KEY = "aecFspAnnouncements";
-
 export default function TeacherDashboardPage() {
   const { toast } = useToast();
   const [latestAnnouncement, setLatestAnnouncement] = useState<Announcement | null>(null);
@@ -29,8 +27,28 @@ export default function TeacherDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchAllData = async () => {
       setIsLoading(true);
+      
+      // Fetch Announcements
+      try {
+        const announcementsRes = await fetch('/api/announcements');
+        if (announcementsRes.ok) {
+            const announcements: Announcement[] = await announcementsRes.json();
+            if (announcements.length > 0) {
+                const latest = announcements[0];
+                const dismissedKey = `dismissed_announcement_${latest.id}`;
+                if (!sessionStorage.getItem(dismissedKey)) {
+                    setLatestAnnouncement(latest);
+                    setIsAnnouncementDialogOpen(true);
+                }
+            }
+        }
+      } catch (error: any) {
+        console.warn("Could not fetch announcements:", error.message);
+      }
+      
+      // Fetch Stats
       let teacherId = null;
       const storedUserJSON = localStorage.getItem("currentUser");
       if (storedUserJSON) {
@@ -51,12 +69,10 @@ export default function TeacherDashboardPage() {
         if (!res.ok) throw new Error("Failed to fetch batches.");
         
         const allBatches: Batch[] = await res.json();
-        const assignedBatches = allBatches.filter(b => b.teacherIds?.includes(teacherId));
+        const assignedBatches = allBatches.filter(b => b.teacherIds?.includes(teacherId!));
         
         const studentsEnrolled = assignedBatches.reduce((acc, batch) => acc + batch.studentIds.length, 0);
         
-        // Logic for today's classes would be more complex, depending on specific timetable entries
-        // For now, this is a placeholder.
         const todayClasses = 0; 
         
         setStats({
@@ -66,28 +82,14 @@ export default function TeacherDashboardPage() {
         });
 
       } catch (error: any) {
-         toast({ title: "Error", description: error.message, variant: "destructive" });
+         toast({ title: "Error Fetching Stats", description: error.message, variant: "destructive" });
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchStats();
-
-    const announcementsRaw = localStorage.getItem(LOCAL_STORAGE_ANNOUNCEMENT_KEY);
-    if (announcementsRaw) {
-      const announcements: Announcement[] = JSON.parse(announcementsRaw);
-      if (announcements.length > 0) {
-        const latest = announcements.sort((a, b) => b.timestamp - a.timestamp)[0];
-        const dismissedKey = `dismissed_announcement_${latest.id}`;
-        if (!sessionStorage.getItem(dismissedKey)) {
-          setLatestAnnouncement(latest);
-          setIsAnnouncementDialogOpen(true);
-        }
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    fetchAllData();
+  }, [toast]);
 
   const handleCloseAnnouncementDialog = () => {
     if (latestAnnouncement) {

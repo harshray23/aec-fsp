@@ -68,18 +68,30 @@ export default function HostDashboardPage() {
     { href: "/host/monitoring/timetables", label: "Monitor Timetables", icon: CalendarDays, description: "View all batch timetables." },
   ];
   
-  const handleClearAnnouncements = () => {
+  const handleClearAnnouncements = async () => {
+    if (!confirm("Are you sure you want to delete ALL announcements? This action cannot be undone.")) {
+      return;
+    }
+    
     try {
-      localStorage.removeItem("aecFspAnnouncements");
+      const response = await fetch('/api/announcements');
+      if (!response.ok) throw new Error('Failed to fetch announcements for deletion.');
+      const announcements: any[] = await response.json();
+
+      const deletePromises = announcements.map(ann => 
+        fetch(`/api/announcements/${ann.id}`, { method: 'DELETE' })
+      );
+
+      await Promise.all(deletePromises);
+
       toast({
         title: "Announcements Cleared",
         description: "All announcements have been successfully deleted.",
       });
-    } catch (error) {
-      console.error("Failed to clear announcements:", error);
+    } catch (error: any) {
       toast({
         title: "Error",
-        description: "Could not clear announcements from local storage.",
+        description: "Could not clear announcements from the database. " + error.message,
         variant: "destructive",
       });
     }
@@ -146,7 +158,7 @@ export default function HostDashboardPage() {
                 <Trash2 className="mr-2 h-4 w-4" /> Clear All Announcements
             </Button>
             <p className="text-xs text-muted-foreground mt-2">
-                This will remove all sent announcements from being displayed to users. This action cannot be undone.
+                This will permanently delete all sent announcements from the database. This action cannot be undone.
             </p>
         </CardContent>
       </Card>

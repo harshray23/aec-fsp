@@ -12,8 +12,6 @@ import { AnnouncementDialog } from "@/components/shared/AnnouncementDialog";
 import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const LOCAL_STORAGE_ANNOUNCEMENT_KEY = "aecFspAnnouncements";
-
 export default function AdminDashboardPage() {
   const [latestAnnouncement, setLatestAnnouncement] = useState<Announcement | null>(null);
   const [isAnnouncementDialogOpen, setIsAnnouncementDialogOpen] = useState(false);
@@ -22,12 +20,27 @@ export default function AdminDashboardPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Fetch dashboard stats
-    const fetchStats = async () => {
+    const fetchAllData = async () => {
       setIsLoading(true);
+
       try {
+        // Fetch Announcements
+        const announcementsRes = await fetch('/api/announcements');
+        if (announcementsRes.ok) {
+            const announcements: Announcement[] = await announcementsRes.json();
+            if (announcements.length > 0) {
+                const latest = announcements[0];
+                const dismissedKey = `dismissed_announcement_${latest.id}`;
+                if (!sessionStorage.getItem(dismissedKey)) {
+                    setLatestAnnouncement(latest);
+                    setIsAnnouncementDialogOpen(true);
+                }
+            }
+        }
+
+        // Fetch dashboard stats
         const [studentsRes, teachersRes, batchesRes, adminsRes] = await Promise.all([
-          fetch('/api/students?limit=99999&simple=true'), // Simplified API call
+          fetch('/api/students?limit=99999&simple=true'),
           fetch('/api/teachers'),
           fetch('/api/batches'),
           fetch('/api/admins')
@@ -62,21 +75,7 @@ export default function AdminDashboardPage() {
       }
     };
     
-    fetchStats();
-
-    // Check for announcements
-    const announcementsRaw = localStorage.getItem(LOCAL_STORAGE_ANNOUNCEMENT_KEY);
-    if (announcementsRaw) {
-      const announcements: Announcement[] = JSON.parse(announcementsRaw);
-      if (announcements.length > 0) {
-        const latest = announcements.sort((a, b) => b.timestamp - a.timestamp)[0];
-        const dismissedKey = `dismissed_announcement_${latest.id}`;
-        if (!sessionStorage.getItem(dismissedKey)) {
-          setLatestAnnouncement(latest);
-          setIsAnnouncementDialogOpen(true);
-        }
-      }
-    }
+    fetchAllData();
   }, [toast]);
 
   const handleCloseAnnouncementDialog = () => {

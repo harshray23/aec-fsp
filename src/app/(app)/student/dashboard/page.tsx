@@ -32,8 +32,6 @@ const getStatusIcon = (status: "present" | "absent" | "late") => {
   }
 };
 
-const LOCAL_STORAGE_ANNOUNCEMENT_KEY = "aecFspAnnouncements";
-
 const formatStudentYear = (year?: number): string => {
     if (!year) return "";
     let suffix = "th";
@@ -53,7 +51,7 @@ export default function StudentDashboardPage() {
   const { toast } = useToast();
 
   useEffect(() => {
-    async function fetchData() {
+    async function fetchAllData() {
       setIsLoading(true);
       setError(null);
       try {
@@ -66,7 +64,7 @@ export default function StudentDashboardPage() {
                 studentIdFromStorage = user.id || user.studentId;
             } else {
                 console.warn("Stored user in localStorage is not a valid student or is missing ID fields:", user);
-                localStorage.removeItem("currentUser"); // Clear invalid/corrupted item
+                localStorage.removeItem("currentUser");
             }
         }
 
@@ -79,43 +77,30 @@ export default function StudentDashboardPage() {
             router.push("/login?role=student");
             return; 
         }
+
+        // Fetch announcements first
+        const announcementsRes = await fetch('/api/announcements');
+        if (announcementsRes.ok) {
+            const announcements: Announcement[] = await announcementsRes.json();
+            if (announcements.length > 0) {
+                const latest = announcements[0]; // API returns sorted by desc timestamp
+                const dismissedKey = `dismissed_announcement_${latest.id}`;
+                if (!sessionStorage.getItem(dismissedKey)) {
+                    setLatestAnnouncement(latest);
+                    setIsAnnouncementDialogOpen(true);
+                }
+            }
+        }
         
         const studentRes = await fetch(`/api/students/profile?studentId=${studentIdFromStorage}`);
-
-        if (!studentRes) {
-          console.error("Fetch student profile: No response received from server.");
-          throw new Error("Failed to fetch student profile: Server did not respond.");
-        }
         
         if (!studentRes.ok) {
           let errorMessage = `Failed to fetch student profile (status: ${studentRes.status} ${studentRes.statusText || ''})`.trim();
-          try {
-            const errorBody = await studentRes.json(); 
-            if (errorBody && errorBody.message) {
-              errorMessage = errorBody.message;
-            }
-          } catch (e) {
-             console.warn("Could not parse error response as JSON from student profile API.", e);
-          }
-          console.error("Error response from /api/students/profile:", errorMessage);
+          try { const errorBody = await studentRes.json(); if (errorBody && errorBody.message) errorMessage = errorBody.message; } catch (e) {}
           throw new Error(errorMessage);
         }
         
-        let student: Student;
-        try {
-          const studentData = await studentRes.json();
-          student = studentData;
-        } catch (jsonError: any) {
-          console.error("Failed to parse JSON from successful student profile response:", jsonError);
-          let responseText = "Could not read response text.";
-          try {
-            responseText = await studentRes.text();
-          } catch (textError) {
-            console.error("Error reading response text after JSON parse failure:", textError);
-          }
-          console.error("Response Text from /api/students/profile:", responseText);
-          throw new Error("Received malformed data from the server for student profile.");
-        }
+        const student: Student = await studentRes.json();
         
         let batchesData: (Batch & { teacherNames?: string })[] = [];
         let attendanceData: AttendanceRecord[] = [];
@@ -140,8 +125,7 @@ export default function StudentDashboardPage() {
                     }));
 
                 attendanceData = await allAttendanceRes.json();
-                // Sort records by date, oldest first (ascending)
-                attendanceData.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                attendanceData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
             } else {
                  console.warn(`Failed to fetch all required data for dashboard.`);
             }
@@ -150,29 +134,13 @@ export default function StudentDashboardPage() {
         setDashboardData({ student, batches: batchesData, attendance: attendanceData });
 
       } catch (err: any) {
-        console.error("Full error fetching student dashboard data:", err);
         setError(err.message || "An unexpected error occurred while loading your dashboard.");
       } finally {
         setIsLoading(false);
       }
     }
-    fetchData();
-
-    // Check for announcements
-    const announcementsRaw = localStorage.getItem(LOCAL_STORAGE_ANNOUNCEMENT_KEY);
-    if (announcementsRaw) {
-      const announcements: Announcement[] = JSON.parse(announcementsRaw);
-      if (announcements.length > 0) {
-        const latest = announcements.sort((a, b) => b.timestamp - a.timestamp)[0];
-        const dismissedKey = `dismissed_announcement_${latest.id}`;
-        if (!sessionStorage.getItem(dismissedKey)) {
-          setLatestAnnouncement(latest);
-          setIsAnnouncementDialogOpen(true);
-        }
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // router and toast are stable, no need to add to deps for this effect
+    fetchAllData();
+  }, [router, toast]);
 
   const handleCloseAnnouncementDialog = () => {
     if (latestAnnouncement) {

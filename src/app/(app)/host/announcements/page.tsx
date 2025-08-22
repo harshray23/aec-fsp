@@ -11,7 +11,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Megaphone, Edit, Trash2 } from "lucide-react";
+import { Megaphone, Edit, Trash2, Loader2 } from "lucide-react";
 import type { Announcement } from "@/lib/types";
 import { format } from "date-fns";
 import {
@@ -31,11 +31,10 @@ const announcementSchema = z.object({
 
 type AnnouncementFormValues = z.infer<typeof announcementSchema>;
 
-const LOCAL_STORAGE_KEY = "aecFspAnnouncements";
-
 export default function HostAnnouncementsPage() {
   const { toast } = useToast();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
   const [announcementToDelete, setAnnouncementToDelete] = useState<Announcement | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -47,26 +46,30 @@ export default function HostAnnouncementsPage() {
     },
   });
 
-  useEffect(() => {
-    // Load announcements from localStorage on component mount
+  const fetchAnnouncements = async () => {
+    setIsLoading(true);
     try {
-      const existingAnnouncementsRaw = localStorage.getItem(LOCAL_STORAGE_KEY);
-      const existingAnnouncements: Announcement[] = existingAnnouncementsRaw ? JSON.parse(existingAnnouncementsRaw) : [];
-      setAnnouncements(existingAnnouncements.sort((a, b) => b.timestamp - a.timestamp));
-    } catch (error) {
-      console.error("Failed to load announcements from localStorage", error);
+      const response = await fetch('/api/announcements');
+      if (!response.ok) {
+        throw new Error('Failed to fetch announcements.');
+      }
+      const data: Announcement[] = await response.json();
+      setAnnouncements(data);
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsLoading(false);
     }
-  }, []);
-
-  const saveAnnouncementsToLocalStorage = (updatedAnnouncements: Announcement[]) => {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedAnnouncements));
-    setAnnouncements(updatedAnnouncements.sort((a, b) => b.timestamp - a.timestamp));
   };
-  
+
+  useEffect(() => {
+    fetchAnnouncements();
+  }, [toast]);
+
   const handleEditClick = (announcement: Announcement) => {
     setEditingAnnouncement(announcement);
     form.setValue("message", announcement.message);
-    window.scrollTo({ top: 0, behavior: 'smooth' }); // Scroll to the top where the form is
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleCancelEdit = () => {
@@ -79,51 +82,50 @@ export default function HostAnnouncementsPage() {
     setIsDeleteDialogOpen(true);
   };
   
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (!announcementToDelete) return;
-    const updatedAnnouncements = announcements.filter(a => a.id !== announcementToDelete.id);
-    saveAnnouncementsToLocalStorage(updatedAnnouncements);
-    toast({ title: "Deleted", description: "The announcement has been deleted." });
-    setIsDeleteDialogOpen(false);
-    setAnnouncementToDelete(null);
+    try {
+      const response = await fetch(`/api/announcements/${announcementToDelete.id}`, { method: 'DELETE' });
+      if (!response.ok) throw new Error('Failed to delete announcement.');
+      toast({ title: "Deleted", description: "The announcement has been deleted." });
+      fetchAnnouncements(); // Refresh the list
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setAnnouncementToDelete(null);
+    }
   };
 
-  const onSubmit = (values: AnnouncementFormValues) => {
+  const onSubmit = async (values: AnnouncementFormValues) => {
     try {
+      let response;
       if (editingAnnouncement) {
         // Update existing announcement
-        const updatedAnnouncements = announcements.map(a =>
-          a.id === editingAnnouncement.id ? { ...a, message: values.message } : a
-        );
-        saveAnnouncementsToLocalStorage(updatedAnnouncements);
-        toast({
-          title: "Announcement Updated!",
-          description: "The announcement has been successfully modified.",
+        response = await fetch(`/api/announcements/${editingAnnouncement.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: values.message }),
         });
-        handleCancelEdit();
+        if (!response.ok) throw new Error('Failed to update announcement.');
+        toast({ title: "Announcement Updated!", description: "The announcement has been successfully modified." });
       } else {
         // Create new announcement
-        const newAnnouncement: Announcement = {
-          id: `ann_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-          message: values.message,
-          timestamp: Date.now(),
-          sender: "Management",
-        };
-        const updatedAnnouncements = [newAnnouncement, ...announcements].slice(0, 10);
-        saveAnnouncementsToLocalStorage(updatedAnnouncements);
-        toast({
-          title: "Announcement Sent!",
-          description: "The announcement has been broadcasted.",
+        response = await fetch('/api/announcements', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: values.message, sender: "Management" }),
         });
-        form.reset();
+        if (!response.ok) throw new Error('Failed to send announcement.');
+        toast({ title: "Announcement Sent!", description: "The announcement has been broadcasted." });
       }
-    } catch (error) {
-      console.error("Failed to send announcement:", error);
-      toast({
-        title: "Error",
-        description: "Could not send the announcement. Please check console for details.",
-        variant: "destructive",
-      });
+      
+      form.reset();
+      setEditingAnnouncement(null);
+      fetchAnnouncements(); // Refresh the list
+
+    } catch (error: any) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
     }
   };
 
@@ -185,7 +187,9 @@ export default function HostAnnouncementsPage() {
           <CardDescription>A list of the most recent announcements.</CardDescription>
         </CardHeader>
         <CardContent>
-          {announcements.length > 0 ? (
+          {isLoading ? (
+             <div className="flex justify-center items-center h-24"><Loader2 className="h-8 w-8 animate-spin" /></div>
+          ) : announcements.length > 0 ? (
             <ul className="space-y-4">
               {announcements.map((ann) => (
                 <li key={ann.id} className="p-4 border rounded-lg flex flex-col md:flex-row justify-between md:items-center gap-4">
