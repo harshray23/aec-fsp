@@ -25,10 +25,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       case USER_ROLES.TEACHER: collectionName = 'teachers'; break;
       case USER_ROLES.ADMIN: collectionName = 'admins'; break;
       case USER_ROLES.HOST: 
-        // Host is a special case not in a separate collection, check admins.
-        // In a real scenario, they would be in a collection.
-        // For this app, the host is a mock user so this API won't be hit for them.
-        collectionName = 'admins'; 
+        collectionName = 'hosts';
         break;
       default:
         return res.status(400).json({ message: 'Invalid user role specified.' });
@@ -41,16 +38,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ message: `No active user found with email ${email} for the role ${role}.` });
     }
 
-    // Check status for roles that have it
-    if (role === USER_ROLES.TEACHER || role === USER_ROLES.ADMIN) {
+    // Check status for roles that have it (Teacher, Admin, Host)
+    if (role === USER_ROLES.TEACHER || role === USER_ROLES.ADMIN || role === USER_ROLES.HOST) {
         const user = snapshot.docs[0].data();
         if (user.status !== 'active') {
              return res.status(403).json({ message: `User account is not active.` });
         }
     }
     
-    // For this mock, we just confirm the user exists. The client will handle the "mock OTP".
-    return res.status(200).json({ message: 'If an account with this email exists, a (mock) password reset OTP has been sent.' });
+    // If user exists and is active, proceed. The client handles the password reset logic.
+    return res.status(200).json({ message: 'User verified successfully.' });
 
   } catch (error) {
     console.error("Error in password reset request:", error);
