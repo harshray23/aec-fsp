@@ -38,8 +38,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ message: `No active user found with email ${email} for the role ${role}.` });
     }
 
-    // Check status for roles that have it (Teacher, Admin, Host)
-    if (role === USER_ROLES.TEACHER || role === USER_ROLES.ADMIN || role === USER_ROLES.HOST) {
+    // Check status for roles that have it (Teacher, Admin)
+    // Host users do not have a status field and are considered active by default.
+    if (role === USER_ROLES.TEACHER || role === USER_ROLES.ADMIN) {
         const user = snapshot.docs[0].data();
         if (user.status !== 'active') {
              return res.status(403).json({ message: `User account is not active.` });
