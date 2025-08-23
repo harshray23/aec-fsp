@@ -8,6 +8,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ message: 'Database not initialized.' });
   }
 
+  // Set Cache-Control headers to prevent caching on the client-side.
+  // This ensures users always get the latest announcements.
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+
+
   switch (req.method) {
     case 'GET':
       try {
