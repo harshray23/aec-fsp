@@ -83,9 +83,12 @@ export default function StudentDashboardPage() {
         if (announcementsRes.ok) {
             const announcements: Announcement[] = await announcementsRes.json();
             if (announcements.length > 0) {
-                const latest = announcements[0]; // API returns sorted by desc timestamp
+                const latest = announcements[0];
                 const dismissedKey = `dismissed_announcement_${latest.id}`;
-                if (!sessionStorage.getItem(dismissedKey)) {
+                const dismissedValue = sessionStorage.getItem(dismissedKey);
+
+                // Show if it's never been dismissed OR if the message content has changed
+                if (!dismissedValue || dismissedValue !== latest.message) {
                     setLatestAnnouncement(latest);
                     setIsAnnouncementDialogOpen(true);
                 }
@@ -144,7 +147,8 @@ export default function StudentDashboardPage() {
 
   const handleCloseAnnouncementDialog = () => {
     if (latestAnnouncement) {
-      sessionStorage.setItem(`dismissed_announcement_${latestAnnouncement.id}`, "true");
+      // Store the message content itself to check for changes later
+      sessionStorage.setItem(`dismissed_announcement_${latestAnnouncement.id}`, latestAnnouncement.message);
     }
     setIsAnnouncementDialogOpen(false);
     setLatestAnnouncement(null);

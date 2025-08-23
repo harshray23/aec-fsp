@@ -38,7 +38,9 @@ export default function TeacherDashboardPage() {
             if (announcements.length > 0) {
                 const latest = announcements[0];
                 const dismissedKey = `dismissed_announcement_${latest.id}`;
-                if (!sessionStorage.getItem(dismissedKey)) {
+                const dismissedValue = sessionStorage.getItem(dismissedKey);
+
+                if (!dismissedValue || dismissedValue !== latest.message) {
                     setLatestAnnouncement(latest);
                     setIsAnnouncementDialogOpen(true);
                 }
@@ -93,7 +95,7 @@ export default function TeacherDashboardPage() {
 
   const handleCloseAnnouncementDialog = () => {
     if (latestAnnouncement) {
-      sessionStorage.setItem(`dismissed_announcement_${latestAnnouncement.id}`, "true");
+      sessionStorage.setItem(`dismissed_announcement_${latestAnnouncement.id}`, latestAnnouncement.message);
     }
     setIsAnnouncementDialogOpen(false);
     setLatestAnnouncement(null);
