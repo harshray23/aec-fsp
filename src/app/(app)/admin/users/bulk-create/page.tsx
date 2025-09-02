@@ -53,6 +53,7 @@ export default function BulkCreateStudentsPage() {
     }
 
     setIsUploading(true);
+    setUploadResult(null);
     const reader = new FileReader();
     reader.onload = async (e) => {
       try {
@@ -68,23 +69,16 @@ export default function BulkCreateStudentsPage() {
           body: JSON.stringify({ students: json }),
         });
         
-        // Error handling for non-JSON responses
-        const responseText = await response.text();
-        let result;
-        try {
-            result = JSON.parse(responseText);
-        } catch (parseError) {
-             throw new Error("The server returned an invalid response. Please check the server logs.");
-        }
+        const result = await response.json();
 
         if (!response.ok) {
-          throw new Error(result.message || 'An unknown error occurred.');
+          throw new Error(result.message || 'An unknown error occurred during upload.');
         }
 
         setUploadResult(result);
         toast({
           title: "Upload Complete",
-          description: `Successfully created ${result.successCount} students. See results below.`,
+          description: `Successfully created ${result.successCount} students. See results below for details.`,
         });
 
       } catch (error: any) {
@@ -92,7 +86,12 @@ export default function BulkCreateStudentsPage() {
         setUploadResult(null);
       } finally {
         setIsUploading(false);
-        setFile(null); // Reset file input
+        // Clear the file input visually after upload attempt
+        const fileInput = document.getElementById('student-file') as HTMLInputElement;
+        if (fileInput) {
+            fileInput.value = "";
+        }
+        setFile(null);
       }
     };
     reader.readAsArrayBuffer(file);
@@ -170,7 +169,7 @@ export default function BulkCreateStudentsPage() {
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground grid grid-cols-2 gap-x-6 gap-y-1">
           {REQUIRED_COLUMNS_FOR_TEMPLATE.map(col => <p key={col}>- <strong className="text-foreground">{col}</strong></p>)}
-          <p className="pt-2 text-primary col-span-2">Note: 'Department' value must be a valid key from the system (e.g., 'CSE', 'IT', 'ECE'). The 'Timestamp' and 'Email Address' columns will be ignored.</p>
+          <p className="pt-2 text-primary col-span-2">Note: 'Department' value must be a valid key from the system (e.g., 'CSE', 'IT', 'ECE'). Any 'Timestamp' and 'Email Address' columns from Google Forms will be ignored.</p>
         </CardContent>
       </Card>
     </div>
