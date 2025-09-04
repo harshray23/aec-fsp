@@ -6,6 +6,7 @@ import { USER_ROLES, DEPARTMENTS } from '@/lib/constants';
 
 const DEFAULT_PASSWORD = "Password@123";
 
+// This helper function finds a value in an object using a list of possible keys, case-insensitively.
 function findValue(obj: any, keys: string[]): any {
     if (!obj) return undefined;
     const lowerCaseKeys = keys.map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''));
@@ -20,13 +21,14 @@ function findValue(obj: any, keys: string[]): any {
     return undefined;
 }
 
-
+// This helper function normalizes department names to their standard system codes.
 function normalizeDepartment(input: string): string | undefined {
     if (!input) return undefined;
     const normalizedInput = String(input).trim().toLowerCase();
     for (const dept of DEPARTMENTS) {
         const lowerDeptValue = dept.value.toLowerCase();
         const lowerDeptLabel = dept.label.toLowerCase();
+        // Check against value ('cse'), label ('Computer...'), and abbreviation ('CSE').
         if (lowerDeptValue === normalizedInput || lowerDeptLabel === normalizedInput) {
             return dept.value;
         }
@@ -62,20 +64,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     errors: [] as string[],
   };
   
-  // Fetch existing users from both Firestore and Auth for robust duplicate checking
-  const [studentsSnapshot, authUsers] = await Promise.all([
-    db.collection('students').get(),
-    adminAuth.listUsers(1000) // Note: This fetches up to 1000 users. For larger user bases, pagination is needed.
-  ]);
-
-  const existingRollNumbers = new Set(studentsSnapshot.docs.map(doc => String(doc.data().rollNumber)));
-  const existingStudentIds = new Set(studentsSnapshot.docs.map(doc => String(doc.data().studentId)));
-  const existingEmails = new Set(authUsers.users.map(user => user.email).filter(Boolean) as string[]);
-
+  const studentsRef = db.collection('students');
 
   for (const row of students) {
-    if (!row) continue; // Skip empty rows
+    if (!row) continue;
 
+    // --- Data Extraction & Sanitization ---
     const studentData = {
       name: String(findValue(row, ["Student Name"]) || '').trim(),
       studentId: String(findValue(row, ["Student ID"]) || '').trim(),
@@ -88,13 +82,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       whatsappNumber: String(findValue(row, ["WhatsApp No.", "WhatsApp No"]) || '').trim(),
       phoneNumber: String(findValue(row, ["Phone No.", "Phone No"]) || '').trim(),
     };
-
-    const {
-      studentId, name, email, rollNumber, registrationNumber, department: rawDepartment,
-      admissionYear, currentYear, phoneNumber
-    } = studentData;
     
     // --- Rigorous Validation ---
+    const { name, studentId, email, rollNumber, registrationNumber, department: rawDepartment, admissionYear, currentYear, phoneNumber } = studentData;
     if (!studentId || !name || !email || !rollNumber || !registrationNumber || !rawDepartment || !admissionYear || !currentYear || !phoneNumber) {
         results.errorCount++;
         results.errors.push(`Skipped row (Missing required data): Name: ${name || 'N/A'}, Roll: ${rollNumber || 'N/A'}`);
@@ -114,68 +104,82 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         continue;
     }
 
-    // --- Duplicate Checking ---
-    if (existingStudentIds.has(studentId)) {
-      results.errorCount++;
-      results.errors.push(`Skipped (Student ID already exists): ${studentId}`);
-      continue;
-    }
-    if (existingRollNumbers.has(rollNumber)) {
-      results.errorCount++;
-      results.errors.push(`Skipped (Roll number already exists): ${rollNumber}`);
-      continue;
-    }
-    if (existingEmails.has(email)) {
-      results.errorCount++;
-      results.errors.push(`Skipped (Email already exists): ${email}`);
-      continue;
-    }
-
     try {
-      // --- Create User and Save ---
-      const userRecord = await adminAuth.createUser({
-        email: email,
-        password: DEFAULT_PASSWORD,
-        displayName: name,
-        emailVerified: true,
-      });
-
-      const newStudentData: Omit<Student, 'id'> = {
-        uid: userRecord.uid,
-        studentId: studentId,
-        name: name,
-        email: email,
-        role: USER_ROLES.STUDENT,
-        rollNumber: rollNumber,
-        registrationNumber: registrationNumber,
-        department: normalizedDept,
-        admissionYear: admissionYearNum,
-        currentYear: currentYearNum,
-        phoneNumber: phoneNumber,
-        whatsappNumber: studentData.whatsappNumber,
-        isEmailVerified: true,
-        isPhoneVerified: false,
-        status: 'active',
-        batchIds: [],
-      };
+      // Check for auth user existence *before* transaction. This is a read operation.
+      try {
+        await adminAuth.getUserByEmail(email);
+        results.errorCount++;
+        results.errors.push(`Skipped (Email already exists in Authentication system): ${email}`);
+        continue;
+      } catch (authError: any) {
+        if (authError.code !== 'auth/user-not-found') {
+          throw authError; // Re-throw unexpected auth errors.
+        }
+        // If user not found, we can proceed.
+      }
       
-      await db.collection('students').doc(userRecord.uid).set(newStudentData);
+      // Use a transaction to ensure atomic read/write and prevent race conditions.
+      await db.runTransaction(async (transaction) => {
+        const idQuery = studentsRef.where('studentId', '==', studentId).limit(1);
+        const rollQuery = studentsRef.where('rollNumber', '==', rollNumber).limit(1);
+        const emailQuery = studentsRef.where('email', '==', email).limit(1);
 
-      // --- Update In-Memory Sets to Prevent Duplicates Within the Same File ---
-      existingStudentIds.add(studentId);
-      existingRollNumbers.add(rollNumber);
-      existingEmails.add(email);
+        const [idSnapshot, rollSnapshot, emailSnapshot] = await Promise.all([
+            transaction.get(idQuery),
+            transaction.get(rollQuery),
+            transaction.get(emailQuery)
+        ]);
 
+        if (!idSnapshot.empty) {
+            throw new Error(`Student ID ${studentId} already exists.`);
+        }
+        if (!rollSnapshot.empty) {
+            throw new Error(`Roll Number ${rollNumber} already exists.`);
+        }
+        if (!emailSnapshot.empty) {
+            throw new Error(`Email ${email} already exists.`);
+        }
+        
+        // If all checks pass inside the transaction, proceed to create the Auth user and then set the Firestore doc.
+        const userRecord = await adminAuth.createUser({
+            email: email,
+            password: DEFAULT_PASSWORD,
+            displayName: name,
+            emailVerified: true,
+        });
+
+        const newStudentData: Omit<Student, 'id'> = {
+            uid: userRecord.uid,
+            studentId, name, email, rollNumber, registrationNumber,
+            department: normalizedDept,
+            admissionYear: admissionYearNum,
+            currentYear: currentYearNum,
+            phoneNumber,
+            whatsappNumber: studentData.whatsappNumber,
+            role: USER_ROLES.STUDENT,
+            isEmailVerified: true,
+            isPhoneVerified: false,
+            status: 'active',
+            batchIds: [],
+        };
+        
+        const newStudentRef = studentsRef.doc(userRecord.uid);
+        transaction.set(newStudentRef, newStudentData);
+      });
+      
       results.successCount++;
 
     } catch (error: any) {
       results.errorCount++;
       let errorMessage = `Failed for ${name} (${rollNumber}): ${error.message}`;
-      if (error.code === 'auth/email-already-exists') {
-        errorMessage = `Skipped (Email already exists in Auth): ${email}`;
-      }
-      if (error.code === 'auth/invalid-email') {
-        errorMessage = `Failed for ${name} (${rollNumber}): The email address is improperly formatted.`;
+      // Clean up Firebase Auth user if Firestore transaction failed.
+      try {
+        const user = await adminAuth.getUserByEmail(email);
+        if (user) await adminAuth.deleteUser(user.uid);
+        errorMessage += ' (Auth user cleaned up).';
+      } catch (cleanupError) {
+        // Log cleanup error but don't overwrite original error message
+        console.error(`Failed to cleanup auth user for ${email} after transaction failure.`);
       }
       results.errors.push(errorMessage);
     }
