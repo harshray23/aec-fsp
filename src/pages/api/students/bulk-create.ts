@@ -6,7 +6,6 @@ import { USER_ROLES, DEPARTMENTS } from '@/lib/constants';
 
 const DEFAULT_PASSWORD = "Password@123";
 
-// This helper function finds a value in an object using a list of possible keys, case-insensitively.
 function findValue(obj: any, keys: string[]): any {
     if (!obj) return undefined;
     const lowerCaseKeys = keys.map(k => k.toLowerCase().replace(/[^a-z0-9]/g, ''));
@@ -21,14 +20,12 @@ function findValue(obj: any, keys: string[]): any {
     return undefined;
 }
 
-// This helper function normalizes department names to their standard system codes.
 function normalizeDepartment(input: string): string | undefined {
     if (!input) return undefined;
     const normalizedInput = String(input).trim().toLowerCase();
     for (const dept of DEPARTMENTS) {
         const lowerDeptValue = dept.value.toLowerCase();
         const lowerDeptLabel = dept.label.toLowerCase();
-        // Check against value ('cse'), label ('Computer...'), and abbreviation ('CSE').
         if (lowerDeptValue === normalizedInput || lowerDeptLabel === normalizedInput) {
             return dept.value;
         }
@@ -44,7 +41,6 @@ function normalizeDepartment(input: string): string | undefined {
     return undefined;
 }
 
-
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method Not Allowed' });
@@ -53,8 +49,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ message: 'Firebase Admin SDK not initialized.' });
   }
 
-  const { students } = req.body;
-  if (!Array.isArray(students)) {
+  const { students: rawStudents } = req.body;
+  if (!Array.isArray(rawStudents)) {
     return res.status(400).json({ message: 'Request body must contain a "students" array.' });
   }
 
@@ -63,13 +59,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     errorCount: 0,
     errors: [] as string[],
   };
-  
-  const studentsRef = db.collection('students');
 
-  for (const row of students) {
+  const validStudentsToCreate: (Omit<Student, 'id'> & { password?: string })[] = [];
+  const existingEmails = new Set<string>();
+  const existingStudentIds = new Set<string>();
+  const existingRollNumbers = new Set<string>();
+
+  // --- Pre-fetch existing data for faster validation ---
+  const allStudentsSnapshot = await db.collection('students').get();
+  allStudentsSnapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.email) existingEmails.add(data.email.toLowerCase());
+      if (data.studentId) existingStudentIds.add(data.studentId);
+      if (data.rollNumber) existingRollNumbers.add(data.rollNumber);
+  });
+
+  // --- Step 1: Validate and sanitize all students first ---
+  for (const row of rawStudents) {
     if (!row) continue;
 
-    // --- Data Extraction & Sanitization ---
     const studentData = {
       name: String(findValue(row, ["Student Name"]) || '').trim(),
       studentId: String(findValue(row, ["Student ID"]) || '').trim(),
@@ -82,108 +90,123 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       whatsappNumber: String(findValue(row, ["WhatsApp No.", "WhatsApp No"]) || '').trim(),
       phoneNumber: String(findValue(row, ["Phone No.", "Phone No"]) || '').trim(),
     };
-    
-    // --- Rigorous Validation ---
+
     const { name, studentId, email, rollNumber, registrationNumber, department: rawDepartment, admissionYear, currentYear, phoneNumber } = studentData;
-    if (!studentId || !name || !email || !rollNumber || !registrationNumber || !rawDepartment || !admissionYear || !currentYear || !phoneNumber) {
-        results.errorCount++;
-        results.errors.push(`Skipped row (Missing required data): Name: ${name || 'N/A'}, Roll: ${rollNumber || 'N/A'}`);
-        continue;
-    }
     const normalizedDept = normalizeDepartment(rawDepartment);
-    if (!normalizedDept) {
-        results.errorCount++;
-        results.errors.push(`Skipped (Invalid department: "${rawDepartment}"): Name: ${name}, Roll: ${rollNumber}`);
-        continue;
-    }
     const admissionYearNum = parseInt(String(admissionYear), 10);
     const currentYearNum = parseInt(String(currentYear), 10);
-    if (isNaN(admissionYearNum) || isNaN(currentYearNum)) {
+
+    const addError = (msg: string) => {
         results.errorCount++;
-        results.errors.push(`Skipped (Invalid year format): Name: ${name}, Admission: ${admissionYear}, Current: ${currentYear}`);
-        continue;
-    }
+        results.errors.push(msg);
+    };
 
-    try {
-      // Check for auth user existence *before* transaction. This is a read operation.
-      try {
-        await adminAuth.getUserByEmail(email);
-        results.errorCount++;
-        results.errors.push(`Skipped (Email already exists in Authentication system): ${email}`);
-        continue;
-      } catch (authError: any) {
-        if (authError.code !== 'auth/user-not-found') {
-          throw authError; // Re-throw unexpected auth errors.
-        }
-        // If user not found, we can proceed.
-      }
-      
-      // Use a transaction to ensure atomic read/write and prevent race conditions.
-      await db.runTransaction(async (transaction) => {
-        const idQuery = studentsRef.where('studentId', '==', studentId).limit(1);
-        const rollQuery = studentsRef.where('rollNumber', '==', rollNumber).limit(1);
-        const emailQuery = studentsRef.where('email', '==', email).limit(1);
-
-        const [idSnapshot, rollSnapshot, emailSnapshot] = await Promise.all([
-            transaction.get(idQuery),
-            transaction.get(rollQuery),
-            transaction.get(emailQuery)
-        ]);
-
-        if (!idSnapshot.empty) {
-            throw new Error(`Student ID ${studentId} already exists.`);
-        }
-        if (!rollSnapshot.empty) {
-            throw new Error(`Roll Number ${rollNumber} already exists.`);
-        }
-        if (!emailSnapshot.empty) {
-            throw new Error(`Email ${email} already exists.`);
-        }
-        
-        // If all checks pass inside the transaction, proceed to create the Auth user and then set the Firestore doc.
-        const userRecord = await adminAuth.createUser({
-            email: email,
-            password: DEFAULT_PASSWORD,
-            displayName: name,
-            emailVerified: true,
-        });
-
-        const newStudentData: Omit<Student, 'id'> = {
-            uid: userRecord.uid,
-            studentId, name, email, rollNumber, registrationNumber,
+    if (!studentId || !name || !email || !rollNumber || !registrationNumber || !rawDepartment || !admissionYear || !currentYear || !phoneNumber) {
+        addError(`Skipped row (Missing required data): Name: ${name || 'N/A'}, Roll: ${rollNumber || 'N/A'}`);
+    } else if (!normalizedDept) {
+        addError(`Skipped (Invalid department: "${rawDepartment}"): Name: ${name}, Roll: ${rollNumber}`);
+    } else if (isNaN(admissionYearNum) || isNaN(currentYearNum)) {
+        addError(`Skipped (Invalid year format): Name: ${name}, Admission: ${admissionYear}, Current: ${currentYear}`);
+    } else if (existingEmails.has(email.toLowerCase())) {
+        addError(`Skipped (Email already exists): ${email}`);
+    } else if (existingStudentIds.has(studentId)) {
+        addError(`Skipped (Student ID already exists): ${studentId}`);
+    } else if (existingRollNumbers.has(rollNumber)) {
+        addError(`Skipped (Roll Number already exists): ${rollNumber}`);
+    } else {
+        validStudentsToCreate.push({
+            name, studentId, rollNumber, registrationNumber, phoneNumber,
+            email: email.toLowerCase(),
             department: normalizedDept,
             admissionYear: admissionYearNum,
             currentYear: currentYearNum,
-            phoneNumber,
             whatsappNumber: studentData.whatsappNumber,
             role: USER_ROLES.STUDENT,
             isEmailVerified: true,
             isPhoneVerified: false,
             status: 'active',
             batchIds: [],
-        };
-        
-        const newStudentRef = studentsRef.doc(userRecord.uid);
-        transaction.set(newStudentRef, newStudentData);
-      });
-      
-      results.successCount++;
-
-    } catch (error: any) {
-      results.errorCount++;
-      let errorMessage = `Failed for ${name} (${rollNumber}): ${error.message}`;
-      // Clean up Firebase Auth user if Firestore transaction failed.
-      try {
-        const user = await adminAuth.getUserByEmail(email);
-        if (user) await adminAuth.deleteUser(user.uid);
-        errorMessage += ' (Auth user cleaned up).';
-      } catch (cleanupError) {
-        // Log cleanup error but don't overwrite original error message
-        console.error(`Failed to cleanup auth user for ${email} after transaction failure.`);
-      }
-      results.errors.push(errorMessage);
+        });
+        // Add to sets to prevent duplicate processing within the same file
+        existingEmails.add(email.toLowerCase());
+        existingStudentIds.add(studentId);
+        existingRollNumbers.add(rollNumber);
     }
+  }
+
+  if (validStudentsToCreate.length === 0) {
+    return res.status(200).json(results);
+  }
+
+  // --- Step 2: Batch create users in Firebase Auth ---
+  const authUsersToCreate = validStudentsToCreate.map(student => ({
+      email: student.email,
+      password: DEFAULT_PASSWORD,
+      displayName: student.name,
+      emailVerified: true,
+  }));
+  
+  let createdAuthUsers: { email: string; uid: string }[] = [];
+  try {
+      const userImportResult = await adminAuth.importUsers(authUsersToCreate, {
+          hash: { algorithm: 'STANDARD_SCRIPTS' },
+      });
+
+      if (userImportResult.errors.length > 0) {
+          userImportResult.errors.forEach(err => {
+              results.errorCount++;
+              results.errors.push(`Auth creation failed for user index ${err.index}: ${err.error.message}`);
+          });
+      }
+      
+      // Map successful creations back to their email to find them later
+      const successfulIndexes = new Set(Array.from({ length: authUsersToCreate.length }, (_, i) => i).filter(i => !userImportResult.errors.some(e => e.index === i)));
+      
+      // Need to fetch the UIDs for the successfully created users
+      const successfulEmails = Array.from(successfulIndexes).map(i => authUsersToCreate[i].email);
+      if(successfulEmails.length > 0) {
+        const userRecords = await adminAuth.getUsers(successfulEmails.map(email => ({ email })));
+        createdAuthUsers = userRecords.users.map(u => ({ email: u.email!, uid: u.uid }));
+      }
+
+  } catch(error: any) {
+    results.errorCount += authUsersToCreate.length;
+    results.errors.push(`A fatal error occurred during user import: ${error.message}`);
+    return res.status(500).json(results);
+  }
+
+  if (createdAuthUsers.length === 0) {
+      return res.status(200).json(results);
+  }
+
+  // --- Step 3: Batch write student profiles to Firestore ---
+  const firestoreBatch = db.batch();
+  const createdAuthUsersMap = new Map(createdAuthUsers.map(u => [u.email, u.uid]));
+
+  for (const student of validStudentsToCreate) {
+      const uid = createdAuthUsersMap.get(student.email);
+      if (uid) {
+          const studentDocRef = db.collection('students').doc(uid);
+          const studentPayload: Omit<Student, 'id'> = { ...student, uid };
+          firestoreBatch.set(studentDocRef, studentPayload);
+      }
+  }
+
+  try {
+      await firestoreBatch.commit();
+      results.successCount = createdAuthUsers.length;
+  } catch (error: any) {
+      results.errorCount += createdAuthUsers.length;
+      results.errors.push(`Firestore batch write failed: ${error.message}. Auth users may need manual cleanup.`);
+      // Attempt to delete the auth users that were just created
+      const uidsToDelete = Array.from(createdAuthUsersMap.values());
+      if (uidsToDelete.length > 0) {
+        await adminAuth.deleteUsers(uidsToDelete);
+        results.errors.push(`Cleaned up ${uidsToDelete.length} auth users due to database failure.`);
+      }
   }
 
   return res.status(200).json(results);
 }
+
+    
