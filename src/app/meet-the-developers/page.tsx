@@ -10,8 +10,8 @@ const developers = [
   { name: 'Sanjay Sharma', role: 'Backend Engineer', department: 'CSE', image: '/iiimg2.jpg' },
   { name: 'Harsh Agarwalla', role: 'Testing and Frontend Engineer', department: 'IT', image: '/iiimg3.jpg' },
   { name: 'Harsh Sahu', role: 'Frontend Engineer', department: 'IT', image: '/img4.jpg' },
-  { name: 'Prerna', role: 'Database Engineer', department: 'CSE', image: '/img5.jpg' },
-  { name: 'Princi Kumari', role: 'Designer', department: 'CSE', image: '/img6.jpg' },
+  { name: 'Prerna Priya', role: 'Database Engineer', department: 'CSE', image: '/img5.jpg' },
+  { name: 'Princi Kumari', role: 'Designer', department: 'CSE', image: '/img6.png' },
 ];
 
 export default function MeetTheDevelopersPage() {
