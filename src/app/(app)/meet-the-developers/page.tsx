@@ -1,10 +1,10 @@
 
 import { PageHeader } from "@/components/shared/PageHeader";
-import { Card, CardContent } from "@/components/ui/card";
 import { Code, ArrowLeft } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 const developers = [
   { name: 'Harsh Ray', role: 'Backend and Automation Engineer', department: 'AIML', image: '/iiimg1.jpg' },
@@ -17,7 +17,7 @@ const developers = [
 
 export default function MeetTheDevelopersPage() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 font-sans">
       <PageHeader
         title="Meet the Developers"
         description="This project was brought to life by a dedicated team of student developers."
@@ -31,23 +31,35 @@ export default function MeetTheDevelopersPage() {
           </Button>
         }
       />
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {developers.map((dev) => (
-          <Card key={dev.name} className="text-center overflow-hidden transition-transform transform hover:scale-105 hover:shadow-xl">
-            <Image 
-                src={dev.image} 
-                alt={dev.name} 
-                width={400} 
-                height={300} 
-                className="w-full h-64 object-cover" 
+      <div 
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"
+        style={{ perspective: '1000px' }}
+      >
+        {developers.map((dev, index) => (
+          <div
+            key={dev.name}
+            className="group relative h-96 w-full rounded-xl shadow-lg transform-style-3d transition-all duration-500 ease-in-out hover:shadow-2xl hover:[transform:rotateY(-5deg)_rotateX(5deg)]"
+          >
+            <div className="absolute inset-0 overflow-hidden rounded-xl">
+              <Image
+                src={dev.image}
+                alt={dev.name}
+                fill
+                className="object-cover object-center h-full w-full grayscale transition-all duration-500 ease-in-out group-hover:grayscale-0 group-hover:scale-110"
                 data-ai-hint="developer portrait"
-            />
-            <CardContent className="p-4">
-              <h3 className="font-semibold text-lg text-foreground">{dev.name}</h3>
-              <p className="text-sm font-medium text-primary">{dev.department}</p>
-              <p className="text-sm text-muted-foreground mt-1">{dev.role}</p>
-            </CardContent>
-          </Card>
+              />
+            </div>
+            
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent opacity-0 transition-opacity duration-500 ease-in-out group-hover:opacity-100 rounded-xl" />
+            
+            <div className="absolute bottom-0 left-0 right-0 p-6 text-white transform-style-3d">
+              <div className="translate-y-8 opacity-0 transition-all duration-500 ease-in-out group-hover:translate-y-0 group-hover:opacity-100">
+                <h3 className="font-bold text-2xl tracking-tight">{dev.name}</h3>
+                <p className="text-sm font-medium text-primary-foreground/80">{dev.role}</p>
+                <p className="text-xs text-primary-foreground/60">{dev.department}</p>
+              </div>
+            </div>
+          </div>
         ))}
       </div>
     </div>

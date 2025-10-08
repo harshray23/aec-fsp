@@ -144,4 +144,9 @@
   .rdp-day_today.day-present .rdp-button { @apply ring-2 ring-green-600; }
   .rdp-day_today.day-absent .rdp-button { @apply ring-2 ring-red-600; }
   .rdp-day_today.day-late .rdp-button { @apply ring-2 ring-yellow-600; }
+
+  /* 3D Transform Utilities */
+  .transform-style-3d {
+    transform-style: preserve-3d;
+  }
 }
