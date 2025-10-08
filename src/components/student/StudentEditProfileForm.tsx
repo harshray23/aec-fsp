@@ -19,10 +19,12 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import type { Student } from "@/lib/types";
 import { Mail, Phone, Building, UserSquare2, Hash, ClipboardList, MapPin, User, HeartPulse, School, GraduationCap, Calendar } from "lucide-react";
-import { DEPARTMENTS } from "@/lib/constants";
+import { DEPARTMENTS, SECTION_OPTIONS, SECTIONS } from "@/lib/constants";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 const editStudentProfileSchema = z.object({
+  section: z.enum(SECTIONS).optional(),
   phoneNumber: z.string().optional().or(z.literal('')).refine(val => !val || /^\d{10,15}$/.test(val), {
     message: "Phone number must be 10-15 digits if provided.",
   }),
@@ -72,6 +74,7 @@ export default function StudentEditProfileForm({ studentData, onSave, onCancel, 
   const form = useForm<EditStudentProfileFormValues>({
     resolver: zodResolver(editStudentProfileSchema),
     defaultValues: {
+      section: studentData.section || undefined,
       phoneNumber: studentData.phoneNumber || "",
       whatsappNumber: studentData.whatsappNumber || "",
       address: {
@@ -163,10 +166,28 @@ export default function StudentEditProfileForm({ studentData, onSave, onCancel, 
                     <FormLabel className="flex items-center text-muted-foreground text-sm"><Building className="mr-2 h-4 w-4" />Department (Read-only)</FormLabel>
                     <Input value={departmentLabel} readOnly className="mt-1 bg-muted/30" />
                 </div>
-                 <div>
-                    <FormLabel className="flex items-center text-muted-foreground text-sm"><ClipboardList className="mr-2 h-4 w-4" />Section (Read-only)</FormLabel>
-                    <Input value={studentData.section || 'N/A'} readOnly className="mt-1 bg-muted/30" />
-                </div>
+                <FormField
+                    control={form.control}
+                    name="section"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel className="flex items-center text-sm"><ClipboardList className="mr-2 h-4 w-4" />Section</FormLabel>
+                         <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select your section" />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {SECTION_OPTIONS.map(opt => (
+                                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
                 <div>
                     <FormLabel className="flex items-center text-muted-foreground text-sm"><UserSquare2 className="mr-2 h-4 w-4" />Roll No. (Read-only)</FormLabel>
                     <Input value={studentData.rollNumber || 'N/A'} readOnly className="mt-1 bg-muted/30" />
