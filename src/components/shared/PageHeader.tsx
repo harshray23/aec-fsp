@@ -12,13 +12,13 @@ export function PageHeader({ title, description, icon: Icon, actions }: PageHead
     <div className="mb-8 border-b pb-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          {Icon && <Icon className="h-8 w-8 text-primary" />}
+          {Icon && <Icon className="h-8 w-8 text-white" />}
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">
+            <h1 className="text-3xl font-bold tracking-tight text-white">
               {title}
             </h1>
             {description && (
-              <p className="text-muted-foreground mt-1">{description}</p>
+              <p className="text-white/80 mt-1">{description}</p>
             )}
           </div>
         </div>
