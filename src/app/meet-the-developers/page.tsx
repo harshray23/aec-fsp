@@ -38,7 +38,7 @@ export default function MeetTheDevelopersPage() {
         {developers.map((dev, index) => (
           <div
             key={dev.name}
-            className="group relative h-96 w-full rounded-xl shadow-lg transform-style-3d transition-all duration-500 ease-in-out hover:shadow-2xl hover:[transform:rotateY(-5deg)_rotateX(5deg)]"
+            className="group relative h-[28rem] w-full rounded-xl shadow-lg transform-style-3d transition-all duration-500 ease-in-out hover:shadow-2xl hover:[transform:rotateY(-5deg)_rotateX(5deg)]"
           >
             <div className="absolute inset-0 overflow-hidden rounded-xl">
               <Image
