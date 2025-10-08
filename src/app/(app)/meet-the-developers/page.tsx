@@ -17,13 +17,13 @@ const developers = [
 
 export default function MeetTheDevelopersPage() {
   return (
-    <div className="space-y-8 font-sans">
+    <div className="space-y-8 font-sans text-white">
       <PageHeader
         title="Meet the Developers"
         description="This project was brought to life by a dedicated team of student developers."
         icon={Code}
         actions={
-          <Button asChild variant="outline">
+          <Button asChild variant="outline" className="bg-transparent text-white border-white/50 hover:bg-white/10 hover:text-white">
             <Link href="/">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Home

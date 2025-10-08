@@ -9,11 +9,17 @@ export default function RootPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 3000); // Show splash screen for 3 seconds
+    // Check if we are running on the client side
+    if (typeof window !== 'undefined') {
+      const timer = setTimeout(() => {
+        setIsLoading(false);
+      }, 3000); // Show splash screen for 3 seconds
 
-    return () => clearTimeout(timer); // Cleanup timer on component unmount
+      return () => clearTimeout(timer); // Cleanup timer on component unmount
+    } else {
+        // If on the server, don't show the splash screen immediately
+        setIsLoading(false);
+    }
   }, []);
 
   if (isLoading) {
