@@ -9,15 +9,6 @@ import { AppLogo } from "@/components/shared/AppLogo";
 import { GraduationCap, Briefcase, UserCog, UserRound, Code } from "lucide-react"; 
 import { USER_ROLES, type UserRole } from "@/lib/constants";
 import Image from "next/image";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-
 
 interface RoleCardProps {
   role: UserRole;
@@ -141,47 +132,11 @@ export default function RoleSelector() {
         </div>
         
         <div className="text-center mt-8 md:mt-12 w-full max-w-4xl">
-           <Dialog>
-              <DialogTrigger asChild>
-                <Button variant="outline" className="bg-background/80 backdrop-blur-sm">
-                  <Code className="mr-2 h-4 w-4"/> Developed By
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle className="text-2xl text-center">Meet the Developers</DialogTitle>
-                  <DialogDescription className="text-center">
-                    This project was brought to life by a dedicated team of student developers.
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                  <Card className="text-center overflow-hidden">
-                    <Image src="/iiimg1.jpg" alt="Harsh Ray" width={400} height={300} className="w-full h-48 object-cover" data-ai-hint="developer portrait" />
-                    <CardContent className="p-4">
-                        <h3 className="font-semibold text-lg text-foreground">Harsh Ray</h3>
-                        <p className="text-sm font-medium text-primary">AIML</p>
-                        <p className="text-sm text-muted-foreground mt-1">Backend and Automation Engineer</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="text-center overflow-hidden">
-                    <Image src="/iiimg2.jpg" alt="Sanjay Sharma" width={400} height={300} className="w-full h-48 object-cover" data-ai-hint="developer portrait" />
-                    <CardContent className="p-4">
-                        <h3 className="font-semibold text-lg text-foreground">Sanjay Sharma</h3>
-                         <p className="text-sm font-medium text-primary">CSE</p>
-                        <p className="text-sm text-muted-foreground mt-1">Backend and Database Engineer</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="text-center overflow-hidden">
-                    <Image src="/iiimg3.jpg" alt="Harsh Agarwalla" width={400} height={300} className="w-full h-48 object-cover" data-ai-hint="developer portrait" />
-                    <CardContent className="p-4">
-                        <h3 className="font-semibold text-lg text-foreground">Harsh Agarwalla</h3>
-                         <p className="text-sm font-medium text-primary">IT</p>
-                        <p className="text-sm text-muted-foreground mt-1">Testing and Frontend Engineer</p>
-                    </CardContent>
-                  </Card>
-                </div>
-              </DialogContent>
-            </Dialog>
+           <Button variant="outline" className="bg-background/80 backdrop-blur-sm" asChild>
+            <Link href="/meet-the-developers">
+              <Code className="mr-2 h-4 w-4"/> Developed By
+            </Link>
+           </Button>
         </div>
         
         <footer className="mt-8 text-center text-white/70 text-sm">
