@@ -11,17 +11,18 @@ export default function RootPage() {
   useEffect(() => {
     // Check if we are running on the client side
     if (typeof window !== 'undefined') {
-      const timer = setTimeout(() => {
-        setIsLoading(false);
-      }, 3000); // Show splash screen for 3 seconds
-
-      return () => clearTimeout(timer); // Cleanup timer on component unmount
+      // Set isLoading to false immediately to avoid the artificial delay.
+      // The splash screen can be shown for a very brief moment if needed,
+      // but a long wait is not user-friendly.
+      setIsLoading(false); 
     } else {
-        // If on the server, don't show the splash screen immediately
+        // If on the server, don't show the splash screen
         setIsLoading(false);
     }
   }, []);
 
+  // While this logic now makes the splash screen almost never appear,
+  // it's kept in case a very brief loading state is desired in the future.
   if (isLoading) {
     return <SplashTransition />;
   }
