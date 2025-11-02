@@ -39,7 +39,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import * as XLSX from "xlsx";
-import { Skeleton } from "@/components/ui/skeleton";
 
 // A simple debounce hook
 function useDebounce(value: string, delay: number) {
@@ -56,25 +55,6 @@ function useDebounce(value: string, delay: number) {
 }
 
 const PAGE_SIZE = 20;
-
-function TableSkeleton() {
-  return (
-    <>
-      {[...Array(5)].map((_, i) => (
-        <TableRow key={i}>
-          <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-[150px]" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-[150px]" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-[200px]" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-[50px]" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-[80px]" /></TableCell>
-          <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
-        </TableRow>
-      ))}
-    </>
-  );
-}
 
 export default function ViewStudentsPage() {
   const { toast } = useToast();
@@ -334,7 +314,7 @@ export default function ViewStudentsPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableSkeleton />
+                <TableRow><TableCell colSpan={8} className="text-center h-24"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></TableCell></TableRow>
               ) : activeStudents.length > 0 ? (
                 activeStudents.map((student) => (
                   <TableRow key={student.id}>

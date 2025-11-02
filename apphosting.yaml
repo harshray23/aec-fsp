@@ -2,13 +2,24 @@
 # https://firebase.google.com/docs/app-hosting/configure
 
 runConfig:
-  # Increase this value if you'd like to automatically spin up
-  # more instances in response to increased traffic.
-  # For 100k concurrent users, this would need to be significantly higher,
-  # and other bottlenecks (database, API logic) must be addressed.
-  # This is an illustrative change; optimal values depend on load testing.
-  maxInstances: 100 # Increased from 50 for better scaling potential
-  minInstances: 0 # Recommended for cost savings. App will scale to zero when idle.
-  # concurrency: 100 # Optional: Max concurrent requests per instance
-  # cpu: 1 # Optional: CPU allocation
-  # memoryMiB: 512 # Optional: Memory allocation
+  # The number of consecutive requests your App Hosting backend can process.
+  # Concurrency has a significant impact on scaling and instance cost.
+  # Higher concurrency means fewer instances are needed to handle traffic,
+  # but it can also lead to increased latency if your backend is slow to respond.
+  # We've chosen a higher concurrency to optimize for cost-efficiency.
+  concurrency: 80
+
+  # The maximum number of instances that can be created for your backend.
+  # This setting is a safety mechanism to prevent uncontrolled scaling and costs.
+  # For a production app with 100k concurrent users, this value would need
+  # to be significantly higher, and other bottlenecks (database, API logic)
+  # would need to be addressed. This is an illustrative value; optimal
+  # settings depend on load testing.
+  maxInstances: 20
+
+  # The minimum number of instances to keep running at all times.
+  # Setting this to 0 is recommended for development and staging environments
+  # to save costs, as the app will scale to zero when idle. For production,
+  # you might set this to 1 or higher to ensure there's always an instance
+  # ready to serve traffic, reducing cold start latency.
+  minInstances: 0

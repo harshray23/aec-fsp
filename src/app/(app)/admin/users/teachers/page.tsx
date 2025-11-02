@@ -29,25 +29,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Skeleton } from "@/components/ui/skeleton";
-
-function TableSkeleton() {
-  return (
-    <>
-      {[...Array(5)].map((_, i) => (
-        <TableRow key={i}>
-          <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-[150px]" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-[200px]" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-[150px]" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
-          <TableCell><Skeleton className="h-4 w-[80px]" /></TableCell>
-          <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
-        </TableRow>
-      ))}
-    </>
-  );
-}
 
 
 export default function ManageTeachersPage() {
@@ -172,7 +153,11 @@ export default function ManageTeachersPage() {
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableSkeleton />
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center h-24">
+                    <Loader2 className="mx-auto h-6 w-6 animate-spin" />
+                  </TableCell>
+                </TableRow>
               ) : teachers.length > 0 ? (
                 teachers.map((teacher) => (
                   <TableRow key={teacher.id}>
