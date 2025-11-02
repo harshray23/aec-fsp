@@ -1,4 +1,3 @@
-
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -59,9 +58,7 @@ export default function LoginForm() {
       return;
     }
 
-    // --- Default Firebase Authentication Flow ---
     try {
-      // Step 1: Authenticate with Firebase Client-Side Authentication
       const userCredential = await signInWithEmailAndPassword(auth, values.email, values.password);
       const firebaseUser = userCredential.user;
 
@@ -69,7 +66,6 @@ export default function LoginForm() {
         throw new Error("Firebase authentication succeeded but user object is null.");
       }
 
-      // Step 2: Fetch the user's detailed profile from our Firestore database via API
       let profileApiUrl: string;
       let successRedirectPath: string;
 
@@ -79,11 +75,11 @@ export default function LoginForm() {
           successRedirectPath = "/student/dashboard";
           break;
         case USER_ROLES.TEACHER:
-          profileApiUrl = `/api/teachers/${firebaseUser.uid}`; // Assuming API can fetch by UID
+          profileApiUrl = `/api/teachers/${firebaseUser.uid}`;
           successRedirectPath = "/teacher/dashboard";
           break;
         case USER_ROLES.ADMIN:
-          profileApiUrl = `/api/admins/${firebaseUser.uid}`; // Assuming API can fetch by UID
+          profileApiUrl = `/api/admins/${firebaseUser.uid}`;
           successRedirectPath = "/admin/dashboard";
           break;
         case USER_ROLES.HOST:
@@ -93,12 +89,20 @@ export default function LoginForm() {
         default:
           throw new Error("Invalid role for profile fetching.");
       }
+      
+      const sessionResponse = await fetch('/api/auth/session-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idToken: await firebaseUser.getIdToken() }),
+      });
+      
+      if (!sessionResponse.ok) {
+          throw new Error("Failed to create a server-side session.");
+      }
 
       const profileRes = await fetch(profileApiUrl);
 
       if (!profileRes.ok) {
-        // If profile not found, it might be an inactive account or an issue.
-        // Log out the Firebase Auth user to prevent being in a weird state.
         await auth.signOut(); 
         const errorData = await profileRes.json().catch(() => ({ message: `Your account profile could not be found for role '${role}'. It may be pending approval or inactive.` }));
         throw new Error(errorData.message);
@@ -106,19 +110,17 @@ export default function LoginForm() {
       
       const firestoreProfile: Teacher | Admin | Host = await profileRes.json();
       
-      // Step 3: Check if the user's account is active (for roles that have a status field)
       if (firestoreProfile.status && firestoreProfile.status !== 'active') {
         await auth.signOut();
         const statusMessage = firestoreProfile.status.replace("_", " ");
         throw new Error(`Your account status is '${statusMessage}'. You cannot log in.`);
       }
 
-      // Step 4: Combine Firebase Auth data with Firestore profile and store in localStorage
       const finalUserData = {
-        ...firestoreProfile, // Contains name, role, department, etc. from Firestore
+        ...firestoreProfile,
         uid: firebaseUser.uid,
-        id: firebaseUser.uid, // Use UID as the primary ID
-        email: firebaseUser.email, // Ensures email is from the source of truth (Firebase Auth)
+        id: firebaseUser.uid, 
+        email: firebaseUser.email,
         isEmailVerified: firebaseUser.emailVerified,
       };
 
@@ -130,9 +132,7 @@ export default function LoginForm() {
       });
 
       setIsLoginSuccess(true);
-      setTimeout(() => {
-        router.push(successRedirectPath);
-      }, 3000); // 3-second delay for visual feedback
+      router.push(successRedirectPath);
 
     } catch (error: any) {
       console.error("Login/Profile Fetch error:", error);
