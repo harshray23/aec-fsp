@@ -130,9 +130,8 @@ export default function LoginForm() {
       });
 
       setIsLoginSuccess(true);
-      setTimeout(() => {
-        router.push(successRedirectPath);
-      }, 3000); // Redirect after 3 seconds
+      // Removed the artificial 3-second delay for a faster user experience.
+      router.push(successRedirectPath);
 
     } catch (error: any) {
       console.error("Login/Profile Fetch error:", error);
