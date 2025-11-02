@@ -39,6 +39,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import * as XLSX from "xlsx";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // A simple debounce hook
 function useDebounce(value: string, delay: number) {
@@ -55,6 +56,25 @@ function useDebounce(value: string, delay: number) {
 }
 
 const PAGE_SIZE = 20;
+
+function TableSkeleton() {
+  return (
+    <>
+      {[...Array(5)].map((_, i) => (
+        <TableRow key={i}>
+          <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-[150px]" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-[150px]" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-[200px]" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-[50px]" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-[80px]" /></TableCell>
+          <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+        </TableRow>
+      ))}
+    </>
+  );
+}
 
 export default function ViewStudentsPage() {
   const { toast } = useToast();
@@ -299,11 +319,6 @@ export default function ViewStudentsPage() {
           </div>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center items-center h-48">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-          ) : (
           <Table>
             <TableHeader>
               <TableRow>
@@ -318,46 +333,50 @@ export default function ViewStudentsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {activeStudents.map((student) => (
-                <TableRow key={student.id}>
-                  <TableCell>{student.studentId}</TableCell>
-                  <TableCell className="font-medium">{student.name}</TableCell>
-                  <TableCell>{student.email}</TableCell>
-                  <TableCell>{DEPARTMENTS.find(d => d.value === student.department)?.label || student.department}</TableCell>
-                  <TableCell>{student.section || "N/A"}</TableCell>
-                  <TableCell>{student.rollNumber}</TableCell>
-                  <TableCell>{getBatchInfo(student.batchIds)}</TableCell> 
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                         <DropdownMenuItem onClick={() => openEditDialog(student)} className="cursor-pointer">
-                          <Edit className="mr-2 h-4 w-4" /> Edit Profile
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => openDeleteDialog(student)}
-                          className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" /> Delete Student
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+              {isLoading ? (
+                <TableSkeleton />
+              ) : activeStudents.length > 0 ? (
+                activeStudents.map((student) => (
+                  <TableRow key={student.id}>
+                    <TableCell>{student.studentId}</TableCell>
+                    <TableCell className="font-medium">{student.name}</TableCell>
+                    <TableCell>{student.email}</TableCell>
+                    <TableCell>{DEPARTMENTS.find(d => d.value === student.department)?.label || student.department}</TableCell>
+                    <TableCell>{student.section || "N/A"}</TableCell>
+                    <TableCell>{student.rollNumber}</TableCell>
+                    <TableCell>{getBatchInfo(student.batchIds)}</TableCell> 
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                           <DropdownMenuItem onClick={() => openEditDialog(student)} className="cursor-pointer">
+                            <Edit className="mr-2 h-4 w-4" /> Edit Profile
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => openDeleteDialog(student)}
+                            className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete Student
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center text-muted-foreground h-24">
+                    No students found with the current filters.
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
-          )}
-          {activeStudents.length === 0 && !isLoading && (
-            <div className="text-center text-muted-foreground h-24 flex items-center justify-center">
-                No students found with the current filters.
-            </div>
-          )}
           {hasMore && !isLoading && (
             <div className="mt-6 text-center">
                 <Button onClick={() => fetchStudents(false, lastVisibleDoc)} disabled={isFetchingMore}>

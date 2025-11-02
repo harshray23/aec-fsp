@@ -29,6 +29,26 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
+
+function TableSkeleton() {
+  return (
+    <>
+      {[...Array(5)].map((_, i) => (
+        <TableRow key={i}>
+          <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-[150px]" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-[200px]" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-[150px]" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-[100px]" /></TableCell>
+          <TableCell><Skeleton className="h-4 w-[80px]" /></TableCell>
+          <TableCell className="text-right"><Skeleton className="h-8 w-8 ml-auto" /></TableCell>
+        </TableRow>
+      ))}
+    </>
+  );
+}
+
 
 export default function ManageTeachersPage() {
   const { toast } = useToast();
@@ -118,20 +138,6 @@ export default function ManageTeachersPage() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="space-y-8">
-        <PageHeader title="Manage Teachers" icon={Briefcase} />
-        <Card className="shadow-lg">
-          <CardHeader><CardTitle>Teacher List</CardTitle></CardHeader>
-          <CardContent className="flex justify-center items-center h-64">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-8">
       <PageHeader
@@ -165,43 +171,46 @@ export default function ManageTeachersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {teachers.map((teacher) => (
-                <TableRow key={teacher.id}>
-                  <TableCell className="truncate max-w-[100px]">{teacher.id}</TableCell>
-                  <TableCell className="font-medium">{teacher.name}</TableCell>
-                  <TableCell>{teacher.email}</TableCell>
-                  <TableCell>{getDepartmentLabel(teacher.department)}</TableCell>
-                  <TableCell>{teacher.username || "N/A"}</TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusVariant(teacher.status)}>
-                      {teacher.status?.replace("_", " ").split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') || "Unknown"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem disabled> {/* Edit functionality can be added later */}
-                          <Edit className="mr-2 h-4 w-4" /> Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          onClick={() => openDeleteDialog(teacher)}
-                          className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
-                          disabled={teacher.status === "pending_approval"} // Maybe don't allow deleting pending users from here
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" /> Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-               {teachers.length === 0 && !isLoading && (
+              {isLoading ? (
+                <TableSkeleton />
+              ) : teachers.length > 0 ? (
+                teachers.map((teacher) => (
+                  <TableRow key={teacher.id}>
+                    <TableCell className="truncate max-w-[100px]">{teacher.id}</TableCell>
+                    <TableCell className="font-medium">{teacher.name}</TableCell>
+                    <TableCell>{teacher.email}</TableCell>
+                    <TableCell>{getDepartmentLabel(teacher.department)}</TableCell>
+                    <TableCell>{teacher.username || "N/A"}</TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusVariant(teacher.status)}>
+                        {teacher.status?.replace("_", " ").split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') || "Unknown"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem disabled> {/* Edit functionality can be added later */}
+                            <Edit className="mr-2 h-4 w-4" /> Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => openDeleteDialog(teacher)}
+                            className="text-destructive focus:text-destructive focus:bg-destructive/10 cursor-pointer"
+                            disabled={teacher.status === "pending_approval"} // Maybe don't allow deleting pending users from here
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" /> Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center text-muted-foreground h-24">
                     No teachers found.

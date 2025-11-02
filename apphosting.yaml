@@ -7,7 +7,7 @@ runConfig:
   # For 100k concurrent users, this would need to be significantly higher,
   # and other bottlenecks (database, API logic) must be addressed.
   # This is an illustrative change; optimal values depend on load testing.
-  maxInstances: 50 # Increased from 1, adjust based on actual needs and testing
+  maxInstances: 100 # Increased from 50 for better scaling potential
   minInstances: 0 # Recommended for cost savings. App will scale to zero when idle.
   # concurrency: 100 # Optional: Max concurrent requests per instance
   # cpu: 1 # Optional: CPU allocation
