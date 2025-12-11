@@ -261,13 +261,13 @@ export default function ManageAcademicsPage() {
         } catch (e) {
           console.error("Invalid date format for test:", test, e);
         }
-        
+
         return {
           ...baseStudentData,
           'Test Name': test.testName,
           'Test Date': formattedDate,
-          'Marks Obtained': test.marksObtained,
-          'Max Marks': test.maxMarks,
+          'Marks Obtained': String(test.marksObtained),
+          'Max Marks': String(test.maxMarks),
         };
       });
     });
