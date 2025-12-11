@@ -239,7 +239,7 @@ export default function StudentProfilePage() {
           <>
             <CardHeader className="items-center text-center border-b pb-6 p-0">
               <Avatar className="h-24 w-24 mb-4 ring-2 ring-primary ring-offset-2">
-                <AvatarImage src={(studentProfile as any).avatarUrl || `https://placehold.co/150x150.png?text=${avatarText}`} alt={studentProfile.name} data-ai-hint="student avatar" />
+                <AvatarImage src={studentProfile.avatarUrl || `https://placehold.co/150x150.png?text=${avatarText}`} alt={studentProfile.name} data-ai-hint="student avatar" />
                 <AvatarFallback>{avatarText}</AvatarFallback>
               </Avatar>
               <CardTitle className="text-2xl">{studentProfile.name || "N/A"}</CardTitle>

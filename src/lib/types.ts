@@ -93,6 +93,7 @@ export interface Student extends User {
     fatherEmail?: string;
     motherEmail?: string;
   };
+  avatarUrl?: string; 
 }
 
 export type UserApprovalStatus = "pending_approval" | "active" | "rejected" | "suspended";
@@ -104,7 +105,8 @@ export interface Teacher extends User {
   status: UserApprovalStatus;
   username?: string; // Assigned by Host
   phoneNumber?: string; 
-  whatsappNumber?: string; 
+  whatsappNumber?: string;
+  avatarUrl?: string;
 }
 
 export interface Admin extends User {
@@ -114,7 +116,7 @@ export interface Admin extends User {
   whatsappNumber?: string;
   status: UserApprovalStatus;
   username?: string; // Assigned by Host
-  // Add other Admin-specific fields if any
+  avatarUrl?: string;
 }
 
 export interface Batch {

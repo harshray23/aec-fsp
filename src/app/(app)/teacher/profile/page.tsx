@@ -1,4 +1,5 @@
 
+
 "use client"; 
 
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -183,7 +184,7 @@ export default function TeacherProfilePage() {
           <>
             <CardHeader className="items-center text-center border-b pb-6">
               <Avatar className="h-24 w-24 mb-4 ring-2 ring-primary ring-offset-2">
-                <AvatarImage src={(teacherProfile as any).avatarUrl || `https://placehold.co/150x150.png?text=${avatarText}`} alt={teacherProfile.name} data-ai-hint="teacher avatar"/>
+                <AvatarImage src={teacherProfile.avatarUrl || `https://placehold.co/150x150.png?text=${avatarText}`} alt={teacherProfile.name} data-ai-hint="teacher avatar"/>
                 <AvatarFallback>{avatarText}</AvatarFallback>
               </Avatar>
               <CardTitle className="text-2xl">{teacherProfile.name || "N/A"}</CardTitle>
