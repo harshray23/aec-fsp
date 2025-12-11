@@ -15,8 +15,8 @@ import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
 
 export default function AdminEditBatchPage() {
   const router = useRouter();
-  const params = useParams();
-  const batchId = params.batchId as string;
+  const params = useParams<{ batchId: string }>();
+  const batchId = params.batchId;
   const { toast } = useToast();
 
   const [batch, setBatch] = useState<Batch | null>(null);

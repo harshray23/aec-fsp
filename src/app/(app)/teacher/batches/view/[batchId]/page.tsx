@@ -19,8 +19,8 @@ interface BatchDetails extends Batch {
 
 export default function TeacherViewBatchDetailsPage() {
     const router = useRouter();
-    const params = useParams();
-    const batchId = params.batchId as string;
+    const params = useParams<{ batchId: string }>();
+    const batchId = params.batchId;
     const { toast } = useToast();
 
     const [batchDetails, setBatchDetails] = useState<BatchDetails | null>(null);
