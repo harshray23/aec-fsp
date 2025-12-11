@@ -383,7 +383,7 @@ export default function ManageAcademicsPage() {
                     <TableCell className="font-medium">{student.name}</TableCell>
                     <TableCell>{student.studentId}</TableCell>
                     <TableCell>
-                      {DEPARTMENTS.find((d) => d.value === student.department)?.label}
+                      {DEPARTMENTS.find((d) => d.value === student.department)?.label || student.department}
                     </TableCell>
                     <TableCell>{student.academics?.class10?.percentage?.toFixed(2) || 'N/A'}</TableCell>
                     <TableCell>{student.academics?.class12?.percentage?.toFixed(2) || 'N/A'}</TableCell>
