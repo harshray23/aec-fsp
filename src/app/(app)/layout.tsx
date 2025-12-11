@@ -128,7 +128,7 @@ export default function AppPagesLayout({
   const pathname = usePathname();
   
   // Initialize state with a server-side determined user. This prevents hydration mismatch.
-  const [currentUser, setCurrentUser] = useState<CurrentUserType>(() => getServerSideUser(pathname)); 
+  const [currentUser, setCurrentUser] = useState<CurrentUserType>(() => getServerSideUser(pathname ?? "/")); 
 
   useEffect(() => {
     // This effect runs only on the client, after the initial render.
