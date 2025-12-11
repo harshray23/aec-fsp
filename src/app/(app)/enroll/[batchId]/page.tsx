@@ -14,7 +14,7 @@ import type { Batch, Student, Teacher } from "@/lib/types";
 import { USER_ROLES } from "@/lib/constants";
 
 export default function EnrollInBatchPage() {
-  const params = useParams<{ batchId: string }>();
+  const params = useParams<{ batchId: string }>()!;
   const router = useRouter();
   const { toast } = useToast();
   const batchId = params.batchId;
