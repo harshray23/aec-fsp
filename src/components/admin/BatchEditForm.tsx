@@ -220,7 +220,6 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
   };
 
   const onSubmit = async (values: BatchEditFormValues) => {
-    form.control.disabled = true;
     try {
       const payload = {
         ...values,
@@ -257,8 +256,6 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
         description: error.message || `Could not ${isEditMode ? 'update' : 'create'} batch.`,
         variant: "destructive",
       });
-    } finally {
-      form.control.disabled = false;
     }
   };
 
@@ -556,4 +553,3 @@ export default function BatchEditForm({ batchData, redirectPathAfterSuccess }: B
     </>
   );
 }
-
