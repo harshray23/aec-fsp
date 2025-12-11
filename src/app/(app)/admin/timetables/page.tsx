@@ -50,8 +50,9 @@ export default function AdminTimetableOverviewPage() {
         const timetables = allBatches
           .filter(batch => batch.daysOfWeek?.length > 0 && batch.startTimeFirstHalf && batch.endTimeFirstHalf)
           .map(batch => {
-            const departmentInfo = DEPARTMENTS.find(d => d.value === batch.department);
-            // Safely handle cases where teacherIds might be missing or empty
+            const departmentLabels = (batch.departments || [])
+              .map(deptValue => DEPARTMENTS.find(d => d.value === deptValue)?.label || deptValue)
+              .join(', ');
             const teacherNames = (batch.teacherIds || []).map(id => teachersMap.get(id)).filter(Boolean).join(', ');
             
             const schedule = [];
@@ -73,7 +74,7 @@ export default function AdminTimetableOverviewPage() {
             return {
               batchId: batch.id,
               batchName: batch.name,
-              departmentName: departmentInfo ? departmentInfo.label : (batch.department || "N/A"),
+              departmentName: departmentLabels || "N/A",
               teacherName: teacherNames || "N/A",
               roomNumber: batch.roomNumber,
               schedule: schedule,

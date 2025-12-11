@@ -6,7 +6,7 @@ import type { Batch, AttendanceRecord } from '@/lib/types';
 interface BatchAttendanceSummary {
   batchId: string;
   batchName: string;
-  department: string;
+  departments: string[];
   totalStudents: number;
   present: number;
   absent: number;
@@ -37,7 +37,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       batchDataMap.set(batch.id, {
         batchId: batch.id,
         batchName: batch.name,
-        department: batch.department,
+        departments: batch.departments,
         totalStudents: batch.studentIds?.length || 0,
         present: 0,
         absent: 0,
